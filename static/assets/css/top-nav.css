@@ -63,6 +63,40 @@
 	backdrop-filter: none;
 }
 
+.mastering-route-pill {
+	position: fixed;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2.75rem;
+	padding: 0 1.4rem 0 1.6rem;
+	border: solid 1px #ffffff;
+	border-radius: 4px;
+	background-color: rgba(19, 21, 25, 0.92);
+	box-shadow: 0 0 1.25rem rgba(0, 0, 0, 0.35);
+	color: #ffffff;
+	font-size: 0.8rem;
+	letter-spacing: 0.2rem;
+	line-height: 1;
+	text-transform: uppercase;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 10000;
+	box-sizing: border-box;
+	transition:
+		top 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+		left 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+		width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+		padding 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+		letter-spacing 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+		border-color 0.2s ease,
+		opacity 0.2s ease;
+}
+
+body.is-routing-mastering #top-nav {
+	opacity: 0.18;
+}
+
 @media screen and (max-width: 736px) {
 
 	#top-nav {
