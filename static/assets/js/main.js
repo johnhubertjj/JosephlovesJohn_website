@@ -53,9 +53,28 @@
 
 		}
 
-	// Nav.
-		var $nav = $header.children('nav'),
-			$nav_li = $nav.find('li');
+		// Nav.
+			var $topNav = $('#top-nav');
+
+			var updateTopNav = function() {
+
+				if ($topNav.length == 0)
+					return;
+
+				if ($window.scrollTop() > 10)
+					$topNav.addClass('is-docked');
+				else
+					$topNav.removeClass('is-docked');
+			};
+
+			$window
+				.on('load resize', updateTopNav)
+				.on('scroll', updateTopNav);
+
+			updateTopNav();
+
+				var $nav = $header.children('nav').not('#top-nav'),
+					$nav_li = $nav.find('li');
 
 		// Add "middle" alignment classes if we're dealing with an even number of items.
 			if ($nav_li.length % 2 == 0) {
@@ -333,7 +352,7 @@
 
 			});
 
-			$window.on('hashchange', function(event) {
+				$window.on('hashchange', function(event) {
 
 				// Empty hash?
 					if (location.hash == ''
@@ -358,9 +377,11 @@
 						// Show article.
 							$main._show(location.hash.substr(1));
 
-					}
+						}
 
-			});
+					window.setTimeout(updateTopNav, delay);
+
+				});
 
 		// Scroll restoration.
 		// This prevents the page from scrolling back to the top on a hashchange.
