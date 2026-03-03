@@ -4,10 +4,14 @@
 		<title>{% block title %}Dimension by HTML5 UP{% endblock %}</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		{% block styles %}
-		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
-		<noscript><link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}" /></noscript>
-		{% endblock %}
+			{% block styles %}
+			<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
+			<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/top-nav.css') }}" />
+			<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main-middle.css') }}" />
+			<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/bottom-nav.css') }}" />
+			<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/footer.css') }}" />
+			<noscript><link rel="stylesheet" href="{{ url_for('static', filename='assets/css/noscript.css') }}" /></noscript>
+			{% endblock %}
 		{% block head %}{% endblock %}
 	</head>
 	<body class="{% block body_class %}is-preload{% endblock %}">
