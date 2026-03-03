@@ -1,0 +1,71 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and packaging artifacts
+build/
+dist/
+site/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Coverage and test output
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# Local environment and secrets
+.env
+.env.*
+*.local
+
+# Logs and runtime files
+*.log
+*.out
+*.pid
+*.pid.lock
+
+# Database and local app state
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Tooling caches
+.tox/
+.nox/
+
+# Frontend dependencies and build caches
+node_modules/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+*.mp4
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+
+# macOS and misc OS files
+.DS_Store
+Thumbs.db
+
+# Local tool metadata
+.codex/
