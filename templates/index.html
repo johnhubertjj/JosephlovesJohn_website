@@ -1,27 +1,40 @@
 {% extends 'base.html' %}
 
-{% block content %}
-	<!--
-		Dimension by HTML5 UP
-		html5up.net | @ajlkn
-		Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
-	-->
-		<!-- Wrapper -->
-			<div id="wrapper">
+	{% block content %}
+		<!--
+			Dimension by HTML5 UP
+			html5up.net | @ajlkn
+			Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+		-->
+			<nav id="top-nav" aria-label="Primary">
+				<ul>
+					<li><a href="#mastering-services">Mastering Services</a></li>
+				</ul>
+			</nav>
+			<!-- Wrapper -->
+				<div id="wrapper">
 
 				<!-- Header -->
 					<header id="header">
-						<div class="logo">
-							<span class="icon fa-gem"></span>
-						</div>
-						<div class="content">
-							<div class="inner">
-								<h1>Dimension</h1>
-								<p>A fully responsive site template designed by <a href="https://html5up.net">HTML5 UP</a> and released<br />
-								for free under the <a href="https://html5up.net/license">Creative Commons</a> license.</p>
+							<div class="logo primary-logo">
+								<span class="logo-frame">
+									<img src="{{ url_for('static', filename='images/jlovesj_symbol-my_version3.png') }}" alt="JosephlovesJohn logo" />
+								</span>
 							</div>
-						</div>
-						<nav>
+							<div class="content">
+								<div class="inner">
+								<h1>JosephlovesJohn</h1>
+								<p>Singer - Composer - Guitar and Bass</p>
+									<p>Canada/UK - based in Bristol</p>
+									<p>Tastefully Melancholic music</p>
+								</div>
+							</div>
+							<div class="logo secondary-logo">
+								<span class="logo-frame">
+									<img src="{{ url_for('static', filename='images/album_art/Current_artist_profile_picture.jpg') }}" alt="JosephlovesJohn artist portrait" />
+								</span>
+							</div>
+							<nav>
 							<ul>
 								<li><a href="#intro">Intro</a></li>
 								<li><a href="#work">Work</a></li>
@@ -58,8 +71,8 @@
 								<p>Lorem ipsum dolor sit amet, consectetur et adipiscing elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac. Aliquam erat volutpat. Praesent urna nisi, fringila lorem et vehicula lacinia quam. Integer sollicitudin mauris nec lorem luctus ultrices. Aliquam libero et malesuada fames ac ante ipsum primis in faucibus. Cras viverra ligula sit amet ex mollis mattis lorem ipsum dolor sit amet.</p>
 							</article>
 
-						<!-- Contact -->
-							<article id="contact">
+							<!-- Contact -->
+								<article id="contact">
 								<h2 class="major">Contact</h2>
 								<form method="post" action="#">
 									<div class="fields">
@@ -86,11 +99,18 @@
 									<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
 									<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
 									<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
-								</ul>
-							</article>
+									</ul>
+								</article>
 
-						<!-- Elements -->
-							<article id="elements">
+							<!-- Mastering Services -->
+								<article id="mastering-services">
+									<h2 class="major">Mastering Services</h2>
+									<p>Dedicated mastering for singles, EPs, and full releases, tuned for clarity, translation, and musical impact across streaming, download, and physical formats.</p>
+									<p>If you want to discuss your project, delivery specs, or turnaround, use the contact section and include a reference track or a rough mix note.</p>
+								</article>
+
+							<!-- Elements -->
+								<article id="elements">
 								<h2 class="major">Elements</h2>
 
 								<section>
