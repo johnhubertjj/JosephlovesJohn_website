@@ -171,7 +171,7 @@ input, select, textarea {
 	}
 
 	p {
-		margin: 0 0 2rem 0;
+		margin: 0 0 1rem 0;
 	}
 
 	h1, h2, h3, h4, h5, h6 {
@@ -1237,16 +1237,16 @@ input, select, textarea {
 
 	/* Header */
 
-		#top-nav {
-			position: fixed;
-			top: 2rem;
-			left: 50%;
-			-moz-transform: translateX(-50%);
-			-webkit-transform: translateX(-50%);
-			-ms-transform: translateX(-50%);
-			transform: translateX(-50%);
-			z-index: 4;
-		}
+			#top-nav {
+				position: fixed;
+				top: 0.6rem;
+				left: 50%;
+				-moz-transform: translateX(-50%);
+				-webkit-transform: translateX(-50%);
+				-ms-transform: translateX(-50%);
+				transform: translateX(-50%);
+				z-index: 4;
+			}
 
 			#top-nav ul {
 				display: -moz-flex;
@@ -1263,6 +1263,10 @@ input, select, textarea {
 				-webkit-backdrop-filter: blur(0.35rem);
 				-ms-backdrop-filter: blur(0.35rem);
 				backdrop-filter: blur(0.35rem);
+				-moz-transition: background-color 0.2s ease, box-shadow 0.2s ease;
+				-webkit-transition: background-color 0.2s ease, box-shadow 0.2s ease;
+				-ms-transition: background-color 0.2s ease, box-shadow 0.2s ease;
+				transition: background-color 0.2s ease, box-shadow 0.2s ease;
 			}
 
 				#top-nav ul li {
@@ -1288,6 +1292,18 @@ input, select, textarea {
 						#top-nav ul li a:active {
 							background-color: rgba(255, 255, 255, 0.175);
 						}
+
+			#top-nav.is-docked {
+			}
+
+				#top-nav.is-docked ul {
+					background-color: rgba(0, 0, 0, 0.94);
+					box-shadow: 0 0 1.25rem rgba(0, 0, 0, 0.35);
+					-moz-backdrop-filter: none;
+					-webkit-backdrop-filter: none;
+					-ms-backdrop-filter: none;
+					backdrop-filter: none;
+				}
 
 		#header {
 			display: -moz-flex;
@@ -1404,7 +1420,7 @@ input, select, textarea {
 				-webkit-transition-delay: 0.25s;
 				-ms-transition-delay: 0.25s;
 				transition-delay: 0.25s;
-				padding: 3rem 2rem;
+				padding: 2.5rem 2rem;
 				max-height: 40rem;
 				overflow: hidden;
 			}
@@ -1425,7 +1441,7 @@ input, select, textarea {
 				}
 
 				#header .secondary-logo + nav {
-					margin-top: 1.75rem;
+					margin-top: 0.8rem;
 				}
 
 			#header nav ul {
@@ -1529,10 +1545,10 @@ input, select, textarea {
 			}
 
 			#top-nav {
-			top: 1rem;
-			width: calc(100% - 2rem);
-			max-width: 18rem;
-		}
+				top: 1rem;
+				width: calc(100% - 2rem);
+				max-width: 18rem;
+			}
 
 			#top-nav ul {
 				width: 100%;
@@ -1549,6 +1565,10 @@ input, select, textarea {
 					padding-left: 1.6rem;
 					padding-right: 1.4rem;
 				}
+
+			#top-nav.is-docked {
+				top: 1rem;
+			}
 
 		#header > * {
 			margin-top: 2rem;
