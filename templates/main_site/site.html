@@ -1,0 +1,117 @@
+{% extends 'main_site/base.html' %}
+{% load static %}
+
+{% block content %}
+<nav id="top-nav" aria-label="Primary">
+    <ul>
+        <li><a href="{% url 'mastering:home' %}?from_home=1" data-mastering-link="true">Mastering Services</a></li>
+    </ul>
+</nav>
+
+<div id="wrapper">
+    <header id="header">
+        <div class="logo primary-logo">
+            <span class="logo-frame">
+                <img src="{% static 'images/jlovesj_symbol-my_version3.png' %}" alt="JosephlovesJohn logo" />
+            </span>
+        </div>
+        <div class="content">
+            <div class="inner">
+                <h1>JosephlovesJohn</h1>
+                <p>Singer - Composer - Guitar and Bass</p>
+                <p>Canada/UK - based in Bristol</p>
+                <p>Tastefully Melancholic music</p>
+            </div>
+        </div>
+        <div class="logo secondary-logo">
+            <span class="logo-frame">
+                <img src="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}" alt="JosephlovesJohn artist portrait" />
+            </span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="{% url 'main_site:main' %}">Main</a></li>
+                <li><a href="{% url 'main_site:intro' %}">Intro</a></li>
+                <li><a href="{% url 'main_site:music' %}">Music</a></li>
+                <li><a href="{% url 'main_site:art' %}">Art</a></li>
+                <li><a href="{% url 'main_site:contact' %}">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div id="main">
+        <article id="main">
+            <h2 class="major">Main</h2>
+            <span class="image main"><img src="{% static 'images/pic01.jpg' %}" alt="JosephlovesJohn visual" /></span>
+            <p>Welcome to the main site. Use the navigation above to jump directly to Intro, Music, Art, or Contact.</p>
+            <p>You can also visit the dedicated <a href="{% url 'mastering:home' %}">Mastering Services</a> site.</p>
+        </article>
+
+        <article id="intro">
+            <h2 class="major">Intro</h2>
+            <span class="image main"><img src="{% static 'images/pic01.jpg' %}" alt="Intro visual" /></span>
+            <p>Aenean ornare velit lacus, ac varius enim ullamcorper eu. Proin aliquam facilisis ante interdum congue. Integer mollis, nisl amet convallis, porttitor magna ullamcorper, amet egestas mauris. Ut magna finibus nisi nec lacinia.</p>
+            <p>Nam maximus erat id euismod egestas. By the way, check out the <a href="{% url 'main_site:music' %}">music</a> section.</p>
+        </article>
+
+        <article id="music">
+            <h2 class="major">Music</h2>
+            <span class="image main"><img src="{% static 'images/pic02.jpg' %}" alt="Music visual" /></span>
+            <p>Adipiscing magna sed dolor elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac.</p>
+            <p>Nullam et orci eu lorem consequat tincidunt vivamus et sagittis libero. Mauris aliquet magna magna sed nunc rhoncus pharetra.</p>
+        </article>
+
+        <article id="art">
+            <h2 class="major">Art</h2>
+            <span class="image main"><img src="{% static 'images/pic03.jpg' %}" alt="Art visual" /></span>
+            <p>Lorem ipsum dolor sit amet, consectetur et adipiscing elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac.</p>
+            <p>Aliquam erat volutpat. Praesent urna nisi, fringilla lorem et vehicula lacinia quam.</p>
+        </article>
+
+        <article id="contact">
+            <h2 class="major">Contact</h2>
+            <form method="get" action="{% url 'main_site:contact' %}">
+                <div class="fields">
+                    <div class="field half">
+                        <label for="name">Name</label>
+                        <input type="text" name="name" id="name" />
+                    </div>
+                    <div class="field half">
+                        <label for="email">Email</label>
+                        <input type="text" name="email" id="email" />
+                    </div>
+                    <div class="field">
+                        <label for="message">Message</label>
+                        <textarea name="message" id="message" rows="4"></textarea>
+                    </div>
+                </div>
+                <ul class="actions">
+                    <li><input type="submit" value="Send Message" class="primary" /></li>
+                    <li><input type="reset" value="Reset" /></li>
+                </ul>
+            </form>
+            <ul class="icons">
+                <li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+                <li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+                <li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+                <li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+            </ul>
+        </article>
+    </div>
+
+    <footer id="footer">
+        <p class="copyright">&copy; JosephlovesJohn. Design base: <a href="https://html5up.net">HTML5 UP</a>.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block pre_scripts %}
+<script>
+    (function () {
+        var section = "{{ active_section|default:'' }}";
+        if (section) {
+            window.location.hash = section;
+        }
+    })();
+</script>
+{% endblock %}
