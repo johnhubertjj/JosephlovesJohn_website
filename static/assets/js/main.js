@@ -71,6 +71,15 @@
 				.on('load resize', updateTopNav)
 				.on('scroll', updateTopNav);
 
+			var clearMasteringRouteState = function() {
+				$body.removeClass('is-routing-mastering');
+				$('.mastering-route-pill').remove();
+			};
+
+			$window.on('pageshow', clearMasteringRouteState);
+			$window.on('pagehide', clearMasteringRouteState);
+
+			clearMasteringRouteState();
 			updateTopNav();
 
 			var $masteringLink = $topNav.find('a[data-mastering-link="true"]');
