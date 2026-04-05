@@ -1,6 +1,78 @@
 {% extends 'main_site/base.html' %}
 {% load static %}
 
+{% block head %}
+<style>
+    .music-library {
+        display: grid;
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .music-library-item {
+        display: grid;
+        grid-template-columns: minmax(180px, 260px) 1fr;
+        gap: 1.5rem;
+        align-items: center;
+        padding: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .music-library-item.is-reversed {
+        grid-template-columns: 1fr minmax(180px, 260px);
+    }
+
+    .music-library-item.is-reversed .music-library-art {
+        order: 2;
+    }
+
+    .music-library-item.is-reversed .music-library-player-panel {
+        order: 1;
+    }
+
+    .music-library-art img {
+        display: block;
+        width: 100%;
+        border-radius: 0.45rem;
+        box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.35);
+    }
+
+    .music-library-player-panel h3 {
+        margin: 0 0 0.75rem;
+        letter-spacing: 0.12rem;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+
+    .music-player-frame {
+        min-height: 86px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 0.4rem;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.25);
+    }
+
+    .music-player-fallback {
+        width: 100%;
+        padding: 0.75rem;
+    }
+
+    @media screen and (max-width: 736px) {
+        .music-library-item,
+        .music-library-item.is-reversed {
+            grid-template-columns: 1fr;
+        }
+
+        .music-library-item.is-reversed .music-library-art,
+        .music-library-item.is-reversed .music-library-player-panel {
+            order: initial;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <nav id="top-nav" aria-label="Primary">
     <ul>
@@ -30,11 +102,10 @@
         </div>
         <nav>
             <ul>
-                <li><a href="{% url 'main_site:main' %}">Main</a></li>
-                <li><a href="{% url 'main_site:intro' %}">Intro</a></li>
-                <li><a href="{% url 'main_site:music' %}">Music</a></li>
-                <li><a href="{% url 'main_site:art' %}">Art</a></li>
-                <li><a href="{% url 'main_site:contact' %}">Contact</a></li>
+                <li><a href="#intro">Intro</a></li>
+                <li><a href="#music">Music</a></li>
+                <li><a href="#art">Art</a></li>
+                <li><a href="#contact">Contact</a></li>
             </ul>
         </nav>
     </header>
@@ -56,9 +127,35 @@
 
         <article id="music">
             <h2 class="major">Music</h2>
-            <span class="image main"><img src="{% static 'images/pic02.jpg' %}" alt="Music visual" /></span>
-            <p>Adipiscing magna sed dolor elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac.</p>
-            <p>Nullam et orci eu lorem consequat tincidunt vivamus et sagittis libero. Mauris aliquet magna magna sed nunc rhoncus pharetra.</p>
+            <div class="music-library">
+                <section class="music-library-item">
+                    <figure class="music-library-art">
+                        <img src="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" alt="Dark and Light artist cover artwork" />
+                    </figure>
+                    <div class="music-library-player-panel">
+                        <h3>Dark and Light - Artist Version</h3>
+                        <div
+                            id="dark-and-light-artist-player"
+                            class="music-player-frame"
+                            data-file="{% static 'audio/dark_and_light_artist_cover.mp3' %}"
+                        ></div>
+                    </div>
+                </section>
+
+                <section class="music-library-item is-reversed">
+                    <figure class="music-library-art">
+                        <img src="{% static 'images/album_art/dark_and_light_instrumental.png' %}" alt="Dark and Light instrumental artwork" />
+                    </figure>
+                    <div class="music-library-player-panel">
+                        <h3>Dark and Light - Instrumental</h3>
+                        <div
+                            id="dark-and-light-instrumental-player"
+                            class="music-player-frame"
+                            data-file="{% static 'audio/dark_and_light_instrumental.mp3' %}"
+                        ></div>
+                    </div>
+                </section>
+            </div>
         </article>
 
         <article id="art">
@@ -112,6 +209,41 @@
         if (section) {
             window.location.hash = section;
         }
+    })();
+</script>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="{% static 'assets/js/playerjs-3.js' %}"></script>
+<script>
+    (function () {
+        var frames = document.querySelectorAll(".music-player-frame");
+        var canUsePlayerjs = typeof Playerjs !== "undefined";
+
+        frames.forEach(function (frame) {
+            var file = frame.getAttribute("data-file");
+            if (!file) {
+                return;
+            }
+
+            if (canUsePlayerjs) {
+                try {
+                    new Playerjs({
+                        id: frame.id,
+                        file: file
+                    });
+                    return;
+                } catch (error) {
+                    // Fallback below if PlayerJS initialization fails.
+                }
+            }
+
+            frame.innerHTML =
+                '<audio class="music-player-fallback" controls preload="none">' +
+                '<source src="' + file + '" type="audio/mpeg">' +
+                "</audio>";
+        });
     })();
 </script>
 {% endblock %}
