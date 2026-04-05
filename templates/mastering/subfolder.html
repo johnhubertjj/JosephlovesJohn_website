@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mastering Subfolder</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="{% static 'mastering/assets/css/main.css' %}" />
+</head>
+<body class="is-preload">
+<div id="page-wrapper">
+    <header id="header" class="alt">
+        <h1><a href="{% url 'mastering:home' %}">Mastering Services</a></h1>
+        <nav>
+            <a href="{% url 'main_site:main' %}">Main Site</a>
+        </nav>
+    </header>
+
+    <section id="banner">
+        <div class="inner">
+            <h2>Future Subfolder</h2>
+            <p>The subfolder <strong>{{ subfolder }}</strong> is reserved for future mastering pages.</p>
+            <p>When you decide structure, this route can map to dedicated templates and views.</p>
+        </div>
+    </section>
+</div>
+</body>
+</html>
