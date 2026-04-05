@@ -69,3 +69,6 @@ Thumbs.db
 
 # Local tool metadata
 .codex/
+
+# Audio
+static/audio/

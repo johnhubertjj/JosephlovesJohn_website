@@ -53,9 +53,84 @@
 
 		}
 
-	// Nav.
-		var $nav = $header.children('nav'),
-			$nav_li = $nav.find('li');
+		// Nav.
+			var $topNav = $('#top-nav');
+
+			var updateTopNav = function() {
+
+				if ($topNav.length == 0)
+					return;
+
+				if ($window.scrollTop() > 10)
+					$topNav.addClass('is-docked');
+				else
+					$topNav.removeClass('is-docked');
+			};
+
+			$window
+				.on('load resize', updateTopNav)
+				.on('scroll', updateTopNav);
+
+			var clearMasteringRouteState = function() {
+				$body.removeClass('is-routing-mastering');
+				$('.mastering-route-pill').remove();
+			};
+
+			$window.on('pageshow', clearMasteringRouteState);
+			$window.on('pagehide', clearMasteringRouteState);
+
+			clearMasteringRouteState();
+			updateTopNav();
+
+			var $masteringLink = $topNav.find('a[data-mastering-link="true"]');
+
+			$masteringLink.on('click', function(event) {
+
+				var href = $(this).attr('href');
+
+				if (!href || $body.hasClass('is-routing-mastering'))
+					return;
+
+				event.preventDefault();
+
+				var rect = this.getBoundingClientRect(),
+					targetWidth = 6.25 * 16,
+					targetLeft = Math.max(24, $window.width() - targetWidth - 32),
+					targetTop = 18,
+					$ghost = $('<span class="mastering-route-pill"></span>').text($(this).text());
+
+				$ghost.css({
+					top: rect.top + 'px',
+					left: rect.left + 'px',
+					width: rect.width + 'px'
+				});
+
+				$body
+					.addClass('is-routing-mastering')
+					.append($ghost);
+
+				window.setTimeout(function() {
+					$ghost.text('Menu');
+				}, 360);
+
+				window.requestAnimationFrame(function() {
+					$ghost.css({
+						top: targetTop + 'px',
+						left: targetLeft + 'px',
+						width: targetWidth + 'px',
+						padding: '0 1.1rem',
+						letterSpacing: '0.16rem'
+					});
+				});
+
+				window.setTimeout(function() {
+					window.location.href = href;
+				}, 920);
+
+			});
+
+				var $nav = $header.children('nav').not('#top-nav'),
+					$nav_li = $nav.find('li');
 
 		// Add "middle" alignment classes if we're dealing with an even number of items.
 			if ($nav_li.length % 2 == 0) {
@@ -333,7 +408,7 @@
 
 			});
 
-			$window.on('hashchange', function(event) {
+				$window.on('hashchange', function(event) {
 
 				// Empty hash?
 					if (location.hash == ''
@@ -358,9 +433,11 @@
 						// Show article.
 							$main._show(location.hash.substr(1));
 
-					}
+						}
 
-			});
+					window.setTimeout(updateTopNav, delay);
+
+				});
 
 		// Scroll restoration.
 		// This prevents the page from scrolling back to the top on a hashchange.
