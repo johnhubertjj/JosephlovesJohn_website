@@ -197,7 +197,8 @@
                         <div
                             id="dark-and-light-artist-player"
                             class="music-player-frame"
-                            data-file="{% static 'audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav' %}"
+                            data-file-wav="{% static 'audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav' %}"
+                            data-file-mp3="{% static 'audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3' %}"
                         ></div>
                     </div>
                 </section>
@@ -212,7 +213,8 @@
                         <div
                             id="dark-and-light-instrumental-player"
                             class="music-player-frame"
-                            data-file="{% static 'audio/dark_and_light_final_instrumental_v3_24_192.wav' %}"
+                            data-file-wav="{% static 'audio/dark_and_light_final_instrumental_v3_24_192.wav' %}"
+                            data-file-mp3="{% static 'audio/dark_and_light_final_instrumental_v3_24_192.mp3' %}"
                         ></div>
                     </div>
                 </section>
@@ -276,11 +278,71 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'assets/js/playerjs_v3.js' %}"></script>
+<script src="{% static 'assets/js/playerjs_v4.js' %}"></script>
 <script>
     (function () {
         var frames = document.querySelectorAll(".music-player-frame");
         var canUsePlayerjs = typeof Playerjs !== "undefined";
+
+        function shouldPreferCompressedAudio() {
+            var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (!connection) {
+                return true;
+            }
+
+            if (connection.saveData) {
+                return true;
+            }
+
+            var type = (connection.effectiveType || "").toLowerCase();
+            if (type && type !== "4g") {
+                return true;
+            }
+
+            if (typeof connection.downlink === "number" && connection.downlink > 0 && connection.downlink < 6) {
+                return true;
+            }
+
+            if (typeof connection.rtt === "number" && connection.rtt > 300) {
+                return true;
+            }
+
+            return !(type === "4g" && typeof connection.downlink === "number" && connection.downlink >= 6);
+        }
+
+        function pickPreferredAudioFile(frame) {
+            var wav = frame.getAttribute("data-file-wav") || "";
+            var mp3 = frame.getAttribute("data-file-mp3") || "";
+            var preferCompressed = shouldPreferCompressedAudio();
+
+            if (preferCompressed && mp3) {
+                return mp3;
+            }
+
+            if (wav) {
+                return wav;
+            }
+
+            return mp3;
+        }
+
+        function getAudioMimeType(path) {
+            var cleanPath = (path || "").split("?")[0].toLowerCase();
+
+            if (cleanPath.endsWith(".wav")) {
+                return "audio/wav";
+            }
+            if (cleanPath.endsWith(".mp3")) {
+                return "audio/mpeg";
+            }
+            if (cleanPath.endsWith(".ogg")) {
+                return "audio/ogg";
+            }
+            if (cleanPath.endsWith(".m4a") || cleanPath.endsWith(".mp4")) {
+                return "audio/mp4";
+            }
+            return "audio/*";
+        }
 
         function hidePlayerTitlePlaceholder(frame) {
             var attempts = 0;
@@ -326,8 +388,56 @@
             }, 150);
         }
 
+        function primePlayerMetadata(frame) {
+            var attempts = 0;
+            var maxAttempts = 80;
+            var timer = setInterval(function () {
+                attempts += 1;
+
+                var iframe = frame.querySelector("iframe");
+                if (!iframe) {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                    return;
+                }
+
+                try {
+                    var doc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (!doc || !doc.body) {
+                        if (attempts >= maxAttempts) {
+                            clearInterval(timer);
+                        }
+                        return;
+                    }
+
+                    var media = doc.querySelector("audio, video");
+                    if (!media) {
+                        if (attempts >= maxAttempts) {
+                            clearInterval(timer);
+                        }
+                        return;
+                    }
+
+                    media.preload = "auto";
+                    if (!media.dataset.metadataPrimed) {
+                        media.dataset.metadataPrimed = "1";
+                        media.load();
+                    }
+
+                    if (isFinite(media.duration) && media.duration > 0) {
+                        clearInterval(timer);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                } catch (error) {
+                    clearInterval(timer);
+                }
+            }, 125);
+        }
+
         frames.forEach(function (frame) {
-            var file = frame.getAttribute("data-file");
+            var file = pickPreferredAudioFile(frame);
             if (!file) {
                 return;
             }
@@ -337,10 +447,14 @@
                     new Playerjs({
                         id: frame.id,
                         file: file,
-                        title: " "
+                        title: " ",
+                        preloading: 1,
+                        disablePreload: 0,
+                        showuntilmeta: 1
                     });
                     frame.classList.add("is-enhanced");
                     hidePlayerTitlePlaceholder(frame);
+                    primePlayerMetadata(frame);
                     return;
                 } catch (error) {
                     // Fallback below if PlayerJS initialization fails.
@@ -348,8 +462,8 @@
             }
 
             frame.innerHTML =
-                '<audio class="music-player-fallback" controls preload="none">' +
-                '<source src="' + file + '" type="audio/mpeg">' +
+                '<audio class="music-player-fallback" controls preload="metadata">' +
+                '<source src="' + file + '" type="' + getAudioMimeType(file) + '">' +
                 "</audio>";
             frame.classList.add("is-enhanced");
         });
