@@ -9,7 +9,7 @@
 
     .music-library {
         display: grid;
-        gap: 2.25rem;
+        gap: 2rem;
         margin-top: 1.35rem;
     }
 
@@ -109,6 +109,167 @@
         padding: 0.75rem;
     }
 
+    .art-showcase {
+        display: grid;
+        gap: 2.25rem;
+    }
+
+    .art-block {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        background: linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.06),
+            rgba(255, 255, 255, 0.02)
+        );
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .art-block-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        letter-spacing: 0.14rem;
+        text-transform: uppercase;
+    }
+
+    .art-block-header p {
+        margin: 0.4rem 0 0;
+        font-size: 0.74rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    .art-format-note {
+        margin: 0.9rem 0 0.7rem;
+        font-size: 0.67rem;
+        letter-spacing: 0.07rem;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .gig-photo-grid {
+        column-count: 3;
+        column-gap: 0.95rem;
+    }
+
+    .gig-photo-card {
+        display: block;
+        margin: 0 0 0.95rem;
+        break-inside: avoid;
+        border-radius: 0.55rem;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 0.55rem 1.45rem rgba(0, 0, 0, 0.35);
+    }
+
+    .gig-photo-card img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .album-art-grid {
+        margin-top: 0.95rem;
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 0.95rem;
+    }
+
+    .album-art-card {
+        grid-column: span 4;
+        margin: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 0.55rem;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.24);
+        box-shadow: 0 0.55rem 1.45rem rgba(0, 0, 0, 0.28);
+    }
+
+    .album-art-card.is-featured {
+        grid-column: span 6;
+    }
+
+    .album-art-card img,
+    .album-art-card video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        background: #050505;
+    }
+
+    .album-art-card figcaption {
+        margin: 0;
+        padding: 0.65rem 0.75rem 0.8rem;
+        font-size: 0.68rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.85;
+    }
+
+    .art-lightbox {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 2rem 1rem 1rem;
+        background: rgba(0, 0, 0, 0.84);
+        z-index: 1200;
+    }
+
+    .art-lightbox.is-visible {
+        display: grid;
+    }
+
+    .art-lightbox-image {
+        max-width: min(92vw, 1200px);
+        max-height: 78vh;
+        width: auto;
+        height: auto;
+        border-radius: 0.45rem;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
+    }
+
+    .art-lightbox-caption {
+        margin: 0.8rem 0 0;
+        text-align: center;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        opacity: 0.86;
+    }
+
+    .art-lightbox-close {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.9rem;
+        border: 0;
+        background: transparent;
+        color: #ffffff;
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.92;
+    }
+
+    body.is-lightbox-visible {
+        overflow: hidden;
+    }
+
+    @media screen and (max-width: 980px) {
+        .gig-photo-grid {
+            column-count: 2;
+        }
+
+        .album-art-card,
+        .album-art-card.is-featured {
+            grid-column: span 6;
+        }
+    }
+
     @media screen and (max-width: 736px) {
         .music-library-item,
         .music-library-item.is-reversed {
@@ -118,6 +279,15 @@
         .music-library-item.is-reversed .music-library-art,
         .music-library-item.is-reversed .music-library-player-panel {
             order: initial;
+        }
+
+        .gig-photo-grid {
+            column-count: 1;
+        }
+
+        .album-art-card,
+        .album-art-card.is-featured {
+            grid-column: span 12;
         }
     }
 </style>
@@ -223,9 +393,124 @@
 
         <article id="art">
             <h2 class="major">Art</h2>
-            <span class="image main"><img src="{% static 'images/pic03.jpg' %}" alt="Art visual" /></span>
-            <p>Lorem ipsum dolor sit amet, consectetur et adipiscing elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac.</p>
-            <p>Aliquam erat volutpat. Praesent urna nisi, fringilla lorem et vehicula lacinia quam.</p>
+            <p>A split gallery of live photography and cover/visual artwork.</p>
+
+            <div class="art-showcase">
+                <section class="art-block">
+                    <header class="art-block-header">
+                        <h3>Gig Photos</h3>
+                        <p>Live captures, rehearsals, and stripped back sessions.</p>
+                    </header>
+                    <p class="art-format-note">Some files are HEIC and may not render in every browser.</p>
+                    <div class="gig-photo-grid">
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 01">
+                            <img src="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" alt="Gig photo - sofa session 1" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 02">
+                            <img src="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" alt="Gig photo - sofa session 2" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 03">
+                            <img src="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" alt="Gig photo - sofa session 3" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig1.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 01">
+                            <img src="{% static 'images/gig_photos/gig1.HEIC' %}" alt="Gig photo 1" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig2.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 02">
+                            <img src="{% static 'images/gig_photos/gig2.HEIC' %}" alt="Gig photo 2" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig3.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 03">
+                            <img src="{% static 'images/gig_photos/gig3.HEIC' %}" alt="Gig photo 3" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig4.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 04">
+                            <img src="{% static 'images/gig_photos/gig4.HEIC' %}" alt="Gig photo 4" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig5.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 05">
+                            <img src="{% static 'images/gig_photos/gig5.HEIC' %}" alt="Gig photo 5" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig6.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 06">
+                            <img src="{% static 'images/gig_photos/gig6.HEIC' %}" alt="Gig photo 6" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig7.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 07">
+                            <img src="{% static 'images/gig_photos/gig7.HEIC' %}" alt="Gig photo 7" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig8.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 08">
+                            <img src="{% static 'images/gig_photos/gig8.HEIC' %}" alt="Gig photo 8" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig9.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 09">
+                            <img src="{% static 'images/gig_photos/gig9.HEIC' %}" alt="Gig photo 9" loading="lazy" decoding="async" />
+                        </a>
+                    </div>
+                </section>
+
+                <section class="art-block">
+                    <header class="art-block-header">
+                        <h3>Album &amp; Assorted Artwork</h3>
+                        <p>Cover art, profile imagery, and motion visuals.</p>
+                    </header>
+                    <div class="album-art-grid">
+                        <figure class="album-art-card is-featured">
+                            <a href="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" data-art-lightbox="image" data-art-caption="Dark and Light - Artist Cover">
+                                <img src="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" alt="Dark and Light artist cover artwork" loading="lazy" decoding="async" />
+                            </a>
+                            <figcaption>Dark and Light - Artist Cover</figcaption>
+                        </figure>
+                        <figure class="album-art-card is-featured">
+                            <a href="{% static 'images/album_art/dark_and_light_instrumental.png' %}" data-art-lightbox="image" data-art-caption="Dark and Light - Instrumental Artwork">
+                                <img src="{% static 'images/album_art/dark_and_light_instrumental.png' %}" alt="Dark and Light instrumental artwork" loading="lazy" decoding="async" />
+                            </a>
+                            <figcaption>Dark and Light - Instrumental Artwork</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <a href="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}" data-art-lightbox="image" data-art-caption="Current Artist Profile">
+                                <img src="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}" alt="Current artist profile portrait" loading="lazy" decoding="async" />
+                            </a>
+                            <figcaption>Current Artist Profile</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <video controls preload="metadata" playsinline>
+                                <source src="{% static 'images/album_art/symbol_animation.mp4' %}" type="video/mp4" />
+                            </video>
+                            <figcaption>Symbol Animation</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_artist_cover.png' %}">
+                                <source src="{% static 'images/album_art/buddlea_animation.mp4' %}" type="video/mp4" />
+                            </video>
+                            <figcaption>Buddlea Animation</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_artist_cover.png' %}">
+                                <source src="{% static 'images/album_art/spotify_canvas_raw.mp4' %}" type="video/mp4" />
+                            </video>
+                            <figcaption>Spotify Canvas</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_instrumental.png' %}">
+                                <source src="{% static 'images/album_art/Pixaloop_16_01_2026_22_50_48_8470000.mp4' %}" type="video/mp4" />
+                            </video>
+                            <figcaption>Pixaloop Visual 01</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_instrumental.png' %}">
+                                <source src="{% static 'images/album_art/Pixaloop_16_01_2026_22_56_41_6470000.mp4' %}" type="video/mp4" />
+                            </video>
+                            <figcaption>Pixaloop Visual 02</figcaption>
+                        </figure>
+                        <figure class="album-art-card">
+                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}">
+                                <source src="{% static 'images/album_art/Made with Motionleap.mp4' %}" type="video/mp4" />
+                            </video>
+                            <figcaption>Motionleap Artwork</figcaption>
+                        </figure>
+                    </div>
+                </section>
+            </div>
+
+            <div id="art-lightbox" class="art-lightbox" role="dialog" aria-hidden="true" aria-label="Expanded artwork">
+                <button type="button" class="art-lightbox-close" data-art-close aria-label="Close expanded artwork">&times;</button>
+                <img class="art-lightbox-image" alt="" />
+                <p class="art-lightbox-caption"></p>
+            </div>
         </article>
 
         <article id="contact">
@@ -466,6 +751,58 @@
                 '<source src="' + file + '" type="' + getAudioMimeType(file) + '">' +
                 "</audio>";
             frame.classList.add("is-enhanced");
+        });
+    })();
+</script>
+<script>
+    (function () {
+        var lightbox = document.getElementById("art-lightbox");
+        if (!lightbox) {
+            return;
+        }
+
+        var lightboxImage = lightbox.querySelector(".art-lightbox-image");
+        var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
+
+        function closeLightbox() {
+            lightbox.classList.remove("is-visible");
+            lightbox.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("is-lightbox-visible");
+            lightboxImage.removeAttribute("src");
+            lightboxImage.alt = "";
+            lightboxCaption.textContent = "";
+        }
+
+        document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
+            trigger.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                var targetUrl = trigger.getAttribute("href");
+                if (!targetUrl) {
+                    return;
+                }
+
+                var image = trigger.querySelector("img");
+                lightboxImage.src = targetUrl;
+                lightboxImage.alt = image ? image.alt : "Artwork";
+                lightboxCaption.textContent = trigger.getAttribute("data-art-caption") || "";
+
+                lightbox.classList.add("is-visible");
+                lightbox.setAttribute("aria-hidden", "false");
+                document.body.classList.add("is-lightbox-visible");
+            });
+        });
+
+        lightbox.addEventListener("click", function (event) {
+            if (event.target === lightbox || event.target.hasAttribute("data-art-close")) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && lightbox.classList.contains("is-visible")) {
+                closeLightbox();
+            }
         });
     })();
 </script>

@@ -43,3 +43,23 @@ repos:
         args: ["--branch=main"]
       # Detects the presence of private keys
       - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: django-check
+        name: django check
+        entry: python manage.py check
+        language: python
+        additional_dependencies:
+          - django>=5.2.0
+        pass_filenames: false
+        always_run: true
+
+      - id: django-migrations-check
+        name: django migrations check
+        entry: python manage.py makemigrations --check --dry-run
+        language: python
+        additional_dependencies:
+          - django>=5.2.0
+        pass_filenames: false
+        always_run: true
