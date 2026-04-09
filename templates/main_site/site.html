@@ -3,21 +3,31 @@
 
 {% block head %}
 <style>
+    :root {
+        --music-player-height: 86px;
+    }
+
     .music-library {
         display: grid;
-        gap: 2rem;
-        margin-top: 1.5rem;
+        gap: 2.25rem;
+        margin-top: 1.35rem;
     }
 
     .music-library-item {
         display: grid;
         grid-template-columns: minmax(180px, 260px) 1fr;
-        gap: 1.5rem;
+        gap: 1.35rem;
         align-items: center;
-        padding: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 0.5rem;
-        background: rgba(255, 255, 255, 0.03);
+        padding: 1.1rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 0.65rem;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.06),
+            rgba(255, 255, 255, 0.02)
+        );
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        position: relative;
     }
 
     .music-library-item.is-reversed {
@@ -35,23 +45,61 @@
     .music-library-art img {
         display: block;
         width: 100%;
-        border-radius: 0.45rem;
+        border-radius: 0.5rem;
         box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .music-library-player-panel {
+        width: 100%;
     }
 
     .music-library-player-panel h3 {
-        margin: 0 0 0.75rem;
+        margin: 0 0 0.45rem;
         letter-spacing: 0.12rem;
         text-transform: uppercase;
         font-size: 0.9rem;
     }
 
+    .music-library-player-panel p {
+        margin: 0 0 0.9rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.78;
+    }
+
     .music-player-frame {
-        min-height: 86px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        height: var(--music-player-height);
+        min-height: var(--music-player-height);
+        max-height: var(--music-player-height);
+        border: 1px solid rgba(255, 255, 255, 0.16);
         border-radius: 0.4rem;
         overflow: hidden;
-        background: rgba(0, 0, 0, 0.25);
+        background: rgba(10, 11, 15, 0.55);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            0 0.5rem 1.2rem rgba(0, 0, 0, 0.2);
+    }
+
+    .music-player-frame iframe {
+        display: block;
+        width: 100%;
+        border: 0;
+        height: var(--music-player-height) !important;
+        min-height: var(--music-player-height) !important;
+        max-height: var(--music-player-height) !important;
+    }
+
+    .music-player-frame.is-enhanced {
+        border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .music-player-frame [id^="pjsfrrs"],
+    .music-player-frame [id^="pjsfrrs"] iframe {
+        height: var(--music-player-height) !important;
+        min-height: var(--music-player-height) !important;
+        max-height: var(--music-player-height) !important;
     }
 
     .music-player-fallback {
@@ -134,6 +182,7 @@
                     </figure>
                     <div class="music-library-player-panel">
                         <h3>Dark and Light - Artist Version</h3>
+                        <p>Single</p>
                         <div
                             id="dark-and-light-artist-player"
                             class="music-player-frame"
@@ -148,10 +197,11 @@
                     </figure>
                     <div class="music-library-player-panel">
                         <h3>Dark and Light - Instrumental</h3>
+                        <p>Instrumental Mix</p>
                         <div
                             id="dark-and-light-instrumental-player"
                             class="music-player-frame"
-                            data-file="{% static 'audio/dark_and_light_instrumental.mp3' %}"
+                            data-file="{% static 'audio/dark_and_light_final_instrumental_v3_24_192.wav' %}"
                         ></div>
                     </div>
                 </section>
@@ -215,11 +265,55 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'assets/js/playerjs-3.js' %}"></script>
+<script src="{% static 'assets/js/playerjs_v3.js' %}"></script>
 <script>
     (function () {
         var frames = document.querySelectorAll(".music-player-frame");
         var canUsePlayerjs = typeof Playerjs !== "undefined";
+
+        function hidePlayerTitlePlaceholder(frame) {
+            var attempts = 0;
+            var maxAttempts = 45;
+            var timer = setInterval(function () {
+                attempts += 1;
+                var iframe = frame.querySelector("iframe");
+
+                if (!iframe) {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                    return;
+                }
+
+                try {
+                    var doc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (!doc || !doc.body) {
+                        if (attempts >= maxAttempts) {
+                            clearInterval(timer);
+                        }
+                        return;
+                    }
+
+                    var found = false;
+                    var nodes = doc.body.querySelectorAll("*");
+                    nodes.forEach(function (node) {
+                        if (node.children.length > 0) {
+                            return;
+                        }
+                        if ((node.textContent || "").trim() === "Title - Song") {
+                            node.style.display = "none";
+                            found = true;
+                        }
+                    });
+
+                    if (found || attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                } catch (error) {
+                    clearInterval(timer);
+                }
+            }, 150);
+        }
 
         frames.forEach(function (frame) {
             var file = frame.getAttribute("data-file");
@@ -231,8 +325,11 @@
                 try {
                     new Playerjs({
                         id: frame.id,
-                        file: file
+                        file: file,
+                        title: " "
                     });
+                    frame.classList.add("is-enhanced");
+                    hidePlayerTitlePlaceholder(frame);
                     return;
                 } catch (error) {
                     // Fallback below if PlayerJS initialization fails.
@@ -243,6 +340,7 @@
                 '<audio class="music-player-fallback" controls preload="none">' +
                 '<source src="' + file + '" type="audio/mpeg">' +
                 "</audio>";
+            frame.classList.add("is-enhanced");
         });
     })();
 </script>
