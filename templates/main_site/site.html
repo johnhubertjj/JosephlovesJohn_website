@@ -447,42 +447,13 @@
                     </header>
                     <p class="art-format-note">Gallery thumbnails are optimized for faster loading. Tap any image for full resolution.</p>
                     <div class="gig-photo-grid">
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 01">
-                            <img src="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" alt="Gig photo - sofa session 1" loading="lazy" decoding="async" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 02">
-                            <img src="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" alt="Gig photo - sofa session 2" loading="lazy" decoding="async" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 03">
-                            <img src="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" alt="Gig photo - sofa session 3" loading="lazy" decoding="async" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig1.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 01">
-                            <img src="{% static 'images/gig_photos/thumbs/gig1_thumb.jpg' %}" alt="Gig photo 1" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig2.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 02">
-                            <img src="{% static 'images/gig_photos/thumbs/gig2_thumb.jpg' %}" alt="Gig photo 2" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig3.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 03">
-                            <img src="{% static 'images/gig_photos/thumbs/gig3_thumb.jpg' %}" alt="Gig photo 3" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig4.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 04">
-                            <img src="{% static 'images/gig_photos/thumbs/gig4_thumb.jpg' %}" alt="Gig photo 4" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig5.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 05">
-                            <img src="{% static 'images/gig_photos/thumbs/gig5_thumb.jpg' %}" alt="Gig photo 5" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig6.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 06">
-                            <img src="{% static 'images/gig_photos/thumbs/gig6_thumb.jpg' %}" alt="Gig photo 6" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig7.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 07">
-                            <img src="{% static 'images/gig_photos/thumbs/gig7_thumb.jpg' %}" alt="Gig photo 7" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig8.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 08">
-                            <img src="{% static 'images/gig_photos/thumbs/gig8_thumb.jpg' %}" alt="Gig photo 8" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig9.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 09">
-                            <img src="{% static 'images/gig_photos/thumbs/gig9_thumb.jpg' %}" alt="Gig photo 9" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
+                        {% for photo in gig_photo_items %}
+                            <a class="gig-photo-card" href="{% static photo.image_path %}" data-art-lightbox="image" data-art-caption="{{ photo.title }}">
+                                <img src="{% static photo.thumbnail_path %}" alt="{{ photo.alt_text }}" loading="lazy" decoding="async" fetchpriority="low" />
+                            </a>
+                        {% empty %}
+                            <p class="art-empty-note">Gig photos are being refreshed. Check back soon.</p>
+                        {% endfor %}
                     </div>
                 </section>
 
