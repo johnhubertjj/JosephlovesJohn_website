@@ -13,6 +13,65 @@
         margin-top: 1.35rem;
     }
 
+    #main article#intro .image.main.intro-main-image {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #main article#intro > p {
+        max-width: 46rem;
+        margin: 0 0 1.1rem 0;
+    }
+
+    .intro-signup-form {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0.45rem 0 1.85rem;
+        width: 100%;
+    }
+
+    .intro-signup-form input[type="email"] {
+        flex: 1 1 auto;
+        min-width: 0;
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #ffffff;
+    }
+
+    .intro-signup-form input[type="email"]::placeholder {
+        color: rgba(255, 255, 255, 0.68);
+        opacity: 1;
+    }
+
+    .intro-signup-form input[type="email"]::-webkit-input-placeholder {
+        color: rgba(255, 255, 255, 0.68);
+    }
+
+    .intro-signup-form input[type="email"]::-moz-placeholder {
+        color: rgba(255, 255, 255, 0.68);
+        opacity: 1;
+    }
+
+    .intro-signup-form .button {
+        white-space: nowrap;
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: 0.16rem;
+        background: linear-gradient(135deg, #ffffff, #dfe6ff);
+        color: #10121a !important;
+        border-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0.45rem 1rem rgba(0, 0, 0, 0.28);
+    }
+
+    .intro-signup-form .button:hover,
+    .intro-signup-form .button:focus-visible {
+        background: linear-gradient(135deg, #ffffff, #eef2ff);
+        transform: translateY(-1px);
+    }
+
     .music-library-item {
         display: grid;
         grid-template-columns: minmax(180px, 260px) 1fr;
@@ -54,6 +113,19 @@
         width: 100%;
     }
 
+    .music-library-player-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.9rem;
+        margin: 0 0 0.95rem;
+    }
+
+    .music-library-player-copy {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
     .music-library-player-panel h3 {
         margin: 0 0 0.45rem;
         letter-spacing: 0.12rem;
@@ -67,6 +139,41 @@
         letter-spacing: 0.08rem;
         text-transform: uppercase;
         opacity: 0.78;
+    }
+
+    .music-library-player-meta {
+        margin: 0 !important;
+    }
+
+    .music-share-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.55rem 0.85rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #ffffff;
+        cursor: pointer;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12rem;
+        text-transform: uppercase;
+        transition:
+            background 0.2s ease,
+            border-color 0.2s ease,
+            transform 0.2s ease;
+    }
+
+    .music-share-trigger:hover,
+    .music-share-trigger:focus-visible {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.32);
+        transform: translateY(-1px);
+    }
+
+    .music-share-trigger .fas {
+        font-size: 0.8rem;
     }
 
     .music-player-frame {
@@ -107,6 +214,231 @@
     .music-player-fallback {
         width: 100%;
         padding: 0.75rem;
+    }
+
+    .music-share-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(4, 6, 10, 0.78);
+        z-index: 10001;
+    }
+
+    .music-share-modal.is-visible {
+        display: flex;
+    }
+
+    .music-share-dialog {
+        position: relative;
+        width: min(100%, 27.25rem);
+        padding: 1.2rem 1.2rem 1.35rem;
+        border: 1px solid rgba(130, 178, 255, 0.68);
+        border-radius: 0.95rem;
+        background: linear-gradient(
+            180deg,
+            rgba(4, 6, 10, 0.98),
+            rgba(11, 13, 20, 0.98)
+        );
+        box-shadow:
+            0 1.3rem 3rem rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(130, 178, 255, 0.12);
+    }
+
+    .music-share-close {
+        --music-share-close-glyph-offset-x: 0.05rem;
+        position: absolute;
+        top: 0.45rem;
+        right: 0.55rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border: 0;
+        padding: 0;
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: 999px;
+        background: none;
+        box-shadow: none !important;
+        outline: none !important;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 1.7rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 1;
+        transition:
+            color 0.2s ease,
+            transform 0.2s ease,
+        text-shadow 0.2s ease;
+    }
+
+    .music-share-close-glyph {
+        display: block;
+        transform: translateX(var(--music-share-close-glyph-offset-x));
+    }
+
+    .music-share-close:hover,
+    .music-share-close:focus-visible {
+        color: #ffffff;
+        background: rgba(130, 178, 255, 0.12);
+        transform: scale(1.05);
+        text-shadow: 0 0 0.8rem rgba(130, 178, 255, 0.38);
+    }
+
+    .music-share-header {
+        margin: 0 0 1.05rem;
+        padding: 0 2rem 0.9rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .music-share-title {
+        margin: 0;
+        font-size: 1rem;
+        line-height: 1.3;
+    }
+
+    .music-share-byline {
+        margin: 0.2rem 0 0;
+        font-size: 0.75rem;
+        letter-spacing: 0.06rem;
+        text-transform: uppercase;
+        opacity: 0.76;
+    }
+
+    .music-share-platforms {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin: 0 0 1.1rem;
+        padding: 0;
+        list-style: none;
+    }
+
+    .music-share-platform {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.5rem;
+        height: 3.5rem;
+        margin: 0 auto;
+        border-radius: 999px;
+        border: 1px solid rgba(16, 18, 26, 0.08);
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 1),
+            rgba(239, 243, 251, 0.98)
+        );
+        color: #10121a;
+        text-decoration: none;
+        box-shadow: 0 0.45rem 1rem rgba(0, 0, 0, 0.24);
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .music-share-platform:hover,
+    .music-share-platform:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 0.75rem 1.3rem rgba(0, 0, 0, 0.3);
+    }
+
+    .music-share-platform svg {
+        display: block;
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+
+    .music-share-platform.is-threads svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    .music-share-platform.is-x svg {
+        --music-share-x-icon-offset-x: 0.12rem;
+        width: 1.2rem;
+        height: 1.2rem;
+        transform: translateX(var(--music-share-x-icon-offset-x));
+    }
+
+    .music-share-platform.is-facebook svg {
+        transform: translate(-0.04rem, -0.04rem);
+    }
+
+    .music-share-link-label {
+        display: block;
+        margin: 0 0 0.5rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.78;
+    }
+
+    .music-share-link-row {
+        display: flex;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .music-share-link-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        height: 2.85rem;
+        padding: 0 0.9rem;
+        border: 1px solid rgba(109, 129, 176, 0.24);
+        border-radius: 0.45rem;
+        background: #f5f7fd;
+        color: #10121a;
+        font-size: 0.92rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
+
+    .music-share-copy {
+        flex: 0 0 auto;
+        min-width: 6.2rem;
+        padding: 0 1rem;
+        border: 0;
+        border-radius: 0.45rem;
+        background: linear-gradient(180deg, #ffffff, #edf2fc);
+        color: #000000 !important;
+        cursor: pointer;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.12rem;
+        text-transform: uppercase;
+        box-shadow: 0 0.55rem 1.2rem rgba(0, 0, 0, 0.2);
+        transition:
+            background 0.2s ease,
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .music-share-copy:hover,
+    .music-share-copy:focus-visible {
+        background: linear-gradient(180deg, #ffffff, #f5f8ff);
+        color: #000000 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 0.75rem 1.35rem rgba(0, 0, 0, 0.26);
+    }
+
+    .music-share-copy.is-copied {
+        background: linear-gradient(180deg, #9ee8c5, #74d7ab);
+        color: #071a13;
+        box-shadow: 0 0.75rem 1.35rem rgba(60, 179, 128, 0.28);
+    }
+
+    .music-share-copy-label {
+        display: block;
+        line-height: 1;
+        color: #000000 !important;
+        text-shadow: none;
+    }
+
+    body.is-share-modal-visible {
+        overflow: hidden;
     }
 
     .art-showcase {
@@ -200,6 +532,13 @@
         background: #050505;
     }
 
+    .album-art-card img.is-contain {
+        object-fit: contain;
+        object-position: center;
+        padding: 0.65rem;
+        background: #050505;
+    }
+
     .album-art-card figcaption {
         margin: 0;
         padding: 0.65rem 0.75rem 0.8rem;
@@ -225,28 +564,43 @@
         position: fixed;
         inset: 0;
         display: none;
-        place-items: center;
-        padding: 2rem 1rem 1rem;
-        background: rgba(0, 0, 0, 0.84);
-        z-index: 1200;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        padding: 1.25rem 1rem;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        overscroll-behavior: contain;
     }
 
     .art-lightbox.is-visible {
-        display: grid;
+        display: flex;
+    }
+
+    .art-lightbox-inner {
+        width: auto;
+        max-width: min(96vw, 1260px);
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.85rem;
     }
 
     .art-lightbox-image {
-        max-width: min(92vw, 1200px);
-        max-height: 78vh;
+        display: block;
+        max-width: 100%;
+        max-height: calc(100vh - 8.5rem);
         width: auto;
         height: auto;
+        object-fit: contain;
         border-radius: 0.45rem;
         border: 1px solid rgba(255, 255, 255, 0.22);
         box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
     }
 
     .art-lightbox-caption {
-        margin: 0.8rem 0 0;
+        margin: 0;
         text-align: center;
         letter-spacing: 0.08rem;
         text-transform: uppercase;
@@ -255,16 +609,26 @@
     }
 
     .art-lightbox-close {
-        position: absolute;
-        top: 0.6rem;
+        position: fixed;
+        top: 0.7rem;
         right: 0.9rem;
         border: 0;
-        background: transparent;
+        background: rgba(0, 0, 0, 0.42);
         color: #ffffff;
         font-size: 2rem;
         line-height: 1;
         cursor: pointer;
-        opacity: 0.92;
+        opacity: 0.96;
+        border-radius: 0.35rem;
+        padding: 0.05rem 0.4rem 0.18rem;
+        outline: none;
+        box-shadow: none;
+    }
+
+    .art-lightbox-close:focus,
+    .art-lightbox-close:focus-visible {
+        outline: none;
+        box-shadow: none;
     }
 
     body.is-lightbox-visible {
@@ -279,6 +643,10 @@
         .album-art-card,
         .album-art-card.is-featured {
             grid-column: span 6;
+        }
+
+        #main article#intro .image.main.intro-main-image {
+            width: 100%;
         }
     }
 
@@ -300,6 +668,43 @@
         .album-art-card,
         .album-art-card.is-featured {
             grid-column: span 12;
+        }
+
+        .music-library-player-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .music-share-trigger {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .music-share-platforms {
+            gap: 0.55rem;
+        }
+
+        .music-share-link-row {
+            flex-direction: column;
+        }
+
+        .music-share-copy {
+            width: 100%;
+            height: 2.85rem;
+            min-width: 0;
+        }
+
+        #main article#intro .image.main.intro-main-image {
+            width: 100%;
+        }
+
+        .intro-signup-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .intro-signup-form .button {
+            width: 100%;
         }
     }
 </style>
@@ -360,10 +765,15 @@
 
         <article id="intro">
             <h2 class="major">Intro</h2>
-            <span class="image main"><img src="{% static 'images/pic01.jpg' %}" alt="Intro visual" /></span>
+            <span class="image main intro-main-image"><img src="{% static 'images/gig_photos/Bristol_folk_house_31_03_2026_8_intro_crop.jpeg' %}" alt="Bristol Folk House gig photo 8, cropped for intro" /></span>
             <p>Hi! I am a Bristol-based multi-instrumentalist and composer whose work blends melancholy classical textures with the intimacy of contemporary folk.</p>
-            <p>I try to create music shaped by emotional depth, precise craftsmanship, and a persistent curiosity about the human condition.</p>
-            <p>I also offer mastering services, you can find that website <a href="{% url 'mastering:home' %}">here</a>.</p>
+            <p>I also use projections and animations to immerse the audience in the music and deepen the emotional arc of each performance.</p>
+            <p>If you want to be kept up to date on what I'm up to, sign up below.</p>
+            <div class="intro-signup-form" role="group" aria-label="Sign up for updates">
+                <input type="email" id="intro-signup-email" name="intro-signup-email" placeholder="Your email address" autocomplete="email" />
+                <button type="button" class="button primary">Sign up!</button>
+            </div>
+            <p>I also offer mastering services; you can find that website <a href="{% url 'mastering:home' %}">here</a>.</p>
         </article>
 
         <article id="music">
@@ -374,8 +784,23 @@
                         <img src="{% static 'images/album_art/dark_and_light_artist_cover.jpg' %}" alt="Dark and Light artist cover artwork" />
                     </figure>
                     <div class="music-library-player-panel">
-                        <h3>Dark and Light - Artist Version</h3>
-                        <p>Single</p>
+                        <div class="music-library-player-head">
+                            <div class="music-library-player-copy">
+                                <h3>Dark and Light - Artist Version</h3>
+                                <p class="music-library-player-meta">Single</p>
+                            </div>
+                            <button
+                                type="button"
+                                class="music-share-trigger"
+                                data-share-title="Dark and Light - Artist Version"
+                                data-share-path="{% url 'main_site:music' %}"
+                                aria-haspopup="dialog"
+                                aria-controls="music-share-modal"
+                            >
+                                <span class="fas fa-share-alt" aria-hidden="true"></span>
+                                <span>Share</span>
+                            </button>
+                        </div>
                         <div
                             id="dark-and-light-artist-player"
                             class="music-player-frame"
@@ -390,8 +815,23 @@
                         <img src="{% static 'images/album_art/dark_and_light_instrumental.jpg' %}" alt="Dark and Light instrumental artwork" />
                     </figure>
                     <div class="music-library-player-panel">
-                        <h3>Dark and Light - Instrumental</h3>
-                        <p>Instrumental Mix</p>
+                        <div class="music-library-player-head">
+                            <div class="music-library-player-copy">
+                                <h3>Dark and Light - Instrumental</h3>
+                                <p class="music-library-player-meta">Instrumental Mix</p>
+                            </div>
+                            <button
+                                type="button"
+                                class="music-share-trigger"
+                                data-share-title="Dark and Light - Instrumental"
+                                data-share-path="{% url 'main_site:music' %}"
+                                aria-haspopup="dialog"
+                                aria-controls="music-share-modal"
+                            >
+                                <span class="fas fa-share-alt" aria-hidden="true"></span>
+                                <span>Share</span>
+                            </button>
+                        </div>
                         <div
                             id="dark-and-light-instrumental-player"
                             class="music-player-frame"
@@ -413,44 +853,14 @@
                         <h3>Gig Photos</h3>
                         <p>Live captures, rehearsals, and stripped back sessions.</p>
                     </header>
-                    <p class="art-format-note">Gallery thumbnails are optimized for faster loading. Tap any image for full resolution.</p>
                     <div class="gig-photo-grid">
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 01">
-                            <img src="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" alt="Gig photo - sofa session 1" loading="lazy" decoding="async" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 02">
-                            <img src="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" alt="Gig photo - sofa session 2" loading="lazy" decoding="async" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 03">
-                            <img src="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" alt="Gig photo - sofa session 3" loading="lazy" decoding="async" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig1.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 01">
-                            <img src="{% static 'images/gig_photos/thumbs/gig1_thumb.jpg' %}" alt="Gig photo 1" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig2.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 02">
-                            <img src="{% static 'images/gig_photos/thumbs/gig2_thumb.jpg' %}" alt="Gig photo 2" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig3.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 03">
-                            <img src="{% static 'images/gig_photos/thumbs/gig3_thumb.jpg' %}" alt="Gig photo 3" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig4.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 04">
-                            <img src="{% static 'images/gig_photos/thumbs/gig4_thumb.jpg' %}" alt="Gig photo 4" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig5.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 05">
-                            <img src="{% static 'images/gig_photos/thumbs/gig5_thumb.jpg' %}" alt="Gig photo 5" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig6.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 06">
-                            <img src="{% static 'images/gig_photos/thumbs/gig6_thumb.jpg' %}" alt="Gig photo 6" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig7.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 07">
-                            <img src="{% static 'images/gig_photos/thumbs/gig7_thumb.jpg' %}" alt="Gig photo 7" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig8.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 08">
-                            <img src="{% static 'images/gig_photos/thumbs/gig8_thumb.jpg' %}" alt="Gig photo 8" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig9.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 09">
-                            <img src="{% static 'images/gig_photos/thumbs/gig9_thumb.jpg' %}" alt="Gig photo 9" loading="lazy" decoding="async" fetchpriority="low" />
-                        </a>
+                        {% for photo in gig_photo_items %}
+                            <a class="gig-photo-card" href="{% static photo.image_path %}" data-art-lightbox="image" data-art-caption="{{ photo.title }}">
+                                <img src="{% static photo.thumbnail_path %}" alt="{{ photo.alt_text }}" loading="lazy" decoding="async" fetchpriority="low" />
+                            </a>
+                        {% empty %}
+                            <p class="art-empty-note">Gig photos are being refreshed. Check back soon.</p>
+                        {% endfor %}
                     </div>
                 </section>
 
@@ -458,13 +868,14 @@
                     <header class="art-block-header">
                         <h3>Album &amp; Assorted Artwork</h3>
                         <p>Cover art, profile imagery, and motion visuals.</p>
+                        <p>Animations produced by <a href="https://www.instagram.com/picturemover" target="_blank" rel="noopener noreferrer">picturemover</a>.</p>
                     </header>
                     <div class="album-art-grid">
                         {% for item in album_art_items %}
                             <figure class="album-art-card{% if item.featured %} is-featured{% endif %}">
                                 {% if item.kind == 'image' %}
                                     <a href="{% static item.path %}" data-art-lightbox="image" data-art-caption="{{ item.caption }}">
-                                        <img src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
+                                        <img{% if item.fit_contain %} class="is-contain"{% endif %} src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
                                     </a>
                                 {% elif item.kind == 'video' %}
                                     <video controls preload="metadata" playsinline{% if item.poster %} poster="{% static item.poster %}"{% endif %}>
@@ -480,11 +891,6 @@
                 </section>
             </div>
 
-            <div id="art-lightbox" class="art-lightbox" role="dialog" aria-hidden="true" aria-label="Expanded artwork">
-                <button type="button" class="art-lightbox-close" data-art-close aria-label="Close expanded artwork">&times;</button>
-                <img class="art-lightbox-image" alt="" />
-                <p class="art-lightbox-caption"></p>
-            </div>
         </article>
 
         <article id="contact">
@@ -521,6 +927,54 @@
     <footer id="footer">
         <p class="copyright">&copy; JosephlovesJohn. Design base: <a href="https://html5up.net">HTML5 UP</a>.</p>
     </footer>
+</div>
+<div id="art-lightbox" class="art-lightbox" role="dialog" aria-hidden="true" aria-label="Expanded artwork">
+    <button type="button" class="art-lightbox-close" data-art-close aria-label="Close expanded artwork">&times;</button>
+    <div class="art-lightbox-inner">
+        <img class="art-lightbox-image" alt="" />
+        <p class="art-lightbox-caption"></p>
+    </div>
+</div>
+<div id="music-share-modal" class="music-share-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="music-share-title">
+    <div class="music-share-dialog">
+        <button type="button" class="music-share-close" data-share-close aria-label="Close share dialog">
+            <span class="music-share-close-glyph" aria-hidden="true">&times;</span>
+        </button>
+        <div class="music-share-header">
+            <h3 id="music-share-title" class="music-share-title">Share Track</h3>
+            <p class="music-share-byline">by JosephlovesJohn and Jayne Connell</p>
+        </div>
+        <div class="music-share-platforms">
+            <a class="music-share-platform is-threads" data-share-platform="threads" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on Threads">
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+                    <path d="M15.3 9.4c-.2-1.8-1.4-2.9-3.6-2.9-2.6 0-4.4 1.8-4.4 4.6 0 3 1.9 4.9 4.7 4.9 2.2 0 3.8-1.2 4-3 0-1.6-1.2-2.7-3.1-2.7-1.6 0-2.7.8-2.7 2 0 1.2 1 2 2.4 2 2.4 0 4.2-1.7 4.2-4.3 0-3.3-2.5-5.7-6-5.7-3.9 0-6.7 2.8-6.7 6.9 0 4.2 2.9 7 7 7 3.5 0 6.2-2.2 6.7-5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </a>
+            <a class="music-share-platform is-facebook" data-share-platform="facebook" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path fill="currentColor" d="M11.86 18v-6.69h2.24L14.43 9h-2.57V7.52c0-.74.2-1.24 1.26-1.24H14.5V4.17C14.26 4.14 13.45 4 12.5 4c-1.98 0-3.34 1.2-3.34 3.44V9H7v2.31h2.16V18h2.7z"></path>
+                </svg>
+            </a>
+            <a class="music-share-platform is-x" data-share-platform="x" href="#" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="currentColor" d="M14.1 4h3.1l-6.9 7.88L18.4 20h-6.33l-4.95-5.76L2.06 20H.4l7.23-8.27L0 4h6.48l4.47 5.22L14.1 4zm-1.11 14.14h1.72L5.48 5.76H3.63l9.36 12.38z"></path>
+                </svg>
+            </a>
+            <a class="music-share-platform is-email" data-share-platform="email" href="#" aria-label="Share by email">
+                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+                    <path d="M4 7.5h16v9H4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                    <path d="m5 8.5 7 5 7-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </a>
+        </div>
+        <label class="music-share-link-label" for="music-share-link">Share link</label>
+        <div class="music-share-link-row">
+            <input id="music-share-link" class="music-share-link-input" type="text" readonly />
+            <button type="button" class="music-share-copy" data-share-copy aria-label="Copy share link">
+                <span class="music-share-copy-label" data-share-copy-label>Copy</span>
+            </button>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -730,6 +1184,156 @@
 </script>
 <script>
     (function () {
+        var modal = document.getElementById("music-share-modal");
+        if (!modal) {
+            return;
+        }
+
+        var titleElement = modal.querySelector("#music-share-title");
+        var linkInput = modal.querySelector("#music-share-link");
+        var copyButton = modal.querySelector("[data-share-copy]");
+        var copyLabel = modal.querySelector("[data-share-copy-label]");
+        var closeButton = modal.querySelector("[data-share-close]");
+        var dialog = modal.querySelector(".music-share-dialog");
+        var lastTrigger = null;
+        var copyResetTimer = 0;
+        var platformLinks = {
+            threads: modal.querySelector('[data-share-platform="threads"]'),
+            facebook: modal.querySelector('[data-share-platform="facebook"]'),
+            x: modal.querySelector('[data-share-platform="x"]'),
+            email: modal.querySelector('[data-share-platform="email"]')
+        };
+
+        function buildAbsoluteUrl(path) {
+            try {
+                return new URL(path, window.location.origin).toString();
+            } catch (error) {
+                return window.location.href;
+            }
+        }
+
+        function setCopiedState(isCopied) {
+            if (!copyButton) {
+                return;
+            }
+
+            copyButton.classList.toggle("is-copied", isCopied);
+            copyButton.setAttribute("aria-label", isCopied ? "Share link copied" : "Copy share link");
+            if (copyLabel) {
+                copyLabel.textContent = isCopied ? "Copied" : "Copy";
+            }
+        }
+
+        function openShareModal(trigger) {
+            var title = trigger.getAttribute("data-share-title") || "JosephlovesJohn";
+            var sharePath = trigger.getAttribute("data-share-path") || window.location.pathname;
+            var shareUrl = buildAbsoluteUrl(sharePath);
+            var shareText = 'Listen to "' + title + '" by JosephlovesJohn.';
+
+            lastTrigger = trigger;
+            titleElement.textContent = title;
+            linkInput.value = shareUrl;
+
+            platformLinks.threads.href = "https://www.threads.net/intent/post?text=" + encodeURIComponent(shareText + " " + shareUrl);
+            platformLinks.facebook.href = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl);
+            platformLinks.x.href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText) + "&url=" + encodeURIComponent(shareUrl);
+            platformLinks.email.href = "mailto:?subject=" + encodeURIComponent(title + " - JosephlovesJohn") + "&body=" + encodeURIComponent(shareText + "\n\n" + shareUrl);
+
+            setCopiedState(false);
+            modal.classList.add("is-visible");
+            modal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("is-share-modal-visible");
+
+            if (closeButton) {
+                closeButton.focus();
+            }
+        }
+
+        function closeShareModal() {
+            modal.classList.remove("is-visible");
+            modal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("is-share-modal-visible");
+
+            if (lastTrigger) {
+                lastTrigger.focus();
+            }
+        }
+
+        document.querySelectorAll(".music-share-trigger").forEach(function (trigger) {
+            trigger.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                openShareModal(trigger);
+            });
+        });
+
+        modal.addEventListener("click", function (event) {
+            event.stopPropagation();
+            if (event.target === modal || event.target.hasAttribute("data-share-close")) {
+                closeShareModal();
+            }
+        });
+
+        if (closeButton) {
+            closeButton.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeShareModal();
+            });
+        }
+
+        if (dialog) {
+            dialog.addEventListener("click", function (event) {
+                event.stopPropagation();
+            });
+        }
+
+        window.addEventListener("keyup", function (event) {
+            if ((event.key === "Escape" || event.keyCode === 27) && modal.classList.contains("is-visible")) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                closeShareModal();
+            }
+        }, true);
+
+        if (copyButton && linkInput) {
+            copyButton.addEventListener("click", function () {
+                var linkValue = linkInput.value;
+
+                function markCopied() {
+                    clearTimeout(copyResetTimer);
+                    setCopiedState(true);
+                    copyResetTimer = window.setTimeout(function () {
+                        setCopiedState(false);
+                    }, 1600);
+                }
+
+                function fallbackCopy() {
+                    linkInput.focus();
+                    linkInput.select();
+                    linkInput.setSelectionRange(0, linkValue.length);
+
+                    try {
+                        if (document.execCommand("copy")) {
+                            markCopied();
+                        }
+                    } catch (error) {
+                        return;
+                    }
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(linkValue).then(markCopied, fallbackCopy);
+                    return;
+                }
+
+                fallbackCopy();
+            });
+        }
+    })();
+</script>
+<script>
+    (function () {
         var lightbox = document.getElementById("art-lightbox");
         if (!lightbox) {
             return;
@@ -737,6 +1341,7 @@
 
         var lightboxImage = lightbox.querySelector(".art-lightbox-image");
         var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
+        var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
 
         function closeLightbox() {
             lightbox.classList.remove("is-visible");
@@ -764,17 +1369,35 @@
                 lightbox.classList.add("is-visible");
                 lightbox.setAttribute("aria-hidden", "false");
                 document.body.classList.add("is-lightbox-visible");
+                lightbox.scrollTop = 0;
             });
         });
 
         lightbox.addEventListener("click", function (event) {
+            event.stopPropagation();
+
             if (event.target === lightbox || event.target.hasAttribute("data-art-close")) {
+                event.preventDefault();
                 closeLightbox();
             }
         });
 
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape" && lightbox.classList.contains("is-visible")) {
+        if (lightboxInner) {
+            lightboxInner.addEventListener("click", function (event) {
+                event.stopPropagation();
+            });
+        }
+
+        window.addEventListener("keyup", function (event) {
+            if ((event.key === "Escape" || event.keyCode === 27) && lightbox.classList.contains("is-visible")) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeLightbox();
+            }
+        }, true);
+
+        window.addEventListener("hashchange", function () {
+            if (lightbox.classList.contains("is-visible")) {
                 closeLightbox();
             }
         });
