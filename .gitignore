@@ -72,4 +72,8 @@ Thumbs.db
 
 # Audio
 static/audio/
-static/images/gig_photos
+
+# Keep full-size gig photos local, but allow optimized thumbnails in git.
+static/images/*
+#!static/images/gig_photos/thumbs/
+#!static/images/gig_photos/thumbs/*.jpg

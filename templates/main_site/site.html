@@ -209,6 +209,18 @@
         opacity: 0.85;
     }
 
+    .art-empty-note {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 0.85rem 0.95rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 0.55rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.82;
+    }
+
     .art-lightbox {
         position: fixed;
         inset: 0;
@@ -359,7 +371,7 @@
             <div class="music-library">
                 <section class="music-library-item">
                     <figure class="music-library-art">
-                        <img src="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" alt="Dark and Light artist cover artwork" />
+                        <img src="{% static 'images/album_art/dark_and_light_artist_cover.jpg' %}" alt="Dark and Light artist cover artwork" />
                     </figure>
                     <div class="music-library-player-panel">
                         <h3>Dark and Light - Artist Version</h3>
@@ -375,7 +387,7 @@
 
                 <section class="music-library-item is-reversed">
                     <figure class="music-library-art">
-                        <img src="{% static 'images/album_art/dark_and_light_instrumental.png' %}" alt="Dark and Light instrumental artwork" />
+                        <img src="{% static 'images/album_art/dark_and_light_instrumental.jpg' %}" alt="Dark and Light instrumental artwork" />
                     </figure>
                     <div class="music-library-player-panel">
                         <h3>Dark and Light - Instrumental</h3>
@@ -401,7 +413,7 @@
                         <h3>Gig Photos</h3>
                         <p>Live captures, rehearsals, and stripped back sessions.</p>
                     </header>
-                    <p class="art-format-note">Some files are HEIC and may not render in every browser.</p>
+                    <p class="art-format-note">Gallery thumbnails are optimized for faster loading. Tap any image for full resolution.</p>
                     <div class="gig-photo-grid">
                         <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 01">
                             <img src="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" alt="Gig photo - sofa session 1" loading="lazy" decoding="async" />
@@ -412,32 +424,32 @@
                         <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 03">
                             <img src="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" alt="Gig photo - sofa session 3" loading="lazy" decoding="async" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig1.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 01">
-                            <img src="{% static 'images/gig_photos/gig1.HEIC' %}" alt="Gig photo 1" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig1.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 01">
+                            <img src="{% static 'images/gig_photos/thumbs/gig1_thumb.jpg' %}" alt="Gig photo 1" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig2.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 02">
-                            <img src="{% static 'images/gig_photos/gig2.HEIC' %}" alt="Gig photo 2" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig2.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 02">
+                            <img src="{% static 'images/gig_photos/thumbs/gig2_thumb.jpg' %}" alt="Gig photo 2" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig3.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 03">
-                            <img src="{% static 'images/gig_photos/gig3.HEIC' %}" alt="Gig photo 3" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig3.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 03">
+                            <img src="{% static 'images/gig_photos/thumbs/gig3_thumb.jpg' %}" alt="Gig photo 3" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig4.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 04">
-                            <img src="{% static 'images/gig_photos/gig4.HEIC' %}" alt="Gig photo 4" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig4.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 04">
+                            <img src="{% static 'images/gig_photos/thumbs/gig4_thumb.jpg' %}" alt="Gig photo 4" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig5.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 05">
-                            <img src="{% static 'images/gig_photos/gig5.HEIC' %}" alt="Gig photo 5" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig5.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 05">
+                            <img src="{% static 'images/gig_photos/thumbs/gig5_thumb.jpg' %}" alt="Gig photo 5" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig6.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 06">
-                            <img src="{% static 'images/gig_photos/gig6.HEIC' %}" alt="Gig photo 6" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig6.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 06">
+                            <img src="{% static 'images/gig_photos/thumbs/gig6_thumb.jpg' %}" alt="Gig photo 6" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig7.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 07">
-                            <img src="{% static 'images/gig_photos/gig7.HEIC' %}" alt="Gig photo 7" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig7.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 07">
+                            <img src="{% static 'images/gig_photos/thumbs/gig7_thumb.jpg' %}" alt="Gig photo 7" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig8.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 08">
-                            <img src="{% static 'images/gig_photos/gig8.HEIC' %}" alt="Gig photo 8" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig8.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 08">
+                            <img src="{% static 'images/gig_photos/thumbs/gig8_thumb.jpg' %}" alt="Gig photo 8" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
-                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig9.HEIC' %}" data-art-lightbox="image" data-art-caption="Gig Photo 09">
-                            <img src="{% static 'images/gig_photos/gig9.HEIC' %}" alt="Gig photo 9" loading="lazy" decoding="async" />
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig9.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 09">
+                            <img src="{% static 'images/gig_photos/thumbs/gig9_thumb.jpg' %}" alt="Gig photo 9" loading="lazy" decoding="async" fetchpriority="low" />
                         </a>
                     </div>
                 </section>
@@ -448,60 +460,22 @@
                         <p>Cover art, profile imagery, and motion visuals.</p>
                     </header>
                     <div class="album-art-grid">
-                        <figure class="album-art-card is-featured">
-                            <a href="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" data-art-lightbox="image" data-art-caption="Dark and Light - Artist Cover">
-                                <img src="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" alt="Dark and Light artist cover artwork" loading="lazy" decoding="async" />
-                            </a>
-                            <figcaption>Dark and Light - Artist Cover</figcaption>
-                        </figure>
-                        <figure class="album-art-card is-featured">
-                            <a href="{% static 'images/album_art/dark_and_light_instrumental.png' %}" data-art-lightbox="image" data-art-caption="Dark and Light - Instrumental Artwork">
-                                <img src="{% static 'images/album_art/dark_and_light_instrumental.png' %}" alt="Dark and Light instrumental artwork" loading="lazy" decoding="async" />
-                            </a>
-                            <figcaption>Dark and Light - Instrumental Artwork</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <a href="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}" data-art-lightbox="image" data-art-caption="Current Artist Profile">
-                                <img src="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}" alt="Current artist profile portrait" loading="lazy" decoding="async" />
-                            </a>
-                            <figcaption>Current Artist Profile</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <video controls preload="metadata" playsinline>
-                                <source src="{% static 'images/album_art/symbol_animation.mp4' %}" type="video/mp4" />
-                            </video>
-                            <figcaption>Symbol Animation</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_artist_cover.png' %}">
-                                <source src="{% static 'images/album_art/buddlea_animation.mp4' %}" type="video/mp4" />
-                            </video>
-                            <figcaption>Buddlea Animation</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_artist_cover.png' %}">
-                                <source src="{% static 'images/album_art/spotify_canvas_raw.mp4' %}" type="video/mp4" />
-                            </video>
-                            <figcaption>Spotify Canvas</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_instrumental.png' %}">
-                                <source src="{% static 'images/album_art/Pixaloop_16_01_2026_22_50_48_8470000.mp4' %}" type="video/mp4" />
-                            </video>
-                            <figcaption>Pixaloop Visual 01</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/dark_and_light_instrumental.png' %}">
-                                <source src="{% static 'images/album_art/Pixaloop_16_01_2026_22_56_41_6470000.mp4' %}" type="video/mp4" />
-                            </video>
-                            <figcaption>Pixaloop Visual 02</figcaption>
-                        </figure>
-                        <figure class="album-art-card">
-                            <video controls preload="metadata" playsinline poster="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}">
-                                <source src="{% static 'images/album_art/Made with Motionleap.mp4' %}" type="video/mp4" />
-                            </video>
-                            <figcaption>Motionleap Artwork</figcaption>
-                        </figure>
+                        {% for item in album_art_items %}
+                            <figure class="album-art-card{% if item.featured %} is-featured{% endif %}">
+                                {% if item.kind == 'image' %}
+                                    <a href="{% static item.path %}" data-art-lightbox="image" data-art-caption="{{ item.caption }}">
+                                        <img src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
+                                    </a>
+                                {% elif item.kind == 'video' %}
+                                    <video controls preload="metadata" playsinline{% if item.poster %} poster="{% static item.poster %}"{% endif %}>
+                                        <source src="{% static item.path %}" type="{{ item.mime_type }}" />
+                                    </video>
+                                {% endif %}
+                                <figcaption>{{ item.caption }}</figcaption>
+                            </figure>
+                        {% empty %}
+                            <p class="art-empty-note">Album artwork is being refreshed. Check back soon.</p>
+                        {% endfor %}
                     </div>
                 </section>
             </div>
