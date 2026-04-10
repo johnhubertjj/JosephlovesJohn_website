@@ -3,21 +3,31 @@
 
 {% block head %}
 <style>
+    :root {
+        --music-player-height: 120px;
+    }
+
     .music-library {
         display: grid;
         gap: 2rem;
-        margin-top: 1.5rem;
+        margin-top: 1.35rem;
     }
 
     .music-library-item {
         display: grid;
         grid-template-columns: minmax(180px, 260px) 1fr;
-        gap: 1.5rem;
+        gap: 1.35rem;
         align-items: center;
-        padding: 1rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 0.5rem;
-        background: rgba(255, 255, 255, 0.03);
+        padding: 1.1rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 0.65rem;
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.06),
+            rgba(255, 255, 255, 0.02)
+        );
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        position: relative;
     }
 
     .music-library-item.is-reversed {
@@ -35,28 +45,241 @@
     .music-library-art img {
         display: block;
         width: 100%;
-        border-radius: 0.45rem;
+        border-radius: 0.5rem;
         box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .music-library-player-panel {
+        width: 100%;
     }
 
     .music-library-player-panel h3 {
-        margin: 0 0 0.75rem;
+        margin: 0 0 0.45rem;
         letter-spacing: 0.12rem;
         text-transform: uppercase;
         font-size: 0.9rem;
     }
 
+    .music-library-player-panel p {
+        margin: 0 0 0.9rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.78;
+    }
+
     .music-player-frame {
-        min-height: 86px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        height: var(--music-player-height);
+        min-height: var(--music-player-height);
+        max-height: var(--music-player-height);
+        border: 1px solid rgba(255, 255, 255, 0.16);
         border-radius: 0.4rem;
-        overflow: hidden;
-        background: rgba(0, 0, 0, 0.25);
+        overflow: visible;
+        position: relative;
+        z-index: 1;
+        background: rgba(10, 11, 15, 0.55);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            0 0.5rem 1.2rem rgba(0, 0, 0, 0.2);
+    }
+
+    .music-player-frame iframe {
+        display: block;
+        width: 100%;
+        border: 0;
+        height: var(--music-player-height) !important;
+        min-height: var(--music-player-height) !important;
+        max-height: var(--music-player-height) !important;
+    }
+
+    .music-player-frame.is-enhanced {
+        border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .music-player-frame [id^="pjsfrrs"],
+    .music-player-frame [id^="pjsfrrs"] iframe {
+        height: var(--music-player-height) !important;
+        min-height: var(--music-player-height) !important;
+        max-height: var(--music-player-height) !important;
     }
 
     .music-player-fallback {
         width: 100%;
         padding: 0.75rem;
+    }
+
+    .art-showcase {
+        display: grid;
+        gap: 2.25rem;
+    }
+
+    .art-block {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        background: linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.06),
+            rgba(255, 255, 255, 0.02)
+        );
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .art-block-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        letter-spacing: 0.14rem;
+        text-transform: uppercase;
+    }
+
+    .art-block-header p {
+        margin: 0.4rem 0 0;
+        font-size: 0.74rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+
+    .art-format-note {
+        margin: 0.9rem 0 0.7rem;
+        font-size: 0.67rem;
+        letter-spacing: 0.07rem;
+        text-transform: uppercase;
+        opacity: 0.7;
+    }
+
+    .gig-photo-grid {
+        column-count: 3;
+        column-gap: 0.95rem;
+    }
+
+    .gig-photo-card {
+        display: block;
+        margin: 0 0 0.95rem;
+        break-inside: avoid;
+        border-radius: 0.55rem;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 0.55rem 1.45rem rgba(0, 0, 0, 0.35);
+    }
+
+    .gig-photo-card img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .album-art-grid {
+        margin-top: 0.95rem;
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 0.95rem;
+    }
+
+    .album-art-card {
+        grid-column: span 4;
+        margin: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 0.55rem;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.24);
+        box-shadow: 0 0.55rem 1.45rem rgba(0, 0, 0, 0.28);
+    }
+
+    .album-art-card.is-featured {
+        grid-column: span 6;
+    }
+
+    .album-art-card img,
+    .album-art-card video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        background: #050505;
+    }
+
+    .album-art-card figcaption {
+        margin: 0;
+        padding: 0.65rem 0.75rem 0.8rem;
+        font-size: 0.68rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.85;
+    }
+
+    .art-empty-note {
+        grid-column: 1 / -1;
+        margin: 0;
+        padding: 0.85rem 0.95rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 0.55rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        opacity: 0.82;
+    }
+
+    .art-lightbox {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 2rem 1rem 1rem;
+        background: rgba(0, 0, 0, 0.84);
+        z-index: 1200;
+    }
+
+    .art-lightbox.is-visible {
+        display: grid;
+    }
+
+    .art-lightbox-image {
+        max-width: min(92vw, 1200px);
+        max-height: 78vh;
+        width: auto;
+        height: auto;
+        border-radius: 0.45rem;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
+    }
+
+    .art-lightbox-caption {
+        margin: 0.8rem 0 0;
+        text-align: center;
+        letter-spacing: 0.08rem;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        opacity: 0.86;
+    }
+
+    .art-lightbox-close {
+        position: absolute;
+        top: 0.6rem;
+        right: 0.9rem;
+        border: 0;
+        background: transparent;
+        color: #ffffff;
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.92;
+    }
+
+    body.is-lightbox-visible {
+        overflow: hidden;
+    }
+
+    @media screen and (max-width: 980px) {
+        .gig-photo-grid {
+            column-count: 2;
+        }
+
+        .album-art-card,
+        .album-art-card.is-featured {
+            grid-column: span 6;
+        }
     }
 
     @media screen and (max-width: 736px) {
@@ -68,6 +291,15 @@
         .music-library-item.is-reversed .music-library-art,
         .music-library-item.is-reversed .music-library-player-panel {
             order: initial;
+        }
+
+        .gig-photo-grid {
+            column-count: 1;
+        }
+
+        .album-art-card,
+        .album-art-card.is-featured {
+            grid-column: span 12;
         }
     }
 </style>
@@ -93,6 +325,14 @@
                 <p>Singer - Composer - Guitar and Bass</p>
                 <p>Canada/UK - based in Bristol</p>
                 <p>Tastefully Melancholic music</p>
+                <ul class="icons">
+                    <li><a href="https://josephlovesjohn.bandcamp.com" class="icon brands fa-bandcamp" target="_blank" rel="noopener noreferrer"><span class="label">Bandcamp</span></a></li>
+                    <li><a href="https://www.instagram.com/josephlovesjohn_music/" class="icon brands fa-instagram" target="_blank" rel="noopener noreferrer"><span class="label">Instagram</span></a></li>
+                    <li><a href="https://www.youtube.com/@JosephlovesJohn" class="icon brands fa-youtube" target="_blank" rel="noopener noreferrer"><span class="label">YouTube</span></a></li>
+                    <li><a href="https://music.amazon.co.uk/artists/B0GHXDGN9M/josephlovesjohn" class="icon brands fa-amazon" target="_blank" rel="noopener noreferrer"><span class="label">Amazon Music</span></a></li>
+                    <li><a href="https://music.apple.com/us/artist/josephlovesjohn/1869723292" class="icon brands fa-apple" target="_blank" rel="noopener noreferrer"><span class="label">Apple Music</span></a></li>
+                    <li><a href="https://www.tiktok.com/@joseph_loves_john" class="icon brands fa-tiktok" target="_blank" rel="noopener noreferrer"><span class="label">TikTok</span></a></li>
+                </ul>
             </div>
         </div>
         <div class="logo secondary-logo">
@@ -121,8 +361,9 @@
         <article id="intro">
             <h2 class="major">Intro</h2>
             <span class="image main"><img src="{% static 'images/pic01.jpg' %}" alt="Intro visual" /></span>
-            <p>Aenean ornare velit lacus, ac varius enim ullamcorper eu. Proin aliquam facilisis ante interdum congue. Integer mollis, nisl amet convallis, porttitor magna ullamcorper, amet egestas mauris. Ut magna finibus nisi nec lacinia.</p>
-            <p>Nam maximus erat id euismod egestas. By the way, check out the <a href="{% url 'main_site:music' %}">music</a> section.</p>
+            <p>Hi! I am a Bristol-based multi-instrumentalist and composer whose work blends melancholy classical textures with the intimacy of contemporary folk.</p>
+            <p>I try to create music shaped by emotional depth, precise craftsmanship, and a persistent curiosity about the human condition.</p>
+            <p>I also offer mastering services, you can find that website <a href="{% url 'mastering:home' %}">here</a>.</p>
         </article>
 
         <article id="music">
@@ -130,28 +371,32 @@
             <div class="music-library">
                 <section class="music-library-item">
                     <figure class="music-library-art">
-                        <img src="{% static 'images/album_art/dark_and_light_artist_cover.png' %}" alt="Dark and Light artist cover artwork" />
+                        <img src="{% static 'images/album_art/dark_and_light_artist_cover.jpg' %}" alt="Dark and Light artist cover artwork" />
                     </figure>
                     <div class="music-library-player-panel">
                         <h3>Dark and Light - Artist Version</h3>
+                        <p>Single</p>
                         <div
                             id="dark-and-light-artist-player"
                             class="music-player-frame"
-                            data-file="{% static 'audio/dark_and_light_artist_cover.mp3' %}"
+                            data-file-wav="{% static 'audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav' %}"
+                            data-file-mp3="{% static 'audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3' %}"
                         ></div>
                     </div>
                 </section>
 
                 <section class="music-library-item is-reversed">
                     <figure class="music-library-art">
-                        <img src="{% static 'images/album_art/dark_and_light_instrumental.png' %}" alt="Dark and Light instrumental artwork" />
+                        <img src="{% static 'images/album_art/dark_and_light_instrumental.jpg' %}" alt="Dark and Light instrumental artwork" />
                     </figure>
                     <div class="music-library-player-panel">
                         <h3>Dark and Light - Instrumental</h3>
+                        <p>Instrumental Mix</p>
                         <div
                             id="dark-and-light-instrumental-player"
                             class="music-player-frame"
-                            data-file="{% static 'audio/dark_and_light_instrumental.mp3' %}"
+                            data-file-wav="{% static 'audio/dark_and_light_final_instrumental_v3_24_192.wav' %}"
+                            data-file-mp3="{% static 'audio/dark_and_light_final_instrumental_v3_24_192.mp3' %}"
                         ></div>
                     </div>
                 </section>
@@ -160,9 +405,86 @@
 
         <article id="art">
             <h2 class="major">Art</h2>
-            <span class="image main"><img src="{% static 'images/pic03.jpg' %}" alt="Art visual" /></span>
-            <p>Lorem ipsum dolor sit amet, consectetur et adipiscing elit. Praesent eleifend dignissim arcu, at eleifend sapien imperdiet ac.</p>
-            <p>Aliquam erat volutpat. Praesent urna nisi, fringilla lorem et vehicula lacinia quam.</p>
+            <p>A split gallery of live photography and cover/visual artwork.</p>
+
+            <div class="art-showcase">
+                <section class="art-block">
+                    <header class="art-block-header">
+                        <h3>Gig Photos</h3>
+                        <p>Live captures, rehearsals, and stripped back sessions.</p>
+                    </header>
+                    <p class="art-format-note">Gallery thumbnails are optimized for faster loading. Tap any image for full resolution.</p>
+                    <div class="gig-photo-grid">
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 01">
+                            <img src="{% static 'images/gig_photos/sofa_photos_1.jpeg' %}" alt="Gig photo - sofa session 1" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 02">
+                            <img src="{% static 'images/gig_photos/sofa_photos2.jpeg' %}" alt="Gig photo - sofa session 2" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" data-art-lightbox="image" data-art-caption="Sofa Session 03">
+                            <img src="{% static 'images/gig_photos/sofa_photos3.jpeg' %}" alt="Gig photo - sofa session 3" loading="lazy" decoding="async" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig1.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 01">
+                            <img src="{% static 'images/gig_photos/thumbs/gig1_thumb.jpg' %}" alt="Gig photo 1" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig2.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 02">
+                            <img src="{% static 'images/gig_photos/thumbs/gig2_thumb.jpg' %}" alt="Gig photo 2" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig3.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 03">
+                            <img src="{% static 'images/gig_photos/thumbs/gig3_thumb.jpg' %}" alt="Gig photo 3" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig4.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 04">
+                            <img src="{% static 'images/gig_photos/thumbs/gig4_thumb.jpg' %}" alt="Gig photo 4" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig5.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 05">
+                            <img src="{% static 'images/gig_photos/thumbs/gig5_thumb.jpg' %}" alt="Gig photo 5" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig6.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 06">
+                            <img src="{% static 'images/gig_photos/thumbs/gig6_thumb.jpg' %}" alt="Gig photo 6" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig7.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 07">
+                            <img src="{% static 'images/gig_photos/thumbs/gig7_thumb.jpg' %}" alt="Gig photo 7" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig8.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 08">
+                            <img src="{% static 'images/gig_photos/thumbs/gig8_thumb.jpg' %}" alt="Gig photo 8" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                        <a class="gig-photo-card" href="{% static 'images/gig_photos/gig9.jpeg' %}" data-art-lightbox="image" data-art-caption="Gig Photo 09">
+                            <img src="{% static 'images/gig_photos/thumbs/gig9_thumb.jpg' %}" alt="Gig photo 9" loading="lazy" decoding="async" fetchpriority="low" />
+                        </a>
+                    </div>
+                </section>
+
+                <section class="art-block">
+                    <header class="art-block-header">
+                        <h3>Album &amp; Assorted Artwork</h3>
+                        <p>Cover art, profile imagery, and motion visuals.</p>
+                    </header>
+                    <div class="album-art-grid">
+                        {% for item in album_art_items %}
+                            <figure class="album-art-card{% if item.featured %} is-featured{% endif %}">
+                                {% if item.kind == 'image' %}
+                                    <a href="{% static item.path %}" data-art-lightbox="image" data-art-caption="{{ item.caption }}">
+                                        <img src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
+                                    </a>
+                                {% elif item.kind == 'video' %}
+                                    <video controls preload="metadata" playsinline{% if item.poster %} poster="{% static item.poster %}"{% endif %}>
+                                        <source src="{% static item.path %}" type="{{ item.mime_type }}" />
+                                    </video>
+                                {% endif %}
+                                <figcaption>{{ item.caption }}</figcaption>
+                            </figure>
+                        {% empty %}
+                            <p class="art-empty-note">Album artwork is being refreshed. Check back soon.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <div id="art-lightbox" class="art-lightbox" role="dialog" aria-hidden="true" aria-label="Expanded artwork">
+                <button type="button" class="art-lightbox-close" data-art-close aria-label="Close expanded artwork">&times;</button>
+                <img class="art-lightbox-image" alt="" />
+                <p class="art-lightbox-caption"></p>
+            </div>
         </article>
 
         <article id="contact">
@@ -215,14 +537,166 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'assets/js/playerjs-3.js' %}"></script>
+<script src="{% static 'assets/js/playerjs_v4.js' %}"></script>
 <script>
     (function () {
         var frames = document.querySelectorAll(".music-player-frame");
         var canUsePlayerjs = typeof Playerjs !== "undefined";
 
+        function shouldPreferCompressedAudio() {
+            var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (!connection) {
+                return true;
+            }
+
+            if (connection.saveData) {
+                return true;
+            }
+
+            var type = (connection.effectiveType || "").toLowerCase();
+            if (type && type !== "4g") {
+                return true;
+            }
+
+            if (typeof connection.downlink === "number" && connection.downlink > 0 && connection.downlink < 6) {
+                return true;
+            }
+
+            if (typeof connection.rtt === "number" && connection.rtt > 300) {
+                return true;
+            }
+
+            return !(type === "4g" && typeof connection.downlink === "number" && connection.downlink >= 6);
+        }
+
+        function pickPreferredAudioFile(frame) {
+            var wav = frame.getAttribute("data-file-wav") || "";
+            var mp3 = frame.getAttribute("data-file-mp3") || "";
+            var preferCompressed = shouldPreferCompressedAudio();
+
+            if (preferCompressed && mp3) {
+                return mp3;
+            }
+
+            if (wav) {
+                return wav;
+            }
+
+            return mp3;
+        }
+
+        function getAudioMimeType(path) {
+            var cleanPath = (path || "").split("?")[0].toLowerCase();
+
+            if (cleanPath.endsWith(".wav")) {
+                return "audio/wav";
+            }
+            if (cleanPath.endsWith(".mp3")) {
+                return "audio/mpeg";
+            }
+            if (cleanPath.endsWith(".ogg")) {
+                return "audio/ogg";
+            }
+            if (cleanPath.endsWith(".m4a") || cleanPath.endsWith(".mp4")) {
+                return "audio/mp4";
+            }
+            return "audio/*";
+        }
+
+        function hidePlayerTitlePlaceholder(frame) {
+            var attempts = 0;
+            var maxAttempts = 45;
+            var timer = setInterval(function () {
+                attempts += 1;
+                var iframe = frame.querySelector("iframe");
+
+                if (!iframe) {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                    return;
+                }
+
+                try {
+                    var doc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (!doc || !doc.body) {
+                        if (attempts >= maxAttempts) {
+                            clearInterval(timer);
+                        }
+                        return;
+                    }
+
+                    var found = false;
+                    var nodes = doc.body.querySelectorAll("*");
+                    nodes.forEach(function (node) {
+                        if (node.children.length > 0) {
+                            return;
+                        }
+                        if ((node.textContent || "").trim() === "Title - Song") {
+                            node.style.display = "none";
+                            found = true;
+                        }
+                    });
+
+                    if (found || attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                } catch (error) {
+                    clearInterval(timer);
+                }
+            }, 150);
+        }
+
+        function primePlayerMetadata(frame) {
+            var attempts = 0;
+            var maxAttempts = 80;
+            var timer = setInterval(function () {
+                attempts += 1;
+
+                var iframe = frame.querySelector("iframe");
+                if (!iframe) {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                    return;
+                }
+
+                try {
+                    var doc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (!doc || !doc.body) {
+                        if (attempts >= maxAttempts) {
+                            clearInterval(timer);
+                        }
+                        return;
+                    }
+
+                    var media = doc.querySelector("audio, video");
+                    if (!media) {
+                        if (attempts >= maxAttempts) {
+                            clearInterval(timer);
+                        }
+                        return;
+                    }
+
+                    media.preload = "auto";
+                    if (!media.dataset.metadataPrimed) {
+                        media.dataset.metadataPrimed = "1";
+                        media.load();
+                    }
+
+                    if (isFinite(media.duration) && media.duration > 0) {
+                        clearInterval(timer);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(timer);
+                    }
+                } catch (error) {
+                    clearInterval(timer);
+                }
+            }, 125);
+        }
+
         frames.forEach(function (frame) {
-            var file = frame.getAttribute("data-file");
+            var file = pickPreferredAudioFile(frame);
             if (!file) {
                 return;
             }
@@ -231,8 +705,15 @@
                 try {
                     new Playerjs({
                         id: frame.id,
-                        file: file
+                        file: file,
+                        title: " ",
+                        preloading: 1,
+                        disablePreload: 0,
+                        showuntilmeta: 1
                     });
+                    frame.classList.add("is-enhanced");
+                    hidePlayerTitlePlaceholder(frame);
+                    primePlayerMetadata(frame);
                     return;
                 } catch (error) {
                     // Fallback below if PlayerJS initialization fails.
@@ -240,9 +721,62 @@
             }
 
             frame.innerHTML =
-                '<audio class="music-player-fallback" controls preload="none">' +
-                '<source src="' + file + '" type="audio/mpeg">' +
+                '<audio class="music-player-fallback" controls preload="metadata">' +
+                '<source src="' + file + '" type="' + getAudioMimeType(file) + '">' +
                 "</audio>";
+            frame.classList.add("is-enhanced");
+        });
+    })();
+</script>
+<script>
+    (function () {
+        var lightbox = document.getElementById("art-lightbox");
+        if (!lightbox) {
+            return;
+        }
+
+        var lightboxImage = lightbox.querySelector(".art-lightbox-image");
+        var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
+
+        function closeLightbox() {
+            lightbox.classList.remove("is-visible");
+            lightbox.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("is-lightbox-visible");
+            lightboxImage.removeAttribute("src");
+            lightboxImage.alt = "";
+            lightboxCaption.textContent = "";
+        }
+
+        document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
+            trigger.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                var targetUrl = trigger.getAttribute("href");
+                if (!targetUrl) {
+                    return;
+                }
+
+                var image = trigger.querySelector("img");
+                lightboxImage.src = targetUrl;
+                lightboxImage.alt = image ? image.alt : "Artwork";
+                lightboxCaption.textContent = trigger.getAttribute("data-art-caption") || "";
+
+                lightbox.classList.add("is-visible");
+                lightbox.setAttribute("aria-hidden", "false");
+                document.body.classList.add("is-lightbox-visible");
+            });
+        });
+
+        lightbox.addEventListener("click", function (event) {
+            if (event.target === lightbox || event.target.hasAttribute("data-art-close")) {
+                closeLightbox();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && lightbox.classList.contains("is-visible")) {
+                closeLightbox();
+            }
         });
     })();
 </script>
