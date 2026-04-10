@@ -1,0 +1,23 @@
+<article id="art">
+    <h2 class="major">Art</h2>
+    <p>A split gallery of live photography and cover/visual artwork.</p>
+
+    <div class="art-showcase">
+        <section class="art-block">
+            <header class="art-block-header">
+                <h3>Gig Photos</h3>
+                <p>Live captures, rehearsals, and stripped back sessions.</p>
+            </header>
+            {% include 'main_site/includes/components/art/gig_photo_grid.html' with gig_photo_items=gig_photo_items only %}
+        </section>
+
+        <section class="art-block">
+            <header class="art-block-header">
+                <h3>Album &amp; Assorted Artwork</h3>
+                <p>Cover art, profile imagery, and motion visuals.</p>
+                <p>Animations produced by <a href="https://www.instagram.com/picturemover" target="_blank" rel="noopener noreferrer">picturemover</a>.</p>
+            </header>
+            {% include 'main_site/includes/components/art/album_art_grid.html' with album_art_items=album_art_items only %}
+        </section>
+    </div>
+</article>

@@ -1,0 +1,7 @@
+<div class="music-library">
+    {% for item in music_items %}
+        {% include 'main_site/includes/components/music/library_item.html' with item=item only %}
+    {% empty %}
+        <p class="art-empty-note">Music is being refreshed. Check back soon.</p>
+    {% endfor %}
+</div>

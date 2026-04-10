@@ -1,0 +1,9 @@
+<ul class="icons">
+    {% for link in links %}
+        <li>
+            <a href="{{ link.href }}" class="{{ link.icon_class }}" target="_blank" rel="noopener noreferrer">
+                <span class="label">{{ link.label }}</span>
+            </a>
+        </li>
+    {% endfor %}
+</ul>
