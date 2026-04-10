@@ -3,9 +3,72 @@ from pathlib import Path
 from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 from django.shortcuts import render
+from django.urls import reverse
 
 from .models import GigPhoto
 
+HEADER_SOCIAL_LINKS = (
+    {
+        "href": "https://josephlovesjohn.bandcamp.com",
+        "icon_class": "icon brands fa-bandcamp",
+        "label": "Bandcamp",
+    },
+    {
+        "href": "https://www.instagram.com/josephlovesjohn_music/",
+        "icon_class": "icon brands fa-instagram",
+        "label": "Instagram",
+    },
+    {
+        "href": "https://www.youtube.com/@JosephlovesJohn",
+        "icon_class": "icon brands fa-youtube",
+        "label": "YouTube",
+    },
+    {
+        "href": "https://music.amazon.co.uk/artists/B0GHXDGN9M/josephlovesjohn",
+        "icon_class": "icon brands fa-amazon",
+        "label": "Amazon Music",
+    },
+    {
+        "href": "https://music.apple.com/us/artist/josephlovesjohn/1869723292",
+        "icon_class": "icon brands fa-apple",
+        "label": "Apple Music",
+    },
+    {
+        "href": "https://www.tiktok.com/@joseph_loves_john",
+        "icon_class": "icon brands fa-tiktok",
+        "label": "TikTok",
+    },
+)
+
+PRIMARY_NAV_ITEMS = (
+    {"href": "#intro", "label": "Intro"},
+    {"href": "#music", "label": "Music"},
+    {"href": "#art", "label": "Art"},
+    {"href": "#contact", "label": "Contact"},
+)
+
+MUSIC_LIBRARY_MANIFEST = (
+    {
+        "title": "Dark and Light - Artist Version",
+        "meta": "Single",
+        "art_path": "images/album_art/dark_and_light_artist_cover.jpg",
+        "art_alt": "Dark and Light artist cover artwork",
+        "player_id": "dark-and-light-artist-player",
+        "file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
+        "file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
+        "is_reversed": False,
+    },
+    {
+        "title": "Dark and Light - Instrumental",
+        "meta": "Instrumental Mix",
+        "art_path": "images/album_art/dark_and_light_instrumental.jpg",
+        "art_alt": "Dark and Light instrumental artwork",
+        "player_id": "dark-and-light-instrumental-player",
+        "file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
+        "file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
+        "is_reversed": True,
+    },
+)
 
 ALBUM_ART_MANIFEST = (
     {
@@ -204,9 +267,22 @@ def _get_album_art_items():
     return items
 
 
+def _get_music_library_items():
+    share_path = reverse("main_site:music")
+    items = []
+    for asset in MUSIC_LIBRARY_MANIFEST:
+        item = asset.copy()
+        item["share_path"] = share_path
+        items.append(item)
+    return items
+
+
 def _site_context(active_section):
     return {
         "active_section": active_section,
+        "header_social_links": HEADER_SOCIAL_LINKS,
+        "primary_nav_items": PRIMARY_NAV_ITEMS,
+        "music_items": _get_music_library_items(),
         "gig_photo_items": _get_gig_photo_items(),
         "album_art_items": _get_album_art_items(),
     }

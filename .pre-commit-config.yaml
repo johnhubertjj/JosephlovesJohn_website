@@ -48,18 +48,28 @@ repos:
     hooks:
       - id: django-check
         name: django check
-        entry: python manage.py check
-        language: python
-        additional_dependencies:
-          - django>=5.2.0
+        entry: uv run python manage.py check
+        language: system
         pass_filenames: false
         always_run: true
 
       - id: django-migrations-check
         name: django migrations check
-        entry: python manage.py makemigrations --check --dry-run
-        language: python
-        additional_dependencies:
-          - django>=5.2.0
+        entry: uv run python manage.py makemigrations --check --dry-run
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: ruff
+        name: ruff
+        entry: uv run ruff check josephlovesjohn_site main_site mastering
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
         pass_filenames: false
         always_run: true
