@@ -200,6 +200,13 @@
         background: #050505;
     }
 
+    .album-art-card img.is-contain {
+        object-fit: contain;
+        object-position: center;
+        padding: 0.65rem;
+        background: #050505;
+    }
+
     .album-art-card figcaption {
         margin: 0;
         padding: 0.65rem 0.75rem 0.8rem;
@@ -225,28 +232,43 @@
         position: fixed;
         inset: 0;
         display: none;
-        place-items: center;
-        padding: 2rem 1rem 1rem;
-        background: rgba(0, 0, 0, 0.84);
-        z-index: 1200;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        padding: 1.25rem 1rem;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        overscroll-behavior: contain;
     }
 
     .art-lightbox.is-visible {
-        display: grid;
+        display: flex;
+    }
+
+    .art-lightbox-inner {
+        width: auto;
+        max-width: min(96vw, 1260px);
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.85rem;
     }
 
     .art-lightbox-image {
-        max-width: min(92vw, 1200px);
-        max-height: 78vh;
+        display: block;
+        max-width: 100%;
+        max-height: calc(100vh - 8.5rem);
         width: auto;
         height: auto;
+        object-fit: contain;
         border-radius: 0.45rem;
         border: 1px solid rgba(255, 255, 255, 0.22);
         box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
     }
 
     .art-lightbox-caption {
-        margin: 0.8rem 0 0;
+        margin: 0;
         text-align: center;
         letter-spacing: 0.08rem;
         text-transform: uppercase;
@@ -255,16 +277,26 @@
     }
 
     .art-lightbox-close {
-        position: absolute;
-        top: 0.6rem;
+        position: fixed;
+        top: 0.7rem;
         right: 0.9rem;
         border: 0;
-        background: transparent;
+        background: rgba(0, 0, 0, 0.42);
         color: #ffffff;
         font-size: 2rem;
         line-height: 1;
         cursor: pointer;
-        opacity: 0.92;
+        opacity: 0.96;
+        border-radius: 0.35rem;
+        padding: 0.05rem 0.4rem 0.18rem;
+        outline: none;
+        box-shadow: none;
+    }
+
+    .art-lightbox-close:focus,
+    .art-lightbox-close:focus-visible {
+        outline: none;
+        box-shadow: none;
     }
 
     body.is-lightbox-visible {
@@ -464,7 +496,7 @@
                             <figure class="album-art-card{% if item.featured %} is-featured{% endif %}">
                                 {% if item.kind == 'image' %}
                                     <a href="{% static item.path %}" data-art-lightbox="image" data-art-caption="{{ item.caption }}">
-                                        <img src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
+                                        <img{% if item.fit_contain %} class="is-contain"{% endif %} src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
                                     </a>
                                 {% elif item.kind == 'video' %}
                                     <video controls preload="metadata" playsinline{% if item.poster %} poster="{% static item.poster %}"{% endif %}>
@@ -480,11 +512,6 @@
                 </section>
             </div>
 
-            <div id="art-lightbox" class="art-lightbox" role="dialog" aria-hidden="true" aria-label="Expanded artwork">
-                <button type="button" class="art-lightbox-close" data-art-close aria-label="Close expanded artwork">&times;</button>
-                <img class="art-lightbox-image" alt="" />
-                <p class="art-lightbox-caption"></p>
-            </div>
         </article>
 
         <article id="contact">
@@ -521,6 +548,13 @@
     <footer id="footer">
         <p class="copyright">&copy; JosephlovesJohn. Design base: <a href="https://html5up.net">HTML5 UP</a>.</p>
     </footer>
+</div>
+<div id="art-lightbox" class="art-lightbox" role="dialog" aria-hidden="true" aria-label="Expanded artwork">
+    <button type="button" class="art-lightbox-close" data-art-close aria-label="Close expanded artwork">&times;</button>
+    <div class="art-lightbox-inner">
+        <img class="art-lightbox-image" alt="" />
+        <p class="art-lightbox-caption"></p>
+    </div>
 </div>
 {% endblock %}
 
@@ -737,6 +771,7 @@
 
         var lightboxImage = lightbox.querySelector(".art-lightbox-image");
         var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
+        var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
 
         function closeLightbox() {
             lightbox.classList.remove("is-visible");
@@ -764,17 +799,35 @@
                 lightbox.classList.add("is-visible");
                 lightbox.setAttribute("aria-hidden", "false");
                 document.body.classList.add("is-lightbox-visible");
+                lightbox.scrollTop = 0;
             });
         });
 
         lightbox.addEventListener("click", function (event) {
+            event.stopPropagation();
+
             if (event.target === lightbox || event.target.hasAttribute("data-art-close")) {
+                event.preventDefault();
                 closeLightbox();
             }
         });
 
-        document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape" && lightbox.classList.contains("is-visible")) {
+        if (lightboxInner) {
+            lightboxInner.addEventListener("click", function (event) {
+                event.stopPropagation();
+            });
+        }
+
+        window.addEventListener("keyup", function (event) {
+            if ((event.key === "Escape" || event.keyCode === 27) && lightbox.classList.contains("is-visible")) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeLightbox();
+            }
+        }, true);
+
+        window.addEventListener("hashchange", function () {
+            if (lightbox.classList.contains("is-visible")) {
                 closeLightbox();
             }
         });
