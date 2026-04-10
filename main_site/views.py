@@ -39,6 +39,7 @@ ALBUM_ART_MANIFEST = (
         "caption": "Buddlea Animation",
         "alt": "Buddlea animation artwork",
         "featured": False,
+        "fit_contain": True,
     },
 )
 
