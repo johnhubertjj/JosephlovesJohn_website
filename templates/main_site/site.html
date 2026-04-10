@@ -13,6 +13,31 @@
         margin-top: 1.35rem;
     }
 
+    #main article#intro .image.main.intro-main-image {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .intro-signup-form {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0 0 1.5rem;
+        width: 100%;
+    }
+
+    .intro-signup-form input[type="email"] {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .intro-signup-form .button {
+        white-space: nowrap;
+        margin: 0;
+    }
+
     .music-library-item {
         display: grid;
         grid-template-columns: minmax(180px, 260px) 1fr;
@@ -312,6 +337,10 @@
         .album-art-card.is-featured {
             grid-column: span 6;
         }
+
+        #main article#intro .image.main.intro-main-image {
+            width: 100%;
+        }
     }
 
     @media screen and (max-width: 736px) {
@@ -332,6 +361,19 @@
         .album-art-card,
         .album-art-card.is-featured {
             grid-column: span 12;
+        }
+
+        #main article#intro .image.main.intro-main-image {
+            width: 100%;
+        }
+
+        .intro-signup-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .intro-signup-form .button {
+            width: 100%;
         }
     }
 </style>
@@ -392,10 +434,15 @@
 
         <article id="intro">
             <h2 class="major">Intro</h2>
-            <span class="image main"><img src="{% static 'images/pic01.jpg' %}" alt="Intro visual" /></span>
+            <span class="image main intro-main-image"><img src="{% static 'images/gig_photos/Bristol_folk_house_31_03_2026_8_intro_crop.jpeg' %}" alt="Bristol Folk House gig photo 8, cropped for intro" /></span>
             <p>Hi! I am a Bristol-based multi-instrumentalist and composer whose work blends melancholy classical textures with the intimacy of contemporary folk.</p>
-            <p>I try to create music shaped by emotional depth, precise craftsmanship, and a persistent curiosity about the human condition.</p>
-            <p>I also offer mastering services, you can find that website <a href="{% url 'mastering:home' %}">here</a>.</p>
+            <p>I also use projections and animations to immerse the audience in the music and deepen the emotional arc of each performance.</p>
+            <p>If you want to be kept up to date on what I'm up to, sign up below.</p>
+            <div class="intro-signup-form" role="group" aria-label="Sign up for updates">
+                <input type="email" id="intro-signup-email" name="intro-signup-email" placeholder="Your email address" autocomplete="email" />
+                <button type="button" class="button primary">Sign up!</button>
+            </div>
+            <p>I also offer mastering services; you can find that website <a href="{% url 'mastering:home' %}">here</a>.</p>
         </article>
 
         <article id="music">
@@ -445,7 +492,6 @@
                         <h3>Gig Photos</h3>
                         <p>Live captures, rehearsals, and stripped back sessions.</p>
                     </header>
-                    <p class="art-format-note">Gallery thumbnails are optimized for faster loading. Tap any image for full resolution.</p>
                     <div class="gig-photo-grid">
                         {% for photo in gig_photo_items %}
                             <a class="gig-photo-card" href="{% static photo.image_path %}" data-art-lightbox="image" data-art-caption="{{ photo.title }}">
@@ -461,6 +507,7 @@
                     <header class="art-block-header">
                         <h3>Album &amp; Assorted Artwork</h3>
                         <p>Cover art, profile imagery, and motion visuals.</p>
+                        <p>Animations produced by <a href="https://www.instagram.com/picturemover" target="_blank" rel="noopener noreferrer">picturemover</a>.</p>
                     </header>
                     <div class="album-art-grid">
                         {% for item in album_art_items %}
