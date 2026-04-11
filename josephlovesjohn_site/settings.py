@@ -1,3 +1,9 @@
+"""Django settings for the JosephlovesJohn project.
+
+This module contains the environment-agnostic defaults used for local
+development of the site and its supporting apps.
+"""
+
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent

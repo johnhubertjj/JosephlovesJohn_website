@@ -1,3 +1,5 @@
+"""Views and content helpers for the main JosephlovesJohn site."""
+
 from pathlib import Path
 
 from django.conf import settings
@@ -190,10 +192,25 @@ DEFAULT_GIG_PHOTO_LIBRARY = (
 
 
 def _static_file_exists(relative_path):
+    """Check whether a static asset exists on disk.
+
+    :param relative_path: Path relative to the ``static`` directory.
+    :type relative_path: str
+    :returns: ``True`` when the file exists, otherwise ``False``.
+    :rtype: bool
+    """
     return (Path(settings.BASE_DIR) / "static" / relative_path).is_file()
 
 
 def _normalize_static_path(path):
+    """Normalize a static asset path for lookups and template usage.
+
+    :param path: Raw file path value that may include leading slashes or a
+        ``static/`` prefix.
+    :type path: str | None
+    :returns: A normalized path relative to ``static/``.
+    :rtype: str
+    """
     normalized = (path or "").strip()
     if normalized.startswith("/"):
         normalized = normalized.lstrip("/")
@@ -203,6 +220,20 @@ def _normalize_static_path(path):
 
 
 def _build_gig_photo_item(title, image_path, thumbnail_path="", alt_text=""):
+    """Build a gallery item dictionary when the referenced files exist.
+
+    :param title: Display title for the gallery item.
+    :type title: str
+    :param image_path: Static-relative path to the source image.
+    :type image_path: str
+    :param thumbnail_path: Optional static-relative path to a thumbnail image.
+    :type thumbnail_path: str
+    :param alt_text: Accessible image description.
+    :type alt_text: str
+    :returns: A normalized gallery item dictionary or ``None`` if the required
+        image file is missing.
+    :rtype: dict[str, str] | None
+    """
     image_relative = _normalize_static_path(image_path)
     thumbnail_relative = _normalize_static_path(thumbnail_path) if thumbnail_path else image_relative
     if not image_relative or not _static_file_exists(image_relative):
@@ -218,6 +249,14 @@ def _build_gig_photo_item(title, image_path, thumbnail_path="", alt_text=""):
 
 
 def _get_gig_photo_items():
+    """Return active gig photo items for the art gallery.
+
+    The function prefers admin-managed database records and falls back to the
+    bundled static manifest when the database is unavailable or empty.
+
+    :returns: A list of normalized gig photo dictionaries.
+    :rtype: list[dict[str, str]]
+    """
     try:
         configured_gig_photos = list(GigPhoto.objects.filter(is_active=True).order_by("sort_order", "id"))
     except (OperationalError, ProgrammingError):
@@ -251,6 +290,11 @@ def _get_gig_photo_items():
 
 
 def _get_album_art_items():
+    """Return album art entries whose backing static assets still exist.
+
+    :returns: A list of album art dictionaries ready for template rendering.
+    :rtype: list[dict[str, object]]
+    """
     items = []
     for asset in ALBUM_ART_MANIFEST:
         if not _static_file_exists(asset["path"]):
@@ -268,6 +312,11 @@ def _get_album_art_items():
 
 
 def _get_music_library_items():
+    """Return music library items with a precomputed share route.
+
+    :returns: Music library dictionaries enriched for template rendering.
+    :rtype: list[dict[str, object]]
+    """
     share_path = reverse("main_site:music")
     items = []
     for asset in MUSIC_LIBRARY_MANIFEST:
@@ -278,6 +327,13 @@ def _get_music_library_items():
 
 
 def _site_context(active_section):
+    """Build the shared rendering context for the one-page site.
+
+    :param active_section: Hash-compatible section slug to activate on load.
+    :type active_section: str
+    :returns: Template context for the main site page.
+    :rtype: dict[str, object]
+    """
     return {
         "active_section": active_section,
         "header_social_links": HEADER_SOCIAL_LINKS,
@@ -289,20 +345,55 @@ def _site_context(active_section):
 
 
 def main(request):
+    """Render the default one-page site view.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the main landing page.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context(""))
 
 
 def intro(request):
+    """Render the one-page site with the intro section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the intro route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("intro"))
 
 
 def music(request):
+    """Render the one-page site with the music section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the music route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("music"))
 
 
 def art(request):
+    """Render the one-page site with the art section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the art route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("art"))
 
 
 def contact(request):
+    """Render the one-page site with the contact section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the contact route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("contact"))
