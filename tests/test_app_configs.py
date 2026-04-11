@@ -1,7 +1,10 @@
 """Application configuration tests."""
 
+import pytest
 from main_site.apps import MainSiteConfig
 from mastering.apps import MasteringConfig
+
+pytestmark = pytest.mark.smoke
 
 
 def test_main_site_config_metadata() -> None:

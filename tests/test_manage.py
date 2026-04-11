@@ -5,6 +5,9 @@ import sys
 
 import django.core.management
 import manage
+import pytest
+
+pytestmark = pytest.mark.smoke
 
 
 def test_main_sets_default_settings_and_executes_command(monkeypatch):
