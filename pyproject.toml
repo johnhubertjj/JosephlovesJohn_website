@@ -13,6 +13,7 @@ dev = [
     "mypy>=1.18.2",
     "pre-commit>=4.5.0",
     "pytest>=8.4.0",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.11.0",
     "ruff>=0.12.0",
 ]
@@ -42,3 +43,17 @@ django_settings_module = "josephlovesjohn_site.settings"
 DJANGO_SETTINGS_MODULE = "josephlovesjohn_site.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["manage", "josephlovesjohn_site", "main_site", "mastering"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "JosephlovesJohn Test Coverage"
