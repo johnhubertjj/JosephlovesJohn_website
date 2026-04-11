@@ -1,3 +1,5 @@
+"""Top-level URL configuration for the JosephlovesJohn project."""
+
 from django.contrib import admin
 from django.urls import include, path
 

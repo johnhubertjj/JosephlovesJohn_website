@@ -1,3 +1,5 @@
+"""URL patterns for the mastering services site."""
+
 from django.urls import path
 
 from . import views

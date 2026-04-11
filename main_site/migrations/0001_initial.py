@@ -1,7 +1,17 @@
+"""Initial schema and seed data for editable gig photos."""
+
 from django.db import migrations, models
 
 
 def seed_gig_photos(apps, schema_editor):
+    """Seed the gig photo table with default gallery entries.
+
+    :param apps: Historical app registry supplied by Django migrations.
+    :type apps: django.apps.registry.Apps
+    :param schema_editor: Schema editor for the current migration run.
+    :type schema_editor: django.db.backends.base.schema.BaseDatabaseSchemaEditor
+    :returns: ``None``.
+    """
     GigPhoto = apps.get_model("main_site", "GigPhoto")
     if GigPhoto.objects.exists():
         return
@@ -109,11 +119,21 @@ def seed_gig_photos(apps, schema_editor):
 
 
 def unseed_gig_photos(apps, schema_editor):
+    """Remove seeded gig photos during reverse migration.
+
+    :param apps: Historical app registry supplied by Django migrations.
+    :type apps: django.apps.registry.Apps
+    :param schema_editor: Schema editor for the current migration run.
+    :type schema_editor: django.db.backends.base.schema.BaseDatabaseSchemaEditor
+    :returns: ``None``.
+    """
     GigPhoto = apps.get_model("main_site", "GigPhoto")
     GigPhoto.objects.all().delete()
 
 
 class Migration(migrations.Migration):
+    """Create the ``GigPhoto`` model and initial gallery seed data."""
+
     initial = True
 
     dependencies = []
