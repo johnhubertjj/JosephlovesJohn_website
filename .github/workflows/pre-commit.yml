@@ -138,3 +138,29 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
         run: uv run pytest --cov --cov-report=term-missing -q
+
+  browser-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dev dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Install Playwright Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run browser tests
+        env:
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+        run: uv run pytest -q --run-browser -m browser

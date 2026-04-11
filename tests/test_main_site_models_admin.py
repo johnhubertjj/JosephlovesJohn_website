@@ -5,6 +5,8 @@ from django.contrib import admin
 from main_site.admin import GigPhotoAdmin
 from main_site.models import GigPhoto
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_gig_photo_string_representation_uses_title() -> None:

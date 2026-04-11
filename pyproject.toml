@@ -11,6 +11,7 @@ dependencies = [
 dev = [
     "django-stubs>=5.2.0",
     "mypy>=1.18.2",
+    "playwright>=1.56.0",
     "pre-commit>=4.5.0",
     "pytest>=8.4.0",
     "pytest-cov>=7.1.0",
@@ -43,6 +44,11 @@ django_settings_module = "josephlovesjohn_site.settings"
 DJANGO_SETTINGS_MODULE = "josephlovesjohn_site.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
+markers = [
+    "browser: browser-level UI tests that require --run-browser.",
+    "integration: cross-template or multi-layer integration tests.",
+    "smoke: lightweight route and rendering confidence checks.",
+]
 
 [tool.coverage.run]
 branch = true

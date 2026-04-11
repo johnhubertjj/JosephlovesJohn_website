@@ -7,6 +7,8 @@ from django.db import OperationalError
 from main_site import views
 from main_site.models import GigPhoto
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.mark.django_db
 def test_get_gig_photo_items_prefers_active_database_rows(create_static_asset, monkeypatch) -> None:

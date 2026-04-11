@@ -1,6 +1,9 @@
 """Black-box route tests for the mastering site."""
 
+import pytest
 from django.urls import reverse
+
+pytestmark = pytest.mark.smoke
 
 
 def test_mastering_home_renders_default_context(client) -> None:
