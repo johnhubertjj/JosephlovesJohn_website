@@ -62,7 +62,7 @@ repos:
 
       - id: ruff
         name: ruff
-        entry: uv run ruff check josephlovesjohn_site main_site mastering
+        entry: uv run ruff check josephlovesjohn_site main_site mastering tests
         language: system
         pass_filenames: false
         always_run: true
@@ -70,6 +70,13 @@ repos:
       - id: mypy
         name: mypy
         entry: uv run mypy
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: pytest
+        name: pytest
+        entry: uv run pytest -q
         language: system
         pass_filenames: false
         always_run: true

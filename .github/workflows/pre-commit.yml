@@ -68,7 +68,7 @@ jobs:
         run: uv sync --frozen --group dev
 
       - name: Run Ruff
-        run: uv run ruff check josephlovesjohn_site main_site mastering
+        run: uv run ruff check josephlovesjohn_site main_site mastering tests
 
   mypy:
     runs-on: ubuntu-latest
@@ -92,3 +92,49 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
         run: uv run mypy
+
+  pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dev dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run Pytest
+        env:
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+        run: uv run pytest -q
+
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dev dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run Pytest with coverage threshold
+        env:
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+        run: uv run pytest --cov --cov-report=term-missing -q
