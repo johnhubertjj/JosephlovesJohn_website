@@ -1,31 +1,31 @@
 {% extends 'shop/base.html' %}
 
 {% block shop_title %}Checkout | JosephlovesJohn{% endblock %}
-{% block shop_heading %}Checkout{% endblock %}
-{% block shop_subtitle %}Review your selections, add your details, and confirm the order on a dedicated checkout page.{% endblock %}
+{% block shop_heading %}Secure Checkout{% endblock %}
+{% block shop_subtitle %}Your cart is ready. We'll send you straight to Stripe's secure hosted checkout to pay for your music.{% endblock %}
 
 {% block shop_content %}
     <div class="shop-grid shop-grid--checkout">
         <section class="shop-card">
             <div class="shop-card-header">
-                <p class="shop-eyebrow">Customer details</p>
-                <h2>Complete your order</h2>
+                <p class="shop-eyebrow">Secure payment</p>
+                {% if checkout_error %}
+                    <h2>Stripe checkout is unavailable</h2>
+                {% elif checkout_canceled %}
+                    <h2>Checkout canceled</h2>
+                {% else %}
+                    <h2>Continue to payment</h2>
+                {% endif %}
             </div>
-            {% if not request.user.is_authenticated %}
-                <p class="shop-inline-note">Want to save your details and keep a download history? <a href="{{ login_url }}?next={{ request.path }}">Log in</a> or <a href="{{ register_url }}?next={{ request.path }}">create an account</a>.</p>
+            {% if checkout_error %}
+                <p class="shop-inline-note">{{ checkout_error }}</p>
+            {% elif checkout_canceled %}
+                <p class="shop-inline-note">Your cart is still here. When you're ready, try Stripe Checkout again.</p>
+            {% else %}
+                <p class="shop-inline-note">Use the button below to continue to Stripe and complete your purchase.</p>
             {% endif %}
-            <form method="post" class="shop-form" novalidate>
-                {% csrf_token %}
-                {% for field in form %}
-                    <div class="shop-form-field{% if field.errors %} has-errors{% endif %}">
-                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-                        {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
-                    </div>
-                {% endfor %}
-                <button type="submit" class="button primary shop-primary-button">Confirm order</button>
-            </form>
+
+            <a href="{% url 'shop:checkout' %}" class="button primary shop-primary-button">Continue to Stripe Checkout</a>
         </section>
 
         {% include 'shop/includes/order_summary.html' with items=checkout_items total_display=checkout_subtotal_display summary_title='This order' only %}
