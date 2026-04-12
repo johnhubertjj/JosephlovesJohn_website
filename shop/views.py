@@ -1,6 +1,7 @@
 """Views for the demo music shop experience."""
 
 from decimal import Decimal
+from http import HTTPStatus
 from typing import cast
 
 from django.conf import settings
@@ -10,10 +11,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import ImproperlyConfigured
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
 
@@ -75,6 +78,78 @@ def _remember_recent_order(request, order_id):
         *[value for value in recent_orders if value != order_id],
     ][:10]
     request.session.modified = True
+
+
+def _sync_customer_profile_from_order(order):
+    """Save confirmed Stripe customer details back to the logged-in profile."""
+    if not order.user_id:
+        return
+
+    profile, _ = CustomerProfile.objects.get_or_create(user=order.user)
+    profile.full_name = order.full_name
+    profile.marketing_opt_in = profile.marketing_opt_in
+    profile.save(update_fields=["full_name", "marketing_opt_in", "updated_at"])
+
+    if order.email and order.email != order.user.email:
+        order.user.email = order.email
+        order.user.save(update_fields=["email"])
+
+
+def _apply_paid_checkout_session_to_order(order, checkout_session):
+    """Mark an order as paid when Stripe confirms a matching Checkout session."""
+    metadata = _stripe_value(checkout_session, "metadata", {}) or {}
+    if (
+        _stripe_value(checkout_session, "status") != "complete"
+        or _stripe_value(checkout_session, "payment_status") != "paid"
+        or metadata.get("order_id") != str(order.pk)
+    ):
+        raise Http404("Order not found")
+
+    customer_details = _stripe_value(checkout_session, "customer_details", {}) or {}
+    customer_name = customer_details.get("name") or order.full_name
+    customer_email = (
+        customer_details.get("email")
+        or _stripe_value(checkout_session, "customer_email")
+        or order.email
+    )
+    update_fields: list[str] = []
+
+    if customer_name != order.full_name:
+        order.full_name = customer_name
+        update_fields.append("full_name")
+    if customer_email != order.email:
+        order.email = customer_email
+        update_fields.append("email")
+
+    was_paid = order.is_paid
+    order.mark_paid(payment_intent_id=_stripe_identifier(_stripe_value(checkout_session, "payment_intent")))
+    if order.status != Order.Status.CONFIRMED or "status" not in update_fields:
+        update_fields.extend(["status", "stripe_payment_intent_id", "paid_at"])
+
+    if order.user_id:
+        _sync_customer_profile_from_order(order)
+    order.save(update_fields=list(dict.fromkeys(update_fields)))
+    return not was_paid
+
+
+def _fulfill_checkout_session(checkout_session):
+    """Confirm an order from a Stripe Checkout session payload."""
+    metadata = _stripe_value(checkout_session, "metadata", {}) or {}
+    order_id = metadata.get("order_id")
+    session_id = _stripe_value(checkout_session, "id", "")
+    if not order_id or not session_id:
+        return None
+
+    order = (
+        Order.objects.filter(pk=order_id, stripe_checkout_session_id=session_id)
+        .select_related("user")
+        .first()
+    )
+    if order is None:
+        return None
+
+    _apply_paid_checkout_session_to_order(order, checkout_session)
+    return order
 
 
 class ShopLoginView(LoginView):
@@ -350,8 +425,10 @@ class OrderSuccessView(TemplateView):
         context = super().get_context_data(**kwargs)
         order = get_object_or_404(Order.objects.prefetch_related("items", "items__product"), pk=kwargs["order_id"])
         self._ensure_user_can_access(order)
-        if not order.is_paid:
-            self._confirm_paid_order(order)
+        if self.request.GET.get("session_id"):
+            self._synchronize_checkout_session(order)
+        elif not order.is_paid:
+            raise Http404("Order not found")
         self._ensure_guest_session_can_access(order)
         context["order"] = order
         return context
@@ -374,7 +451,7 @@ class OrderSuccessView(TemplateView):
         if order.pk not in allowed_orders:
             raise Http404("Order not found")
 
-    def _confirm_paid_order(self, order):
+    def _synchronize_checkout_session(self, order):
         """Verify the returned Stripe session and unlock the download page."""
 
         session_id = self.request.GET.get("session_id", "")
@@ -386,47 +463,46 @@ class OrderSuccessView(TemplateView):
             session_id,
             expand=["payment_intent"],
         )
-        metadata = _stripe_value(checkout_session, "metadata", {}) or {}
-
-        if (
-            _stripe_value(checkout_session, "status") != "complete"
-            or _stripe_value(checkout_session, "payment_status") != "paid"
-            or metadata.get("order_id") != str(order.pk)
-        ):
-            raise Http404("Order not found")
-
-        customer_details = _stripe_value(checkout_session, "customer_details", {}) or {}
-        customer_name = customer_details.get("name") or order.full_name
-        customer_email = (
-            customer_details.get("email")
-            or _stripe_value(checkout_session, "customer_email")
-            or order.email
-        )
-        order.full_name = customer_name
-        order.email = customer_email
-        order.mark_paid(payment_intent_id=_stripe_identifier(_stripe_value(checkout_session, "payment_intent")))
-        update_fields = ["full_name", "email", "status", "stripe_payment_intent_id", "paid_at"]
-        if order.user_id:
-            self._sync_customer_profile(order)
-        order.save(update_fields=update_fields)
+        order_was_just_confirmed = _apply_paid_checkout_session_to_order(order, checkout_session)
         clear_cart(self.request)
         _remember_recent_order(self.request, order.pk)
-        messages.success(self.request, "Payment confirmed. Your music is ready below.")
+        if order_was_just_confirmed:
+            messages.success(self.request, "Payment confirmed. Your music is ready below.")
 
-    def _sync_customer_profile(self, order):
-        """Save confirmed Stripe customer details back to the logged-in profile."""
 
-        if not order.user_id:
-            return
+@method_decorator(csrf_exempt, name="dispatch")
+class StripeWebhookView(View):
+    """Receive Stripe webhook events for Checkout fulfillment."""
 
-        profile, _ = CustomerProfile.objects.get_or_create(user=order.user)
-        profile.full_name = order.full_name
-        profile.marketing_opt_in = profile.marketing_opt_in
-        profile.save(update_fields=["full_name", "marketing_opt_in", "updated_at"])
+    http_method_names = ["post"]
 
-        if order.email and order.email != order.user.email:
-            order.user.email = order.email
-            order.user.save(update_fields=["email"])
+    def post(self, request):
+        """Verify and handle signed Stripe webhook payloads."""
+        if not settings.STRIPE_WEBHOOK_SECRET:
+            return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+
+        stripe_module = _get_stripe_module()
+        signature = request.headers.get("Stripe-Signature", "")
+        try:
+            event = stripe_module.Webhook.construct_event(
+                payload=request.body,
+                sig_header=signature,
+                secret=settings.STRIPE_WEBHOOK_SECRET,
+            )
+        except Exception:
+            return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+
+        event_type = _stripe_value(event, "type", "")
+        event_data = _stripe_value(event, "data", {}) or {}
+        checkout_session = _stripe_value(event_data, "object")
+
+        if event_type in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
+            try:
+                _fulfill_checkout_session(checkout_session)
+            except Http404:
+                pass
+
+        return HttpResponse(status=HTTPStatus.OK)
 
 
 @require_POST
