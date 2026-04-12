@@ -1,18 +1,35 @@
 <article id="contact">
     <h2 class="major">Contact</h2>
-    <form method="get" action="{% url 'main_site:contact' %}">
+    {% if messages %}
+        <ul class="contact-form-messages">
+            {% for message in messages %}
+                <li class="contact-form-message {{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <form method="post" action="{% url 'main_site:contact' %}">
+        {% csrf_token %}
         <div class="fields">
             <div class="field half">
                 <label for="name">Name</label>
-                <input type="text" name="name" id="name" />
+                {{ contact_form.name }}
+                {% if contact_form.name.errors %}
+                    <p class="contact-form-error">{{ contact_form.name.errors|join:", " }}</p>
+                {% endif %}
             </div>
             <div class="field half">
                 <label for="email">Email</label>
-                <input type="text" name="email" id="email" />
+                {{ contact_form.email }}
+                {% if contact_form.email.errors %}
+                    <p class="contact-form-error">{{ contact_form.email.errors|join:", " }}</p>
+                {% endif %}
             </div>
             <div class="field">
                 <label for="message">Message</label>
-                <textarea name="message" id="message" rows="4"></textarea>
+                {{ contact_form.message }}
+                {% if contact_form.message.errors %}
+                    <p class="contact-form-error">{{ contact_form.message.errors|join:", " }}</p>
+                {% endif %}
             </div>
         </div>
         <ul class="actions">

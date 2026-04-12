@@ -4,12 +4,15 @@ import mimetypes
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib import messages
+from django.core.mail import EmailMessage
 from django.db import OperationalError, ProgrammingError
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.templatetags.static import static as static_url
 from django.urls import reverse
 from shop.models import Product
 
+from .forms import ContactForm
 from .models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 
 
@@ -259,11 +262,13 @@ def _get_music_library_items():
     return items
 
 
-def _site_context(active_section):
+def _site_context(active_section, *, contact_form=None):
     """Build the shared rendering context for the one-page site.
 
     :param active_section: Hash-compatible section slug to activate on load.
     :type active_section: str
+    :param contact_form: Optional pre-bound contact form instance.
+    :type contact_form: main_site.forms.ContactForm | None
     :returns: Template context for the main site page.
     :rtype: dict[str, object]
     """
@@ -274,6 +279,7 @@ def _site_context(active_section):
         "music_items": _get_music_library_items(),
         "gig_photo_items": _get_gig_photo_items(),
         "album_art_items": _get_album_art_items(),
+        "contact_form": contact_form or ContactForm(),
     }
 
 
@@ -329,4 +335,36 @@ def contact(request):
     :returns: A rendered response for the contact route.
     :rtype: django.http.HttpResponse
     """
+    if request.method == "POST":
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            cleaned = form.cleaned_data
+            message_body = (
+                f"New website contact form submission\n\n"
+                f"Name: {cleaned['name']}\n"
+                f"Email: {cleaned['email']}\n\n"
+                f"Message:\n{cleaned['message']}"
+            )
+            email_message = EmailMessage(
+                subject=f"Website contact from {cleaned['name']}",
+                body=message_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[settings.CONTACT_RECIPIENT_EMAIL],
+                reply_to=[cleaned["email"]],
+            )
+            try:
+                email_message.send(fail_silently=False)
+            except Exception:  # pragma: no cover - exercised in production mail failures.
+                messages.error(
+                    request,
+                    "Your message could not be sent right now. Please try again in a moment.",
+                )
+                return render(request, "main_site/site.html", _site_context("contact", contact_form=form))
+
+            messages.success(request, "Thanks, your message has been sent.")
+            return redirect("main_site:contact")
+
+        messages.error(request, "Please correct the highlighted fields and try again.")
+        return render(request, "main_site/site.html", _site_context("contact", contact_form=form))
+
     return render(request, "main_site/site.html", _site_context("contact"))
