@@ -29,7 +29,7 @@ jobs:
 
       - name: Run pre-commit (changed files)
         env:
-          SKIP: no-commit-to-branch
+          SKIP: no-commit-to-branch,django-check,django-migrations-check,ruff,mypy,pytest
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             uv run pre-commit run \
@@ -48,6 +48,34 @@ jobs:
               uv run pre-commit run --all-files --show-diff-on-failure --color=always
             fi
           fi
+
+  django-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dev dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Run Django system checks
+        env:
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+        run: uv run python manage.py check
+
+      - name: Check for missing migrations
+        env:
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+        run: uv run python manage.py makemigrations --check --dry-run
 
   ruff:
     runs-on: ubuntu-latest
@@ -92,29 +120,6 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
         run: uv run mypy
-
-  pytest:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Sync dev dependencies
-        run: uv sync --frozen --group dev
-
-      - name: Run Pytest
-        env:
-          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
-        run: uv run pytest -q
 
   coverage:
     runs-on: ubuntu-latest
