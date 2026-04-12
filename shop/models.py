@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 
 
 class Product(models.Model):
@@ -98,6 +99,7 @@ class Order(models.Model):
     class Status(models.TextChoices):
         """Supported demo order statuses."""
 
+        PENDING = "pending", "Pending payment"
         CONFIRMED = "confirmed", "Confirmed"
 
     user = models.ForeignKey(
@@ -113,6 +115,9 @@ class Order(models.Model):
     subtotal = models.DecimalField(max_digits=8, decimal_places=2)
     total = models.DecimalField(max_digits=8, decimal_places=2)
     notes = models.TextField(blank=True)
+    stripe_checkout_session_id = models.CharField(max_length=255, blank=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -136,6 +141,20 @@ class Order(models.Model):
         :rtype: str
         """
         return f"£{self.total:.2f}"
+
+    @property
+    def is_paid(self):
+        """Return whether the order has a confirmed Stripe payment."""
+
+        return self.status == self.Status.CONFIRMED
+
+    def mark_paid(self, *, payment_intent_id=""):
+        """Mark the order as paid after Stripe confirms the checkout session."""
+
+        self.status = self.Status.CONFIRMED
+        self.stripe_payment_intent_id = payment_intent_id
+        if self.paid_at is None:
+            self.paid_at = timezone.now()
 
 
 class OrderItem(models.Model):
