@@ -97,8 +97,44 @@ def test_contact_page_smoke_renders_labeled_form_controls(client) -> None:
 
 
 
-def test_smoke_manifest_assets_exist_on_disk() -> None:
-    """Music and gallery manifests should only point at files that ship with the site."""
+def test_smoke_manifest_assets_exist_on_disk_with_mock_media(create_static_asset, monkeypatch) -> None:
+    """Manifest-backed asset checks should work against synthetic static media in CI."""
+    music_manifest = (
+        {
+            "slug": "mock-song",
+            "title": "Mock Song",
+            "meta": "Single",
+            "art_path": create_static_asset("images/album_art/mock-song-cover.jpg"),
+            "art_alt": "Mock cover art",
+            "player_id": "mock-song-player",
+            "file_wav": create_static_asset("audio/mock-song.wav"),
+            "file_mp3": create_static_asset("audio/mock-song.mp3"),
+            "price_display": "£1.00",
+            "is_reversed": False,
+        },
+    )
+    gig_photo_library = (
+        {
+            "title": "Mock Gig",
+            "image_path": create_static_asset("images/gig_photos/mock-gig.jpeg"),
+            "thumbnail_path": create_static_asset("images/gig_photos/thumbs/mock-gig-thumb.jpg"),
+            "alt_text": "Mock gig photo",
+        },
+    )
+    album_art_manifest = (
+        {
+            "kind": "image",
+            "path": create_static_asset("images/album_art/mock-gallery-art.gif"),
+            "caption": "Mock Gallery Art",
+            "alt": "Mock gallery artwork",
+            "featured": True,
+        },
+    )
+
+    monkeypatch.setattr(views, "MUSIC_LIBRARY_MANIFEST", music_manifest)
+    monkeypatch.setattr(views, "DEFAULT_GIG_PHOTO_LIBRARY", gig_photo_library)
+    monkeypatch.setattr(views, "ALBUM_ART_MANIFEST", album_art_manifest)
+
     for item in views.MUSIC_LIBRARY_MANIFEST:
         assert views._static_file_exists(item["art_path"])
         assert views._static_file_exists(item["file_wav"])
