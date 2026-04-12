@@ -101,7 +101,8 @@ def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_serv
     lightbox = browser_page.locator("#art-lightbox")
     lightbox.wait_for()
     assert lightbox.get_attribute("aria-hidden") == "false"
-    assert "/static/images/gig_photos/" in (browser_page.locator(".art-lightbox-image").get_attribute("src") or "")
+    lightbox_src = browser_page.locator(".art-lightbox-image").get_attribute("src") or ""
+    assert "/static/images/gig_photos/" in lightbox_src or "/media/gig_photos/" in lightbox_src
     assert browser_page.locator(".art-lightbox-caption").inner_text().strip()
 
     lightbox.click(position={"x": 8, "y": 8})

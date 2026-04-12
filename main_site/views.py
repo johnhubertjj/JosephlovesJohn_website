@@ -1,13 +1,15 @@
 """Views and content helpers for the main JosephlovesJohn site."""
 
+import mimetypes
 from pathlib import Path
 
 from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 from django.shortcuts import render
+from django.templatetags.static import static as static_url
 from django.urls import reverse
 
-from .models import GigPhoto
+from .models import AlbumArt, AnimationAsset, GigPhoto
 
 HEADER_SOCIAL_LINKS = (
     {
@@ -206,6 +208,21 @@ def _static_file_exists(relative_path):
     return (Path(settings.BASE_DIR) / "static" / relative_path).is_file()
 
 
+def _uploaded_file_exists(file_field):
+    """Check whether an uploaded media file exists in storage."""
+    if not file_field:
+        return False
+
+    file_name = getattr(file_field, "name", "")
+    if not file_name:
+        return False
+
+    try:
+        return file_field.storage.exists(file_name)
+    except OSError:
+        return False
+
+
 def _normalize_static_path(path):
     """Normalize a static asset path for lookups and template usage.
 
@@ -223,33 +240,75 @@ def _normalize_static_path(path):
     return normalized
 
 
-def _build_gig_photo_item(title, image_path, thumbnail_path="", alt_text=""):
-    """Build a gallery item dictionary when the referenced files exist.
+def _resolve_asset_source(static_path="", uploaded_file=None):
+    """Resolve a gallery asset to a URL, preferring uploaded files."""
+    if uploaded_file and _uploaded_file_exists(uploaded_file):
+        return {
+            "path": uploaded_file.name,
+            "url": uploaded_file.url,
+            "is_static": False,
+        }
 
-    :param title: Display title for the gallery item.
-    :type title: str
-    :param image_path: Static-relative path to the source image.
-    :type image_path: str
-    :param thumbnail_path: Optional static-relative path to a thumbnail image.
-    :type thumbnail_path: str
-    :param alt_text: Accessible image description.
-    :type alt_text: str
-    :returns: A normalized gallery item dictionary or ``None`` if the required
-        image file is missing.
-    :rtype: dict[str, str] | None
-    """
-    image_relative = _normalize_static_path(image_path)
-    thumbnail_relative = _normalize_static_path(thumbnail_path) if thumbnail_path else image_relative
-    if not image_relative or not _static_file_exists(image_relative):
+    relative_path = _normalize_static_path(static_path)
+    if relative_path and _static_file_exists(relative_path):
+        return {
+            "path": relative_path,
+            "url": static_url(relative_path),
+            "is_static": True,
+        }
+
+    return None
+
+
+def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path="", thumbnail_file=None, alt_text=""):
+    """Build a gallery item dictionary when the referenced files exist."""
+    image_asset = _resolve_asset_source(static_path=image_path, uploaded_file=image_file)
+    if not image_asset:
         return None
-    if not thumbnail_relative or not _static_file_exists(thumbnail_relative):
-        thumbnail_relative = image_relative
+
+    thumbnail_asset = _resolve_asset_source(static_path=thumbnail_path, uploaded_file=thumbnail_file) or image_asset
     return {
         "title": title,
-        "image_path": image_relative,
-        "thumbnail_path": thumbnail_relative,
+        "image_path": image_asset["path"],
+        "thumbnail_path": thumbnail_asset["path"],
+        "image_url": image_asset["url"],
+        "thumbnail_url": thumbnail_asset["url"],
         "alt_text": alt_text or title,
     }
+
+
+def _build_album_art_item(
+    *,
+    kind,
+    title,
+    asset_path="",
+    asset_file=None,
+    alt_text="",
+    featured=False,
+    fit_contain=False,
+    poster_path="",
+    poster_file=None,
+):
+    """Build an album art or animation item when the referenced files exist."""
+    asset = _resolve_asset_source(static_path=asset_path, uploaded_file=asset_file)
+    if not asset:
+        return None
+
+    item = {
+        "kind": kind,
+        "path": asset["path"],
+        "url": asset["url"],
+        "caption": title,
+        "alt": alt_text or title,
+        "featured": featured,
+        "fit_contain": fit_contain,
+    }
+    if kind == "video":
+        item["mime_type"] = mimetypes.guess_type(asset["path"])[0] or "video/mp4"
+        poster = _resolve_asset_source(static_path=poster_path, uploaded_file=poster_file)
+        item["poster"] = poster["path"] if poster else ""
+        item["poster_url"] = poster["url"] if poster else ""
+    return item
 
 
 def _get_gig_photo_items():
@@ -265,21 +324,22 @@ def _get_gig_photo_items():
         configured_gig_photos = list(GigPhoto.objects.filter(is_active=True).order_by("sort_order", "id"))
     except (OperationalError, ProgrammingError):
         configured_gig_photos = []
-
-    items = []
-    for photo in configured_gig_photos:
-        item = _build_gig_photo_item(
-            title=photo.title,
-            image_path=photo.image_path,
-            thumbnail_path=photo.thumbnail_path,
-            alt_text=photo.alt_text,
-        )
-        if item:
-            items.append(item)
-
-    if items:
+    else:
+        items = []
+        for photo in configured_gig_photos:
+            item = _build_gig_photo_item(
+                title=photo.title,
+                image_path=photo.image_path,
+                image_file=photo.image_file,
+                thumbnail_path=photo.thumbnail_path,
+                thumbnail_file=photo.thumbnail_file,
+                alt_text=photo.alt_text,
+            )
+            if item:
+                items.append(item)
         return items
 
+    items = []
     for asset in DEFAULT_GIG_PHOTO_LIBRARY:
         item = _build_gig_photo_item(
             title=asset["title"],
@@ -299,18 +359,58 @@ def _get_album_art_items():
     :returns: A list of album art dictionaries ready for template rendering.
     :rtype: list[dict[str, object]]
     """
+    try:
+        configured_album_art = list(AlbumArt.objects.filter(is_active=True).order_by("sort_order", "id"))
+        configured_animations = list(AnimationAsset.objects.filter(is_active=True).order_by("sort_order", "id"))
+    except (OperationalError, ProgrammingError):
+        configured_album_art = []
+        configured_animations = []
+    else:
+        items = []
+        for asset in configured_album_art:
+            item = _build_album_art_item(
+                kind="image",
+                title=asset.title,
+                asset_path=asset.image_path,
+                asset_file=asset.image_file,
+                alt_text=asset.alt_text,
+                featured=asset.featured,
+                fit_contain=asset.fit_contain,
+            )
+            if item:
+                items.append((asset.sort_order, 0, asset.id, item))
+
+        for asset in configured_animations:
+            item = _build_album_art_item(
+                kind=asset.media_kind,
+                title=asset.title,
+                asset_path=asset.file_path,
+                asset_file=asset.file_upload,
+                alt_text=asset.alt_text,
+                featured=asset.featured,
+                fit_contain=asset.fit_contain,
+                poster_path=asset.poster_path,
+                poster_file=asset.poster_upload,
+            )
+            if item:
+                items.append((asset.sort_order, 1, asset.id, item))
+
+        items.sort(key=lambda row: (row[0], row[1], row[2]))
+        return [row[3] for row in items]
+
     items = []
     for asset in ALBUM_ART_MANIFEST:
-        if not _static_file_exists(asset["path"]):
+        item = _build_album_art_item(
+            kind=asset["kind"],
+            title=asset["caption"],
+            asset_path=asset["path"],
+            alt_text=asset.get("alt", ""),
+            featured=asset.get("featured", False),
+            fit_contain=asset.get("fit_contain", False),
+            poster_path=asset.get("poster", ""),
+        )
+        if not item:
             continue
-
-        item = asset.copy()
-        if item["kind"] == "video":
-            item["mime_type"] = "video/mp4"
-            poster = item.get("poster")
-            if poster and not _static_file_exists(poster):
-                item["poster"] = ""
-
         items.append(item)
     return items
 

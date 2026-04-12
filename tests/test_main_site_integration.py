@@ -4,7 +4,7 @@ import pytest
 from django.template.loader import render_to_string
 from django.urls import reverse
 from main_site import views
-from main_site.models import GigPhoto
+from main_site.models import AlbumArt, AnimationAsset, GigPhoto
 
 
 @pytest.mark.django_db
@@ -21,7 +21,7 @@ def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, cl
         image_path="images/gallery/second.jpg",
         thumbnail_path="",
         alt_text="Second alt",
-        sort_order=20,
+        sort_order=1,
         is_active=True,
     )
     GigPhoto.objects.create(
@@ -37,7 +37,7 @@ def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, cl
         image_path="images/gallery/first.jpg",
         thumbnail_path="images/gallery/first-thumb.jpg",
         alt_text="First alt",
-        sort_order=10,
+        sort_order=0,
         is_active=True,
     )
 
@@ -49,6 +49,34 @@ def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, cl
     assert body.index('data-art-caption="First Photo"') < body.index('data-art-caption="Second Photo"')
     assert 'data-art-caption="Hidden Photo"' not in body
     assert '/static/images/gallery/first-thumb.jpg' in body
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+def test_art_route_combines_album_art_and_animation_items(create_static_asset, client) -> None:
+    """The artwork section should merge album art and animations into one grid."""
+    create_static_asset("images/album_art/cover.jpg")
+    create_static_asset("images/album_art/loop.gif")
+
+    AnimationAsset.objects.create(
+        title="Loop Animation",
+        file_path="images/album_art/loop.gif",
+        sort_order=1,
+    )
+    AlbumArt.objects.create(
+        title="Cover Art",
+        image_path="images/album_art/cover.jpg",
+        featured=True,
+        sort_order=0,
+    )
+
+    response = client.get(reverse("main_site:art"))
+    body = response.content.decode()
+
+    assert [item["caption"] for item in response.context["album_art_items"]] == ["Cover Art", "Loop Animation"]
+    assert body.index("Cover Art") < body.index("Loop Animation")
+    assert '/static/images/album_art/cover.jpg' in body
+    assert '/static/images/album_art/loop.gif' in body
 
 
 @pytest.mark.django_db
@@ -120,6 +148,27 @@ def test_gig_photo_grid_component_renders_empty_state() -> None:
 
 
 @pytest.mark.integration
+def test_gig_photo_grid_component_renders_direct_urls() -> None:
+    """Gig photo cards should render directly from the prepared helper URLs."""
+    html = render_to_string(
+        "main_site/includes/components/art/gig_photo_grid.html",
+        {
+            "gig_photo_items": [
+                {
+                    "title": "Reusable Photo",
+                    "image_url": "/media/gig_photos/uploads/reusable.jpg",
+                    "thumbnail_url": "/media/gig_photos/thumbs/uploads/reusable-thumb.jpg",
+                    "alt_text": "Reusable photo",
+                }
+            ]
+        },
+    )
+
+    assert 'href="/media/gig_photos/uploads/reusable.jpg"' in html
+    assert 'src="/media/gig_photos/thumbs/uploads/reusable-thumb.jpg"' in html
+
+
+@pytest.mark.integration
 def test_album_art_grid_component_renders_featured_and_contain_variants() -> None:
     """The album-art grid partial should render featured cards and contain-fit artwork."""
     html = render_to_string(
@@ -128,7 +177,7 @@ def test_album_art_grid_component_renders_featured_and_contain_variants() -> Non
             "album_art_items": [
                 {
                     "kind": "image",
-                    "path": "images/album_art/buddlea_animation.gif",
+                    "url": "/static/images/album_art/buddlea_animation.gif",
                     "caption": "Buddlea Animation",
                     "alt": "Buddlea animation artwork",
                     "featured": True,

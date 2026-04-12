@@ -1,8 +1,7 @@
-{% load static %}
 <div class="gig-photo-grid">
     {% for photo in gig_photo_items %}
-        <a class="gig-photo-card" href="{% static photo.image_path %}" data-art-lightbox="image" data-art-caption="{{ photo.title }}">
-            <img src="{% static photo.thumbnail_path %}" alt="{{ photo.alt_text }}" loading="lazy" decoding="async" fetchpriority="low" />
+        <a class="gig-photo-card" href="{{ photo.image_url }}" data-art-lightbox="image" data-art-caption="{{ photo.title }}">
+            <img src="{{ photo.thumbnail_url }}" alt="{{ photo.alt_text }}" loading="lazy" decoding="async" fetchpriority="low" />
         </a>
     {% empty %}
         <p class="art-empty-note">Gig photos are being refreshed. Check back soon.</p>
