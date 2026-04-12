@@ -7,6 +7,8 @@ development of the site and its supporting apps.
 import os
 from pathlib import Path
 
+from josephlovesjohn_site.sentry import setup_sentry_from_env
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-change-me"
@@ -85,3 +87,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_CURRENCY = os.environ.get("STRIPE_CURRENCY", "gbp")
+
+setup_sentry_from_env()

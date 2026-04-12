@@ -10,7 +10,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.smoke]
     ("route_name", "expected_section", "expected_text"),
     [
         ("main_site:main", "", "Welcome to the main site."),
-        ("main_site:intro", "intro", "Sign up!"),
+        ("main_site:intro", "intro", "kept up to date"),
         ("main_site:music", "music", "Dark and Light - Artist Version"),
         ("main_site:art", "art", "Gig Photos"),
         ("main_site:contact", "contact", "Send Message"),
