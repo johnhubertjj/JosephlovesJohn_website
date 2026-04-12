@@ -1,0 +1,214 @@
+"""Database models for the portfolio shop flow."""
+
+from decimal import Decimal
+
+from django.conf import settings
+from django.db import models
+from django.urls import reverse
+
+
+class Product(models.Model):
+    """Represent a purchasable music download."""
+
+    class ProductKind(models.TextChoices):
+        """Supported storefront product types."""
+
+        SINGLE = "single", "Single"
+        BUNDLE = "bundle", "Bundle"
+        ALBUM = "album", "Album"
+
+    title = models.CharField(max_length=180)
+    slug = models.SlugField(unique=True)
+    artist_name = models.CharField(max_length=180, default="JosephlovesJohn and Jayne Connell")
+    meta = models.CharField(max_length=120, blank=True)
+    description = models.TextField(blank=True)
+    art_path = models.CharField(max_length=255)
+    art_alt = models.CharField(max_length=180, blank=True)
+    preview_file_wav = models.CharField(max_length=255, blank=True)
+    preview_file_mp3 = models.CharField(max_length=255, blank=True)
+    download_file_path = models.CharField(max_length=255)
+    product_kind = models.CharField(max_length=20, choices=ProductKind.choices, default=ProductKind.SINGLE)
+    price = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("1.00"))
+    sort_order = models.PositiveIntegerField(default=0)
+    is_published = models.BooleanField(default=True)
+    is_reversed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Storefront ordering metadata."""
+
+        ordering = ("sort_order", "id")
+
+    def __str__(self):
+        """Return the admin label for the product.
+
+        :returns: Product title.
+        :rtype: str
+        """
+        return self.title
+
+    @property
+    def player_id(self):
+        """Return the unique front-end player identifier.
+
+        :returns: DOM-safe player ID.
+        :rtype: str
+        """
+        return f"shop-player-{self.slug}"
+
+    @property
+    def price_display(self):
+        """Return the formatted product price.
+
+        :returns: Human-friendly GBP amount.
+        :rtype: str
+        """
+        return f"£{self.price:.2f}"
+
+    def get_add_to_cart_url(self):
+        """Return the cart endpoint for this product.
+
+        :returns: Add-to-cart URL.
+        :rtype: str
+        """
+        return reverse("shop:cart_add", kwargs={"slug": self.slug})
+
+
+class CustomerProfile(models.Model):
+    """Persist optional saved customer details for logged-in shoppers."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shop_profile")
+    full_name = models.CharField(max_length=180, blank=True)
+    marketing_opt_in = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        """Return an admin-friendly profile label.
+
+        :returns: Profile label.
+        :rtype: str
+        """
+        return self.full_name or self.user.get_username()
+
+
+class Order(models.Model):
+    """Store a completed checkout."""
+
+    class Status(models.TextChoices):
+        """Supported demo order statuses."""
+
+        CONFIRMED = "confirmed", "Confirmed"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shop_orders",
+    )
+    full_name = models.CharField(max_length=180)
+    email = models.EmailField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CONFIRMED)
+    subtotal = models.DecimalField(max_digits=8, decimal_places=2)
+    total = models.DecimalField(max_digits=8, decimal_places=2)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        """Newest orders first for account views and admin."""
+
+        ordering = ("-created_at", "-id")
+
+    def __str__(self):
+        """Return the admin label for the order.
+
+        :returns: Readable order label.
+        :rtype: str
+        """
+        return f"Order #{self.pk} - {self.full_name}"
+
+    @property
+    def total_display(self):
+        """Return the formatted order total.
+
+        :returns: Human-friendly GBP amount.
+        :rtype: str
+        """
+        return f"£{self.total:.2f}"
+
+
+class OrderItem(models.Model):
+    """Snapshot a purchased product within an order."""
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="order_items")
+    title_snapshot = models.CharField(max_length=180)
+    artist_snapshot = models.CharField(max_length=180)
+    meta_snapshot = models.CharField(max_length=120, blank=True)
+    price_snapshot = models.DecimalField(max_digits=6, decimal_places=2)
+    art_path_snapshot = models.CharField(max_length=255)
+    art_alt_snapshot = models.CharField(max_length=180, blank=True)
+    download_file_path = models.CharField(max_length=255)
+
+    def __str__(self):
+        """Return the admin label for the order line.
+
+        :returns: Order line label.
+        :rtype: str
+        """
+        return f"{self.title_snapshot} ({self.order_id})"
+
+    @property
+    def price_display(self):
+        """Return the formatted line-item price.
+
+        :returns: Human-friendly GBP amount.
+        :rtype: str
+        """
+        return f"£{self.price_snapshot:.2f}"
+
+    @property
+    def title(self):
+        """Return the reusable item title for shared templates.
+
+        :returns: Snapshot title.
+        :rtype: str
+        """
+        return self.title_snapshot
+
+    @property
+    def artist_name(self):
+        """Return the reusable artist label for shared templates.
+
+        :returns: Snapshot artist label.
+        :rtype: str
+        """
+        return self.artist_snapshot
+
+    @property
+    def meta(self):
+        """Return the reusable metadata label for shared templates.
+
+        :returns: Snapshot metadata label.
+        :rtype: str
+        """
+        return self.meta_snapshot
+
+    @property
+    def art_path(self):
+        """Return the reusable artwork path for shared templates.
+
+        :returns: Snapshot artwork path.
+        :rtype: str
+        """
+        return self.art_path_snapshot
+
+    @property
+    def art_alt(self):
+        """Return the reusable artwork alt text for shared templates.
+
+        :returns: Snapshot artwork alt text.
+        :rtype: str
+        """
+        return self.art_alt_snapshot

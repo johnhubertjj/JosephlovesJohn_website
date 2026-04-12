@@ -1,0 +1,9 @@
+<button
+    type="button"
+    id="floating-cart-button"
+    class="floating-cart-button{% if cart_summary.is_empty %} is-hidden{% endif %}"
+    aria-label="Open cart"
+>
+    <span class="fas fa-shopping-cart" aria-hidden="true"></span>
+    <span class="floating-cart-count" data-cart-count>{{ cart_summary.item_count }}</span>
+</button>

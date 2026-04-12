@@ -1,11 +1,80 @@
+"""Views and content helpers for the main JosephlovesJohn site."""
+
 from pathlib import Path
 
 from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 from django.shortcuts import render
+from django.urls import reverse
 
 from .models import GigPhoto
 
+HEADER_SOCIAL_LINKS = (
+    {
+        "href": "https://josephlovesjohn.bandcamp.com",
+        "icon_class": "icon brands fa-bandcamp",
+        "label": "Bandcamp",
+    },
+    {
+        "href": "https://www.instagram.com/josephlovesjohn_music/",
+        "icon_class": "icon brands fa-instagram",
+        "label": "Instagram",
+    },
+    {
+        "href": "https://www.youtube.com/@JosephlovesJohn",
+        "icon_class": "icon brands fa-youtube",
+        "label": "YouTube",
+    },
+    {
+        "href": "https://music.amazon.co.uk/artists/B0GHXDGN9M/josephlovesjohn",
+        "icon_class": "icon brands fa-amazon",
+        "label": "Amazon Music",
+    },
+    {
+        "href": "https://music.apple.com/us/artist/josephlovesjohn/1869723292",
+        "icon_class": "icon brands fa-apple",
+        "label": "Apple Music",
+    },
+    {
+        "href": "https://www.tiktok.com/@joseph_loves_john",
+        "icon_class": "icon brands fa-tiktok",
+        "label": "TikTok",
+    },
+)
+
+PRIMARY_NAV_ITEMS = (
+    {"href": "#intro", "label": "Intro"},
+    {"href": "#music", "label": "Music"},
+    {"href": "#art", "label": "Art"},
+    {"href": "#contact", "label": "Contact"},
+)
+
+MUSIC_LIBRARY_MANIFEST = (
+    {
+        "slug": "dark-and-light-artist-version",
+        "title": "Dark and Light - Artist Version",
+        "meta": "Single",
+        "art_path": "images/album_art/dark_and_light_artist_cover.jpg",
+        "art_alt": "Dark and Light artist cover artwork",
+        "player_id": "dark-and-light-artist-player",
+        "file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
+        "file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
+        "price_display": "£1.00",
+        "is_reversed": False,
+    },
+    {
+        "slug": "dark-and-light-instrumental",
+        "title": "Dark and Light - Instrumental",
+        "meta": "Instrumental Mix",
+        "art_path": "images/album_art/dark_and_light_instrumental.jpg",
+        "art_alt": "Dark and Light instrumental artwork",
+        "player_id": "dark-and-light-instrumental-player",
+        "file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
+        "file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
+        "price_display": "£1.00",
+        "is_reversed": True,
+    },
+)
 
 ALBUM_ART_MANIFEST = (
     {
@@ -127,10 +196,25 @@ DEFAULT_GIG_PHOTO_LIBRARY = (
 
 
 def _static_file_exists(relative_path):
+    """Check whether a static asset exists on disk.
+
+    :param relative_path: Path relative to the ``static`` directory.
+    :type relative_path: str
+    :returns: ``True`` when the file exists, otherwise ``False``.
+    :rtype: bool
+    """
     return (Path(settings.BASE_DIR) / "static" / relative_path).is_file()
 
 
 def _normalize_static_path(path):
+    """Normalize a static asset path for lookups and template usage.
+
+    :param path: Raw file path value that may include leading slashes or a
+        ``static/`` prefix.
+    :type path: str | None
+    :returns: A normalized path relative to ``static/``.
+    :rtype: str
+    """
     normalized = (path or "").strip()
     if normalized.startswith("/"):
         normalized = normalized.lstrip("/")
@@ -140,6 +224,20 @@ def _normalize_static_path(path):
 
 
 def _build_gig_photo_item(title, image_path, thumbnail_path="", alt_text=""):
+    """Build a gallery item dictionary when the referenced files exist.
+
+    :param title: Display title for the gallery item.
+    :type title: str
+    :param image_path: Static-relative path to the source image.
+    :type image_path: str
+    :param thumbnail_path: Optional static-relative path to a thumbnail image.
+    :type thumbnail_path: str
+    :param alt_text: Accessible image description.
+    :type alt_text: str
+    :returns: A normalized gallery item dictionary or ``None`` if the required
+        image file is missing.
+    :rtype: dict[str, str] | None
+    """
     image_relative = _normalize_static_path(image_path)
     thumbnail_relative = _normalize_static_path(thumbnail_path) if thumbnail_path else image_relative
     if not image_relative or not _static_file_exists(image_relative):
@@ -155,6 +253,14 @@ def _build_gig_photo_item(title, image_path, thumbnail_path="", alt_text=""):
 
 
 def _get_gig_photo_items():
+    """Return active gig photo items for the art gallery.
+
+    The function prefers admin-managed database records and falls back to the
+    bundled static manifest when the database is unavailable or empty.
+
+    :returns: A list of normalized gig photo dictionaries.
+    :rtype: list[dict[str, str]]
+    """
     try:
         configured_gig_photos = list(GigPhoto.objects.filter(is_active=True).order_by("sort_order", "id"))
     except (OperationalError, ProgrammingError):
@@ -188,6 +294,11 @@ def _get_gig_photo_items():
 
 
 def _get_album_art_items():
+    """Return album art entries whose backing static assets still exist.
+
+    :returns: A list of album art dictionaries ready for template rendering.
+    :rtype: list[dict[str, object]]
+    """
     items = []
     for asset in ALBUM_ART_MANIFEST:
         if not _static_file_exists(asset["path"]):
@@ -204,29 +315,90 @@ def _get_album_art_items():
     return items
 
 
+def _get_music_library_items():
+    """Return music library items with a precomputed share route.
+
+    :returns: Music library dictionaries enriched for template rendering.
+    :rtype: list[dict[str, object]]
+    """
+    share_path = reverse("main_site:music")
+    items = []
+    for asset in MUSIC_LIBRARY_MANIFEST:
+        item = asset.copy()
+        item["share_path"] = share_path
+        item["buy_path"] = reverse("shop:cart_add", kwargs={"slug": asset["slug"]})
+        items.append(item)
+    return items
+
+
 def _site_context(active_section):
+    """Build the shared rendering context for the one-page site.
+
+    :param active_section: Hash-compatible section slug to activate on load.
+    :type active_section: str
+    :returns: Template context for the main site page.
+    :rtype: dict[str, object]
+    """
     return {
         "active_section": active_section,
+        "header_social_links": HEADER_SOCIAL_LINKS,
+        "primary_nav_items": PRIMARY_NAV_ITEMS,
+        "music_items": _get_music_library_items(),
         "gig_photo_items": _get_gig_photo_items(),
         "album_art_items": _get_album_art_items(),
     }
 
 
 def main(request):
+    """Render the default one-page site view.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the main landing page.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context(""))
 
 
 def intro(request):
+    """Render the one-page site with the intro section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the intro route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("intro"))
 
 
 def music(request):
+    """Render the one-page site with the music section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the music route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("music"))
 
 
 def art(request):
+    """Render the one-page site with the art section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the art route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("art"))
 
 
 def contact(request):
+    """Render the one-page site with the contact section activated.
+
+    :param request: The incoming HTTP request.
+    :type request: django.http.HttpRequest
+    :returns: A rendered response for the contact route.
+    :rtype: django.http.HttpResponse
+    """
     return render(request, "main_site/site.html", _site_context("contact"))

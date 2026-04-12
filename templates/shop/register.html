@@ -1,0 +1,22 @@
+{% extends 'shop/base.html' %}
+
+{% block shop_title %}Create account | JosephlovesJohn{% endblock %}
+{% block shop_heading %}Create account{% endblock %}
+{% block shop_subtitle %}Save your checkout details and keep your purchased tracks together.{% endblock %}
+
+{% block shop_content %}
+    <section class="shop-card shop-auth-card">
+        <form method="post" class="shop-form" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="shop-form-field{% if field.errors %} has-errors{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="button primary shop-primary-button">Create account</button>
+        </form>
+        <p class="shop-inline-note">Already set up? <a href="{% url 'shop:login' %}">Log in instead</a>.</p>
+    </section>
+{% endblock %}

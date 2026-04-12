@@ -1,0 +1,19 @@
+{% load static %}
+<div class="album-art-grid">
+    {% for item in album_art_items %}
+        <figure class="album-art-card{% if item.featured %} is-featured{% endif %}">
+            {% if item.kind == 'image' %}
+                <a href="{% static item.path %}" data-art-lightbox="image" data-art-caption="{{ item.caption }}">
+                    <img{% if item.fit_contain %} class="is-contain"{% endif %} src="{% static item.path %}" alt="{{ item.alt }}" loading="lazy" decoding="async" />
+                </a>
+            {% elif item.kind == 'video' %}
+                <video controls preload="metadata" playsinline{% if item.poster %} poster="{% static item.poster %}"{% endif %}>
+                    <source src="{% static item.path %}" type="{{ item.mime_type }}" />
+                </video>
+            {% endif %}
+            <figcaption>{{ item.caption }}</figcaption>
+        </figure>
+    {% empty %}
+        <p class="art-empty-note">Album artwork is being refreshed. Check back soon.</p>
+    {% endfor %}
+</div>

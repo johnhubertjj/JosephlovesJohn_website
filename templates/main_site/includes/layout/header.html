@@ -1,0 +1,29 @@
+{% load static %}
+<header id="header">
+    <div class="logo primary-logo">
+        <span class="logo-frame">
+            <img src="{% static 'images/jlovesj_symbol-my_version3.png' %}" alt="JosephlovesJohn logo" />
+        </span>
+    </div>
+    <div class="content">
+        <div class="inner">
+            <h1>JosephlovesJohn</h1>
+            <p>Singer - Composer - Guitar and Bass</p>
+            <p>Canada/UK - based in Bristol</p>
+            <p>Tastefully Melancholic music</p>
+            {% include 'main_site/includes/components/social/icon_links.html' with links=header_social_links only %}
+        </div>
+    </div>
+    <div class="logo secondary-logo">
+        <span class="logo-frame">
+            <img src="{% static 'images/album_art/Current_artist_profile_picture.jpg' %}" alt="JosephlovesJohn artist portrait" />
+        </span>
+    </div>
+    <nav>
+        <ul>
+            {% for item in primary_nav_items %}
+                <li><a href="{{ item.href }}">{{ item.label }}</a></li>
+            {% endfor %}
+        </ul>
+    </nav>
+</header>

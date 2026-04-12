@@ -1,0 +1,23 @@
+{% load static %}
+<section class="shop-card shop-order-summary">
+    <div class="shop-card-header">
+        <p class="shop-eyebrow">Order summary</p>
+        <h2>{{ summary_title|default:'Your cart' }}</h2>
+    </div>
+    <ul class="shop-order-list">
+        {% for item in items %}
+            <li class="shop-order-item">
+                <img src="{% static item.art_path %}" alt="{{ item.art_alt|default:item.title }}" />
+                <div>
+                    <h3>{{ item.title }}</h3>
+                    <p>{{ item.meta|default:item.artist_name }}</p>
+                </div>
+                <strong>{{ item.price_display }}</strong>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="shop-order-total">
+        <span>Total</span>
+        <strong>{{ total_display }}</strong>
+    </div>
+</section>

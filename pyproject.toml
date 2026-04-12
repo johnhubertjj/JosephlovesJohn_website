@@ -6,3 +6,61 @@ requires-python = ">=3.14"
 dependencies = [
     "django>=5.2.0",
 ]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2.0",
+    "mypy>=1.18.2",
+    "playwright>=1.56.0",
+    "pre-commit>=4.5.0",
+    "pytest>=8.4.0",
+    "pytest-cov>=7.1.0",
+    "pytest-django>=4.11.0",
+    "ruff>=0.12.0",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+src = ["josephlovesjohn_site", "main_site", "mastering", "shop"]
+force-exclude = true
+extend-exclude = ["html5up-solid-state", "main_site/migrations", "static", "templates"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.mypy]
+python_version = "3.14"
+plugins = ["mypy_django_plugin.main"]
+files = ["josephlovesjohn_site", "main_site", "mastering", "shop"]
+exclude = ["^main_site/migrations/", "^shop/migrations/"]
+check_untyped_defs = true
+pretty = true
+show_error_codes = true
+
+[tool.django-stubs]
+django_settings_module = "josephlovesjohn_site.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "josephlovesjohn_site.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+markers = [
+    "browser: browser-level UI tests that require --run-browser.",
+    "integration: cross-template or multi-layer integration tests.",
+    "smoke: lightweight route and rendering confidence checks.",
+]
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["manage", "josephlovesjohn_site", "main_site", "mastering", "shop"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "JosephlovesJohn Test Coverage"

@@ -1,3 +1,5 @@
+"""URL patterns for the main site pages."""
+
 from django.urls import path
 
 from . import views

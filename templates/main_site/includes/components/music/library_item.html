@@ -1,0 +1,42 @@
+{% load static %}
+<section class="music-library-item{% if item.is_reversed %} is-reversed{% endif %}">
+    <figure class="music-library-art">
+        <img src="{% static item.art_path %}" alt="{{ item.art_alt }}" />
+    </figure>
+    <div class="music-library-player-panel">
+        <div class="music-library-player-head">
+            <div class="music-library-player-copy">
+                <h3>{{ item.title }}</h3>
+                <p class="music-library-player-meta">{{ item.meta }}</p>
+            </div>
+            <div class="music-library-actions">
+                <button
+                    type="button"
+                    class="music-share-trigger"
+                    data-share-title="{{ item.title }}"
+                    data-share-path="{{ item.share_path }}"
+                    aria-haspopup="dialog"
+                    aria-controls="music-share-modal"
+                >
+                    <span class="fas fa-share-alt" aria-hidden="true"></span>
+                    <span>Share</span>
+                </button>
+                <button
+                    type="button"
+                    class="music-buy-trigger"
+                    data-cart-add-url="{{ item.buy_path }}"
+                >
+                    <span class="fas fa-cart-plus" aria-hidden="true"></span>
+                    <span>Download</span>
+                    <strong>{{ item.price_display }}</strong>
+                </button>
+            </div>
+        </div>
+        <div
+            id="{{ item.player_id }}"
+            class="music-player-frame"
+            data-file-wav="{% static item.file_wav %}"
+            data-file-mp3="{% static item.file_mp3 %}"
+        ></div>
+    </div>
+</section>
