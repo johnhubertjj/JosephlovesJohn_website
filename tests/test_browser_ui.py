@@ -19,7 +19,8 @@ def test_intro_route_sets_hash_and_activates_intro_article(browser_page, live_se
 
     assert browser_page.evaluate("window.location.hash") == "#intro"
     assert browser_page.locator("article#intro.active").is_visible()
-    assert browser_page.locator("#intro-signup-email").is_visible()
+    assert browser_page.locator(".intro-signup-form").is_visible()
+    assert browser_page.locator('script[data-uid="408ee57c19"]').count() == 1
 
 
 

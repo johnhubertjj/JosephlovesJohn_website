@@ -1,4 +1,30 @@
 (function () {
+    var signupRoot = document.querySelector(".intro-signup-form");
+    if (!signupRoot) {
+        return;
+    }
+
+    function styleKitSignup() {
+        var submitButton = signupRoot.querySelector(".formkit-submit");
+        var emailInput = signupRoot.querySelector(".formkit-input");
+
+        if (submitButton) {
+            submitButton.classList.add("primary", "music-accent-button", "button");
+        }
+
+        if (emailInput && !emailInput.getAttribute("placeholder")) {
+            emailInput.setAttribute("placeholder", "Your email address");
+        }
+    }
+
+    styleKitSignup();
+    new MutationObserver(styleKitSignup).observe(signupRoot, {
+        childList: true,
+        subtree: true
+    });
+})();
+
+(function () {
     var frames = document.querySelectorAll(".music-player-frame");
     var canUsePlayerjs = typeof Playerjs !== "undefined";
 
