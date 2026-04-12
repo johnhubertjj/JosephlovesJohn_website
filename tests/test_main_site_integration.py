@@ -11,6 +11,7 @@ from main_site.models import AlbumArt, AnimationAsset, GigPhoto
 @pytest.mark.integration
 def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, client) -> None:
     """Database-managed gig photos should drive the rendered gallery order."""
+    GigPhoto.objects.all().delete()
     create_static_asset("images/gallery/first.jpg")
     create_static_asset("images/gallery/first-thumb.jpg")
     create_static_asset("images/gallery/second.jpg")
@@ -55,6 +56,8 @@ def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, cl
 @pytest.mark.integration
 def test_art_route_combines_album_art_and_animation_items(create_static_asset, client) -> None:
     """The artwork section should merge album art and animations into one grid."""
+    AlbumArt.objects.all().delete()
+    AnimationAsset.objects.all().delete()
     create_static_asset("images/album_art/cover.jpg")
     create_static_asset("images/album_art/loop.gif")
 
@@ -198,15 +201,28 @@ def test_header_component_renders_primary_nav_and_social_links() -> None:
     html = render_to_string(
         "main_site/includes/layout/header.html",
         {
-            "header_social_links": views.HEADER_SOCIAL_LINKS[:2],
-            "primary_nav_items": views.PRIMARY_NAV_ITEMS[:3],
+            "header_social_links": [
+                {
+                    "href": "https://example.com/bandcamp",
+                    "icon_class": "icon brands fa-bandcamp",
+                    "label": "Bandcamp",
+                },
+                {
+                    "href": "https://example.com/instagram",
+                    "icon_class": "icon brands fa-instagram",
+                    "label": "Instagram",
+                },
+            ],
+            "primary_nav_items": [
+                {"href": "#intro", "label": "Intro"},
+                {"href": "#music", "label": "Music"},
+                {"href": "#art", "label": "Art"},
+            ],
         },
     )
 
-    for link in views.HEADER_SOCIAL_LINKS[:2]:
-        assert link["href"] in html
-        assert link["label"] in html
+    for link in ("https://example.com/bandcamp", "https://example.com/instagram"):
+        assert link in html
 
-    for item in views.PRIMARY_NAV_ITEMS[:3]:
-        assert f'href="{item["href"]}"' in html
-        assert item["label"] in html
+    for label in ("Bandcamp", "Instagram", "Intro", "Music", "Art"):
+        assert label in html

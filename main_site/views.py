@@ -8,193 +8,9 @@ from django.db import OperationalError, ProgrammingError
 from django.shortcuts import render
 from django.templatetags.static import static as static_url
 from django.urls import reverse
+from shop.models import Product
 
-from .models import AlbumArt, AnimationAsset, GigPhoto
-
-HEADER_SOCIAL_LINKS = (
-    {
-        "href": "https://josephlovesjohn.bandcamp.com",
-        "icon_class": "icon brands fa-bandcamp",
-        "label": "Bandcamp",
-    },
-    {
-        "href": "https://www.instagram.com/josephlovesjohn_music/",
-        "icon_class": "icon brands fa-instagram",
-        "label": "Instagram",
-    },
-    {
-        "href": "https://www.youtube.com/@JosephlovesJohn",
-        "icon_class": "icon brands fa-youtube",
-        "label": "YouTube",
-    },
-    {
-        "href": "https://music.amazon.co.uk/artists/B0GHXDGN9M/josephlovesjohn",
-        "icon_class": "icon brands fa-amazon",
-        "label": "Amazon Music",
-    },
-    {
-        "href": "https://music.apple.com/us/artist/josephlovesjohn/1869723292",
-        "icon_class": "icon brands fa-apple",
-        "label": "Apple Music",
-    },
-    {
-        "href": "https://www.tiktok.com/@joseph_loves_john",
-        "icon_class": "icon brands fa-tiktok",
-        "label": "TikTok",
-    },
-)
-
-PRIMARY_NAV_ITEMS = (
-    {"href": "#intro", "label": "Intro"},
-    {"href": "#music", "label": "Music"},
-    {"href": "#art", "label": "Art"},
-    {"href": "#contact", "label": "Contact"},
-)
-
-MUSIC_LIBRARY_MANIFEST = (
-    {
-        "slug": "dark-and-light-artist-version",
-        "title": "Dark and Light - Artist Version",
-        "meta": "Single",
-        "art_path": "images/album_art/dark_and_light_artist_cover.jpg",
-        "art_alt": "Dark and Light artist cover artwork",
-        "player_id": "dark-and-light-artist-player",
-        "file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
-        "file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
-        "price_display": "£1.00",
-        "is_reversed": False,
-    },
-    {
-        "slug": "dark-and-light-instrumental",
-        "title": "Dark and Light - Instrumental",
-        "meta": "Instrumental Mix",
-        "art_path": "images/album_art/dark_and_light_instrumental.jpg",
-        "art_alt": "Dark and Light instrumental artwork",
-        "player_id": "dark-and-light-instrumental-player",
-        "file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
-        "file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
-        "price_display": "£1.00",
-        "is_reversed": True,
-    },
-)
-
-ALBUM_ART_MANIFEST = (
-    {
-        "kind": "image",
-        "path": "images/album_art/dark_and_light_artist_cover.jpg",
-        "caption": "Dark and Light - Artist Cover",
-        "alt": "Dark and Light artist cover artwork",
-        "featured": True,
-    },
-    {
-        "kind": "image",
-        "path": "images/album_art/dark_and_light_instrumental.jpg",
-        "caption": "Dark and Light - Instrumental Artwork",
-        "alt": "Dark and Light instrumental artwork",
-        "featured": True,
-    },
-    {
-        "kind": "image",
-        "path": "images/album_art/Current_artist_profile_picture.jpg",
-        "caption": "Current Artist Profile",
-        "alt": "Current artist profile portrait",
-        "featured": False,
-    },
-    {
-        "kind": "image",
-        "path": "images/album_art/symbol_animation.gif",
-        "caption": "Symbol Animation",
-        "alt": "Symbol animation artwork",
-        "featured": False,
-    },
-    {
-        "kind": "image",
-        "path": "images/album_art/buddlea_animation.gif",
-        "caption": "Buddlea Animation",
-        "alt": "Buddlea animation artwork",
-        "featured": False,
-        "fit_contain": True,
-    },
-)
-
-BRISTOL_FOLK_HOUSE_GIG_PHOTO_MAP = {
-    1: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_1.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_1_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 1",
-    },
-    2: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_2.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_2_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 2",
-    },
-    3: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_3.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_3_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 3",
-    },
-    4: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_4.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_4_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 4",
-    },
-    5: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_5.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_5_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 5",
-    },
-    6: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_6.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_6_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 6",
-    },
-    7: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_7.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_7_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 7",
-    },
-    8: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_8.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_8_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 8",
-    },
-    9: {
-        "title": "Bristol Folk House 31 03 2026",
-        "image_path": "images/gig_photos/Bristol_folk_house_31_03_2026_9.jpeg",
-        "thumbnail_path": "images/gig_photos/thumbs/Bristol_folk_house_31_03_2026_9_thumb.jpg",
-        "alt_text": "Bristol Folk House gig photo 9",
-    },
-}
-
-DEFAULT_GIG_PHOTO_LIBRARY = (
-    {
-        "title": "Sofa Session",
-        "image_path": "images/gig_photos/sofa_photos_1.jpeg",
-        "thumbnail_path": "images/gig_photos/sofa_photos_1.jpeg",
-        "alt_text": "Gig photo - sofa session 1",
-    },
-    {
-        "title": "Sofa Session",
-        "image_path": "images/gig_photos/sofa_photos2.jpeg",
-        "thumbnail_path": "images/gig_photos/sofa_photos2.jpeg",
-        "alt_text": "Gig photo - sofa session 2",
-    },
-    {
-        "title": "Sofa Session",
-        "image_path": "images/gig_photos/sofa_photos3.jpeg",
-        "thumbnail_path": "images/gig_photos/sofa_photos3.jpeg",
-        "alt_text": "Gig photo - sofa session 3",
-    },
-    *tuple(BRISTOL_FOLK_HOUSE_GIG_PHOTO_MAP[index] for index in sorted(BRISTOL_FOLK_HOUSE_GIG_PHOTO_MAP)),
-)
+from .models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 
 
 def _static_file_exists(relative_path):
@@ -311,6 +127,30 @@ def _build_album_art_item(
     return item
 
 
+def _get_header_social_links():
+    """Return active header social links in display order."""
+    try:
+        return list(
+            HeaderSocialLink.objects.filter(is_active=True)
+            .order_by("sort_order", "id")
+            .values("href", "icon_class", "label")
+        )
+    except (OperationalError, ProgrammingError):
+        return []
+
+
+def _get_primary_nav_items():
+    """Return active primary nav items in display order."""
+    try:
+        return list(
+            PrimaryNavItem.objects.filter(is_active=True)
+            .order_by("sort_order", "id")
+            .values("href", "label")
+        )
+    except (OperationalError, ProgrammingError):
+        return []
+
+
 def _get_gig_photo_items():
     """Return active gig photo items for the art gallery.
 
@@ -323,29 +163,17 @@ def _get_gig_photo_items():
     try:
         configured_gig_photos = list(GigPhoto.objects.filter(is_active=True).order_by("sort_order", "id"))
     except (OperationalError, ProgrammingError):
-        configured_gig_photos = []
-    else:
-        items = []
-        for photo in configured_gig_photos:
-            item = _build_gig_photo_item(
-                title=photo.title,
-                image_path=photo.image_path,
-                image_file=photo.image_file,
-                thumbnail_path=photo.thumbnail_path,
-                thumbnail_file=photo.thumbnail_file,
-                alt_text=photo.alt_text,
-            )
-            if item:
-                items.append(item)
-        return items
+        return []
 
     items = []
-    for asset in DEFAULT_GIG_PHOTO_LIBRARY:
+    for photo in configured_gig_photos:
         item = _build_gig_photo_item(
-            title=asset["title"],
-            image_path=asset["image_path"],
-            thumbnail_path=asset.get("thumbnail_path", ""),
-            alt_text=asset.get("alt_text", ""),
+            title=photo.title,
+            image_path=photo.image_path,
+            image_file=photo.image_file,
+            thumbnail_path=photo.thumbnail_path,
+            thumbnail_file=photo.thumbnail_file,
+            alt_text=photo.alt_text,
         )
         if item:
             items.append(item)
@@ -363,56 +191,39 @@ def _get_album_art_items():
         configured_album_art = list(AlbumArt.objects.filter(is_active=True).order_by("sort_order", "id"))
         configured_animations = list(AnimationAsset.objects.filter(is_active=True).order_by("sort_order", "id"))
     except (OperationalError, ProgrammingError):
-        configured_album_art = []
-        configured_animations = []
-    else:
-        items = []
-        for asset in configured_album_art:
-            item = _build_album_art_item(
-                kind="image",
-                title=asset.title,
-                asset_path=asset.image_path,
-                asset_file=asset.image_file,
-                alt_text=asset.alt_text,
-                featured=asset.featured,
-                fit_contain=asset.fit_contain,
-            )
-            if item:
-                items.append((asset.sort_order, 0, asset.id, item))
-
-        for asset in configured_animations:
-            item = _build_album_art_item(
-                kind=asset.media_kind,
-                title=asset.title,
-                asset_path=asset.file_path,
-                asset_file=asset.file_upload,
-                alt_text=asset.alt_text,
-                featured=asset.featured,
-                fit_contain=asset.fit_contain,
-                poster_path=asset.poster_path,
-                poster_file=asset.poster_upload,
-            )
-            if item:
-                items.append((asset.sort_order, 1, asset.id, item))
-
-        items.sort(key=lambda row: (row[0], row[1], row[2]))
-        return [row[3] for row in items]
+        return []
 
     items = []
-    for asset in ALBUM_ART_MANIFEST:
+    for asset in configured_album_art:
         item = _build_album_art_item(
-            kind=asset["kind"],
-            title=asset["caption"],
-            asset_path=asset["path"],
-            alt_text=asset.get("alt", ""),
-            featured=asset.get("featured", False),
-            fit_contain=asset.get("fit_contain", False),
-            poster_path=asset.get("poster", ""),
+            kind="image",
+            title=asset.title,
+            asset_path=asset.image_path,
+            asset_file=asset.image_file,
+            alt_text=asset.alt_text,
+            featured=asset.featured,
+            fit_contain=asset.fit_contain,
         )
-        if not item:
-            continue
-        items.append(item)
-    return items
+        if item:
+            items.append((asset.sort_order, 0, asset.id, item))
+
+    for asset in configured_animations:
+        item = _build_album_art_item(
+            kind=asset.media_kind,
+            title=asset.title,
+            asset_path=asset.file_path,
+            asset_file=asset.file_upload,
+            alt_text=asset.alt_text,
+            featured=asset.featured,
+            fit_contain=asset.fit_contain,
+            poster_path=asset.poster_path,
+            poster_file=asset.poster_upload,
+        )
+        if item:
+            items.append((asset.sort_order, 1, asset.id, item))
+
+    items.sort(key=lambda row: (row[0], row[1], row[2]))
+    return [row[3] for row in items]
 
 
 def _get_music_library_items():
@@ -422,12 +233,29 @@ def _get_music_library_items():
     :rtype: list[dict[str, object]]
     """
     share_path = reverse("main_site:music")
+    try:
+        products = list(Product.objects.filter(is_published=True).order_by("sort_order", "id"))
+    except (OperationalError, ProgrammingError):
+        return []
+
     items = []
-    for asset in MUSIC_LIBRARY_MANIFEST:
-        item = asset.copy()
-        item["share_path"] = share_path
-        item["buy_path"] = reverse("shop:cart_add", kwargs={"slug": asset["slug"]})
-        items.append(item)
+    for product in products:
+        items.append(
+            {
+                "slug": product.slug,
+                "title": product.title,
+                "meta": product.meta,
+                "art_path": product.art_path,
+                "art_alt": product.art_alt or product.title,
+                "player_id": product.player_id,
+                "file_wav": product.preview_file_wav,
+                "file_mp3": product.preview_file_mp3,
+                "price_display": product.price_display,
+                "is_reversed": product.is_reversed,
+                "share_path": share_path,
+                "buy_path": reverse("shop:cart_add", kwargs={"slug": product.slug}),
+            }
+        )
     return items
 
 
@@ -441,8 +269,8 @@ def _site_context(active_section):
     """
     return {
         "active_section": active_section,
-        "header_social_links": HEADER_SOCIAL_LINKS,
-        "primary_nav_items": PRIMARY_NAV_ITEMS,
+        "header_social_links": _get_header_social_links(),
+        "primary_nav_items": _get_primary_nav_items(),
         "music_items": _get_music_library_items(),
         "gig_photo_items": _get_gig_photo_items(),
         "album_art_items": _get_album_art_items(),

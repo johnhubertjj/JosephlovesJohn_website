@@ -6,14 +6,76 @@ import pytest
 from django.core.files.base import ContentFile
 from django.db import OperationalError
 from main_site import views
-from main_site.models import AlbumArt, AnimationAsset, GigPhoto
+from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
+from shop.models import Product
 
 pytestmark = pytest.mark.integration
 
 
 @pytest.mark.django_db
+def test_get_header_social_links_returns_active_database_rows_in_order() -> None:
+    """Header links should be sourced from the database in display order."""
+    HeaderSocialLink.objects.all().delete()
+    HeaderSocialLink.objects.create(
+        label="YouTube",
+        href="https://example.com/youtube",
+        icon_class="icon brands fa-youtube",
+        sort_order=1,
+        is_active=True,
+    )
+    HeaderSocialLink.objects.create(
+        label="Hidden",
+        href="https://example.com/hidden",
+        icon_class="icon brands fa-hidden",
+        sort_order=0,
+        is_active=False,
+    )
+    HeaderSocialLink.objects.create(
+        label="Bandcamp",
+        href="https://example.com/bandcamp",
+        icon_class="icon brands fa-bandcamp",
+        sort_order=0,
+        is_active=True,
+    )
+
+    links = views._get_header_social_links()
+
+    assert links == [
+        {
+            "href": "https://example.com/bandcamp",
+            "icon_class": "icon brands fa-bandcamp",
+            "label": "Bandcamp",
+        },
+        {
+            "href": "https://example.com/youtube",
+            "icon_class": "icon brands fa-youtube",
+            "label": "YouTube",
+        },
+    ]
+
+
+@pytest.mark.django_db
+def test_get_primary_nav_items_returns_active_database_rows_in_order() -> None:
+    """Primary nav items should be sourced from the database in display order."""
+    PrimaryNavItem.objects.all().delete()
+    PrimaryNavItem.objects.create(label="Art", href="#art", sort_order=2, is_active=True)
+    PrimaryNavItem.objects.create(label="Hidden", href="#hidden", sort_order=0, is_active=False)
+    PrimaryNavItem.objects.create(label="Intro", href="#intro", sort_order=0, is_active=True)
+    PrimaryNavItem.objects.create(label="Music", href="#music", sort_order=1, is_active=True)
+
+    items = views._get_primary_nav_items()
+
+    assert items == [
+        {"href": "#intro", "label": "Intro"},
+        {"href": "#music", "label": "Music"},
+        {"href": "#art", "label": "Art"},
+    ]
+
+
+@pytest.mark.django_db
 def test_get_gig_photo_items_prefers_active_database_rows(create_static_asset) -> None:
     """Database-backed active photos should be returned in display order."""
+    GigPhoto.objects.all().delete()
     create_static_asset("images/gallery/live-1.jpg")
     create_static_asset("images/gallery/live-1-thumb.jpg")
     create_static_asset("images/gallery/live-2.jpg")
@@ -105,6 +167,8 @@ def test_build_gig_photo_item_falls_back_to_source_image_when_thumb_missing(crea
 @pytest.mark.django_db
 def test_get_album_art_items_combines_album_art_and_animations(create_static_asset) -> None:
     """Album art entries should combine still artwork and animations in sort order."""
+    AlbumArt.objects.all().delete()
+    AnimationAsset.objects.all().delete()
     create_static_asset("images/album_art/cover.jpg")
     create_static_asset("images/album_art/animation.mp4")
     create_static_asset("images/album_art/poster.jpg")
@@ -155,77 +219,97 @@ def test_get_album_art_items_supports_uploaded_files(media_base_dir) -> None:
 
 
 @pytest.mark.django_db
-def test_get_gig_photo_items_falls_back_to_manifest_when_database_lookup_fails(
-    create_static_asset, monkeypatch
-) -> None:
-    """Static manifest items should be used when the database is unavailable."""
-    create_static_asset("images/fallback/one.jpg")
-    create_static_asset("images/fallback/two.jpg")
-    monkeypatch.setattr(
-        views,
-        "DEFAULT_GIG_PHOTO_LIBRARY",
-        (
-            {"title": "Fallback One", "image_path": "images/fallback/one.jpg", "thumbnail_path": "", "alt_text": "One"},
-            {"title": "Fallback Two", "image_path": "images/fallback/two.jpg", "thumbnail_path": "", "alt_text": "Two"},
-        ),
+def test_get_music_library_items_uses_published_products_in_order() -> None:
+    """Music library items should be sourced from the product catalog."""
+    Product.objects.all().delete()
+    Product.objects.create(
+        title="Second Track",
+        slug="second-track",
+        meta="Single",
+        art_path="images/album_art/second.jpg",
+        preview_file_wav="audio/second.wav",
+        preview_file_mp3="audio/second.mp3",
+        download_file_path="audio/second.mp3",
+        sort_order=1,
+        is_published=True,
+        is_reversed=True,
+    )
+    Product.objects.create(
+        title="Hidden Track",
+        slug="hidden-track",
+        meta="Hidden",
+        art_path="images/album_art/hidden.jpg",
+        preview_file_wav="audio/hidden.wav",
+        preview_file_mp3="audio/hidden.mp3",
+        download_file_path="audio/hidden.mp3",
+        sort_order=0,
+        is_published=False,
+    )
+    Product.objects.create(
+        title="First Track",
+        slug="first-track",
+        meta="EP",
+        art_path="images/album_art/first.jpg",
+        preview_file_wav="audio/first.wav",
+        preview_file_mp3="audio/first.mp3",
+        download_file_path="audio/first.mp3",
+        sort_order=0,
+        is_published=True,
+        is_reversed=False,
     )
 
-    broken_filter = Mock(side_effect=OperationalError("db unavailable"))
-    monkeypatch.setattr(views.GigPhoto.objects, "filter", broken_filter)
-
-    items = views._get_gig_photo_items()
-
-    assert [item["title"] for item in items] == ["Fallback One", "Fallback Two"]
-    broken_filter.assert_called_once_with(is_active=True)
-
-
-def test_get_album_art_items_falls_back_to_manifest_when_database_lookup_fails(
-    create_static_asset, monkeypatch
-) -> None:
-    """Static manifest items should be used when the artwork tables are unavailable."""
-    create_static_asset("images/album_art/fallback-cover.jpg")
-    create_static_asset("images/album_art/fallback-animation.gif")
-    monkeypatch.setattr(
-        views,
-        "ALBUM_ART_MANIFEST",
-        (
-            {
-                "kind": "image",
-                "path": "images/album_art/fallback-cover.jpg",
-                "caption": "Fallback Cover",
-                "alt": "Fallback cover art",
-                "featured": True,
-            },
-            {
-                "kind": "image",
-                "path": "images/album_art/fallback-animation.gif",
-                "caption": "Fallback Animation",
-                "alt": "Fallback animation",
-                "featured": False,
-            },
-        ),
-    )
-
-    monkeypatch.setattr(views.AlbumArt.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
-
-    items = views._get_album_art_items()
-
-    assert [item["caption"] for item in items] == ["Fallback Cover", "Fallback Animation"]
-
-
-def test_get_music_library_items_adds_music_route_share_path() -> None:
-    """Music library items should include the reusable music share route."""
     items = views._get_music_library_items()
-    expected_titles = [manifest_item["title"] for manifest_item in views.MUSIC_LIBRARY_MANIFEST]
 
-    assert items
+    assert [item["title"] for item in items] == ["First Track", "Second Track"]
     assert {item["share_path"] for item in items} == {"/music/"}
     assert all(item["buy_path"].startswith("/shop/cart/add/") for item in items)
-    assert [item["title"] for item in items] == expected_titles
+    assert items[1]["is_reversed"] is True
+
+
+@pytest.mark.django_db
+def test_get_header_social_links_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
+    """Header links should fail closed when the database is unavailable."""
+    monkeypatch.setattr(views.HeaderSocialLink.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+
+    assert views._get_header_social_links() == []
+
+
+@pytest.mark.django_db
+def test_get_primary_nav_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
+    """Primary nav should fail closed when the database is unavailable."""
+    monkeypatch.setattr(views.PrimaryNavItem.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+
+    assert views._get_primary_nav_items() == []
+
+
+@pytest.mark.django_db
+def test_get_gig_photo_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
+    """Gig photo helpers should fail closed when the database is unavailable."""
+    monkeypatch.setattr(views.GigPhoto.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+
+    assert views._get_gig_photo_items() == []
+
+
+@pytest.mark.django_db
+def test_get_album_art_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
+    """Album art helpers should fail closed when the database is unavailable."""
+    monkeypatch.setattr(views.AlbumArt.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+
+    assert views._get_album_art_items() == []
+
+
+@pytest.mark.django_db
+def test_get_music_library_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
+    """Music helpers should fail closed when the database is unavailable."""
+    monkeypatch.setattr(views.Product.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+
+    assert views._get_music_library_items() == []
 
 
 def test_site_context_collects_expected_sections(monkeypatch) -> None:
     """The site context should gather all renderable page sections."""
+    monkeypatch.setattr(views, "_get_header_social_links", lambda: [{"label": "Bandcamp"}])
+    monkeypatch.setattr(views, "_get_primary_nav_items", lambda: [{"label": "Music"}])
     monkeypatch.setattr(views, "_get_music_library_items", lambda: [{"title": "Song"}])
     monkeypatch.setattr(views, "_get_gig_photo_items", lambda: [{"title": "Photo"}])
     monkeypatch.setattr(views, "_get_album_art_items", lambda: [{"caption": "Art"}])
@@ -233,8 +317,8 @@ def test_site_context_collects_expected_sections(monkeypatch) -> None:
     context = views._site_context("music")
 
     assert context["active_section"] == "music"
+    assert context["header_social_links"] == [{"label": "Bandcamp"}]
+    assert context["primary_nav_items"] == [{"label": "Music"}]
     assert context["music_items"] == [{"title": "Song"}]
     assert context["gig_photo_items"] == [{"title": "Photo"}]
     assert context["album_art_items"] == [{"caption": "Art"}]
-    assert context["primary_nav_items"] == views.PRIMARY_NAV_ITEMS
-    assert context["header_social_links"] == views.HEADER_SOCIAL_LINKS
