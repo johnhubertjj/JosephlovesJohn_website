@@ -5,9 +5,11 @@ from importlib import import_module
 import pytest
 from django.apps import apps as django_apps
 from main_site.models import GigPhoto
+from shop.models import Product
 
 migration_0001 = import_module("main_site.migrations.0001_initial")
 migration_0002 = import_module("main_site.migrations.0002_normalize_gig_photo_titles")
+shop_migration_0002 = import_module("shop.migrations.0002_seed_music_products")
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
@@ -62,3 +64,16 @@ def test_normalize_titles_updates_seeded_gallery_labels() -> None:
         "Bristol Folk House 31 03 2026",
         "Leave Alone",
     ]
+
+
+def test_shop_seed_music_products_populates_catalog_once() -> None:
+    """The shop seed migration should upsert the demo music products without duplicates."""
+    Product.objects.all().delete()
+
+    shop_migration_0002.seed_music_products(django_apps, None)
+    first_pass = list(Product.objects.order_by("sort_order").values_list("slug", flat=True))
+
+    shop_migration_0002.seed_music_products(django_apps, None)
+
+    assert first_pass == ["dark-and-light-artist-version", "dark-and-light-instrumental"]
+    assert list(Product.objects.order_by("sort_order").values_list("slug", flat=True)) == first_pass

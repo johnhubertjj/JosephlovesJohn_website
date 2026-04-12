@@ -1,0 +1,59 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block shop_title %}Account | JosephlovesJohn{% endblock %}
+{% block shop_heading %}Your account{% endblock %}
+{% block shop_subtitle %}Saved details, previous orders, and download access all live here.{% endblock %}
+
+{% block shop_content %}
+    <div class="shop-grid shop-grid--account">
+        <section class="shop-card">
+            <div class="shop-card-header">
+                <p class="shop-eyebrow">Saved details</p>
+                <h2>{{ profile.full_name|default:request.user.username }}</h2>
+            </div>
+            <dl class="shop-detail-list">
+                <div>
+                    <dt>Email</dt>
+                    <dd>{{ request.user.email|default:'No email saved yet' }}</dd>
+                </div>
+                <div>
+                    <dt>Profile name</dt>
+                    <dd>{{ profile.full_name|default:'Will populate the next time you save details at checkout.' }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="shop-card shop-order-history">
+            <div class="shop-card-header">
+                <p class="shop-eyebrow">Order history</p>
+                <h2>Your downloads</h2>
+            </div>
+            {% if orders %}
+                <div class="shop-order-history-list">
+                    {% for order in orders %}
+                        <article class="shop-history-order">
+                            <header>
+                                <div>
+                                    <h3>Order #{{ order.id }}</h3>
+                                    <p>{{ order.created_at|date:'j F Y' }}</p>
+                                </div>
+                                <strong>{{ order.total_display }}</strong>
+                            </header>
+                            <ul>
+                                {% for item in order.items.all %}
+                                    <li>
+                                        <span>{{ item.title_snapshot }}</span>
+                                        <a href="{% static item.download_file_path %}" download>Download</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="shop-inline-note">No orders yet. Head back to the <a href="{% url 'main_site:music' %}#music">music page</a> to add something to your cart.</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

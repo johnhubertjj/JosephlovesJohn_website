@@ -8,7 +8,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 
 def test_music_route_renders_labeled_share_modal_controls(client) -> None:
-    """The music page should expose accessible labels for the share modal controls."""
+    """The music page should expose accessible labels for the share and cart modal controls."""
     response = client.get(reverse("main_site:music"))
     body = response.content.decode()
 
@@ -20,6 +20,8 @@ def test_music_route_renders_labeled_share_modal_controls(client) -> None:
     assert 'aria-label="Share on Facebook"' in body
     assert 'aria-label="Share on X"' in body
     assert 'aria-label="Share by email"' in body
+    assert 'aria-label="Close cart"' in body
+    assert 'aria-label="Open cart"' in body
 
 
 

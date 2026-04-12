@@ -9,17 +9,28 @@
                 <h3>{{ item.title }}</h3>
                 <p class="music-library-player-meta">{{ item.meta }}</p>
             </div>
-            <button
-                type="button"
-                class="music-share-trigger"
-                data-share-title="{{ item.title }}"
-                data-share-path="{{ item.share_path }}"
-                aria-haspopup="dialog"
-                aria-controls="music-share-modal"
-            >
-                <span class="fas fa-share-alt" aria-hidden="true"></span>
-                <span>Share</span>
-            </button>
+            <div class="music-library-actions">
+                <button
+                    type="button"
+                    class="music-share-trigger"
+                    data-share-title="{{ item.title }}"
+                    data-share-path="{{ item.share_path }}"
+                    aria-haspopup="dialog"
+                    aria-controls="music-share-modal"
+                >
+                    <span class="fas fa-share-alt" aria-hidden="true"></span>
+                    <span>Share</span>
+                </button>
+                <button
+                    type="button"
+                    class="music-buy-trigger"
+                    data-cart-add-url="{{ item.buy_path }}"
+                >
+                    <span class="fas fa-cart-plus" aria-hidden="true"></span>
+                    <span>Buy song</span>
+                    <strong>{{ item.price_display }}</strong>
+                </button>
+            </div>
         </div>
         <div
             id="{{ item.player_id }}"

@@ -151,6 +151,7 @@ def test_get_music_library_items_adds_music_route_share_path() -> None:
 
     assert items
     assert {item["share_path"] for item in items} == {"/music/"}
+    assert all(item["buy_path"].startswith("/shop/cart/add/") for item in items)
     assert [item["title"] for item in items] == expected_titles
 
 

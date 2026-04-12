@@ -22,7 +22,8 @@ dev = [
 [tool.ruff]
 target-version = "py314"
 line-length = 120
-src = ["josephlovesjohn_site", "main_site", "mastering"]
+src = ["josephlovesjohn_site", "main_site", "mastering", "shop"]
+force-exclude = true
 extend-exclude = ["html5up-solid-state", "main_site/migrations", "static", "templates"]
 
 [tool.ruff.lint]
@@ -31,8 +32,8 @@ select = ["E", "F", "I"]
 [tool.mypy]
 python_version = "3.14"
 plugins = ["mypy_django_plugin.main"]
-files = ["josephlovesjohn_site", "main_site", "mastering"]
-exclude = ["^main_site/migrations/"]
+files = ["josephlovesjohn_site", "main_site", "mastering", "shop"]
+exclude = ["^main_site/migrations/", "^shop/migrations/"]
 check_untyped_defs = true
 pretty = true
 show_error_codes = true
@@ -53,7 +54,7 @@ markers = [
 [tool.coverage.run]
 branch = true
 relative_files = true
-source = ["manage", "josephlovesjohn_site", "main_site", "mastering"]
+source = ["manage", "josephlovesjohn_site", "main_site", "mastering", "shop"]
 
 [tool.coverage.report]
 fail_under = 80

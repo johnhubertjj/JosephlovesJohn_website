@@ -64,6 +64,32 @@ def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_p
 
 
 
+def test_music_cart_modal_supports_add_remove_and_checkout(browser_page, live_server) -> None:
+    """The cart UI should open from a track card, update counts, and link to checkout."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    cart_button = browser_page.locator("#floating-cart-button")
+    assert cart_button.is_hidden()
+
+    browser_page.locator(".music-buy-trigger").first.click()
+
+    cart_modal = browser_page.locator("#music-cart-modal")
+    cart_modal.wait_for()
+    assert cart_modal.get_attribute("aria-hidden") == "false"
+    assert cart_button.is_visible()
+    assert browser_page.locator("[data-cart-count]").first.inner_text().strip() == "1"
+    assert browser_page.locator(".music-cart-item").count() == 1
+
+    checkout_link = browser_page.locator("[data-cart-checkout]")
+    assert (checkout_link.get_attribute("href") or "").endswith("/shop/checkout/")
+
+    browser_page.locator(".music-cart-remove").click()
+    browser_page.wait_for_function("document.querySelectorAll('.music-cart-item').length === 0")
+    browser_page.wait_for_function("document.getElementById('floating-cart-button').classList.contains('is-hidden')")
+
+
+
 def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_server) -> None:
     """The art lightbox should open from gallery items and close via overlay and escape."""
     browser_page.goto(_route_url(live_server, "main_site:art"), wait_until="load")
