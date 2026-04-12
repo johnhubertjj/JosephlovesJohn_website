@@ -2,7 +2,6 @@
 
 import pytest
 from django.urls import reverse
-from main_site import views
 
 pytestmark = [pytest.mark.browser, pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 
@@ -43,10 +42,8 @@ def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_p
     modal = browser_page.locator("#music-share-modal")
     modal.wait_for()
     assert modal.get_attribute("aria-hidden") == "false"
-    assert (
-        browser_page.locator("#music-share-title").inner_text().strip().lower()
-        == views.MUSIC_LIBRARY_MANIFEST[0]["title"].lower()
-    )
+    first_title = browser_page.locator(".music-library-item h3").first.inner_text().strip().lower()
+    assert browser_page.locator("#music-share-title").inner_text().strip().lower() == first_title
     assert browser_page.locator("#music-share-link").input_value().endswith("/music/")
 
     browser_page.locator(".music-share-dialog").click()

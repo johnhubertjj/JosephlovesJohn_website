@@ -1,0 +1,88 @@
+#main article#intro .image.main.intro-main-image {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#main article#intro > p {
+    max-width: 46rem;
+    margin: 0 0 1.1rem 0;
+}
+
+.intro-signup-form {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.45rem 0 1.85rem;
+    width: 100%;
+}
+
+.intro-signup-form input[type="email"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+}
+
+.intro-signup-form input[type="email"]::placeholder {
+    color: rgba(255, 255, 255, 0.68);
+    opacity: 1;
+}
+
+.intro-signup-form input[type="email"]::-webkit-input-placeholder {
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.intro-signup-form input[type="email"]::-moz-placeholder {
+    color: rgba(255, 255, 255, 0.68);
+    opacity: 1;
+}
+
+.intro-signup-form .button,
+.music-accent-button {
+    white-space: nowrap;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.16rem;
+    background: linear-gradient(135deg, #ffffff, #dfe6ff);
+    color: #10121a !important;
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0.45rem 1rem rgba(0, 0, 0, 0.28);
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.intro-signup-form .button:hover,
+.intro-signup-form .button:focus-visible,
+.music-accent-button:hover,
+.music-accent-button:focus-visible {
+    background: linear-gradient(135deg, #ffffff, #eef2ff);
+    transform: translateY(-1px);
+    box-shadow: 0 0.65rem 1.2rem rgba(0, 0, 0, 0.32);
+}
+
+@media screen and (max-width: 980px) {
+    #main article#intro .image.main.intro-main-image {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 736px) {
+    #main article#intro .image.main.intro-main-image {
+        width: 100%;
+    }
+
+    .intro-signup-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .intro-signup-form .button {
+        width: 100%;
+    }
+}

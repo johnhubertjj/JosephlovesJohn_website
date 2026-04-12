@@ -4,11 +4,9 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
-class OrderedGalleryAsset(models.Model):
-    """Shared metadata for admin-managed artwork collections."""
+class OrderedSiteItem(models.Model):
+    """Shared metadata for ordered main-site admin content."""
 
-    title = models.CharField(max_length=140)
-    alt_text = models.CharField(max_length=180, blank=True)
     sort_order = models.PositiveIntegerField(
         default=0,
         help_text="Lower numbers appear earlier on the page.",
@@ -16,10 +14,57 @@ class OrderedGalleryAsset(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        """Model metadata for gallery ordering."""
+        """Model metadata for ordered admin content."""
 
         abstract = True
         ordering = ("sort_order", "id")
+
+
+class HeaderSocialLink(OrderedSiteItem):
+    """Store header social links for the main site."""
+
+    label = models.CharField(max_length=80)
+    href = models.URLField(max_length=255)
+    icon_class = models.CharField(max_length=120)
+
+    class Meta(OrderedSiteItem.Meta):
+        """Model metadata for social links."""
+
+        verbose_name = "Header social link"
+        verbose_name_plural = "Header social links"
+
+    def __str__(self):
+        """Return the admin-friendly label for the link."""
+        return self.label
+
+
+class PrimaryNavItem(OrderedSiteItem):
+    """Store primary navigation items for the one-page site."""
+
+    label = models.CharField(max_length=80)
+    href = models.CharField(max_length=120, help_text="For example #intro or #music.")
+
+    class Meta(OrderedSiteItem.Meta):
+        """Model metadata for primary navigation."""
+
+        verbose_name = "Primary nav item"
+        verbose_name_plural = "Primary nav items"
+
+    def __str__(self):
+        """Return the admin-friendly label for the nav item."""
+        return self.label
+
+
+class OrderedGalleryAsset(OrderedSiteItem):
+    """Shared metadata for admin-managed artwork collections."""
+
+    title = models.CharField(max_length=140)
+    alt_text = models.CharField(max_length=180, blank=True)
+
+    class Meta(OrderedSiteItem.Meta):
+        """Model metadata for gallery ordering."""
+
+        abstract = True
 
     def __str__(self):
         """Return the admin-friendly label for the asset."""
