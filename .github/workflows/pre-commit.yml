@@ -68,7 +68,7 @@ jobs:
         run: uv sync --frozen --group dev
 
       - name: Run Ruff
-        run: uv run ruff check josephlovesjohn_site main_site mastering tests
+        run: uv run ruff check josephlovesjohn_site main_site mastering shop tests --exclude shop/migrations
 
   mypy:
     runs-on: ubuntu-latest

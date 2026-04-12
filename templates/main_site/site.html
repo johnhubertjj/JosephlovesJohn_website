@@ -25,6 +25,9 @@
 
     {% include 'main_site/includes/layout/art_lightbox.html' %}
     {% include 'main_site/includes/layout/music_share_modal.html' %}
+    {% include 'main_site/includes/layout/cart_modal.html' %}
+    {% include 'main_site/includes/layout/floating_cart_button.html' %}
+    <div id="site-csrf-token" hidden>{% csrf_token %}</div>
 {% endblock %}
 
 {% block pre_scripts %}
@@ -42,4 +45,5 @@
 {{ block.super }}
 <script src="{% static 'assets/js/playerjs_v4.js' %}"></script>
 <script src="{% static 'main_site/js/site.js' %}"></script>
+<script src="{% static 'main_site/js/cart.js' %}"></script>
 {% endblock %}

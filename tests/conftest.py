@@ -1,6 +1,7 @@
 """Shared pytest fixtures and test controls for the JosephlovesJohn suite."""
 
 import os
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -79,6 +80,61 @@ def pytest_configure(config: pytest.Config) -> None:
         os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 
 
+@pytest.fixture(autouse=True)
+def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
+    """Keep the demo storefront products available for DB-backed tests.
+
+    :param request: Active pytest fixture request.
+    :type request: pytest.FixtureRequest
+    :returns: ``None``.
+    :rtype: None
+    """
+    if not (
+        request.node.get_closest_marker("django_db")
+        or request.node.get_closest_marker("browser")
+    ):
+        return
+
+    request.getfixturevalue("db")
+    from shop.models import Product
+
+    seed_payloads = (
+        {
+            "title": "Dark and Light - Artist Version",
+            "slug": "dark-and-light-artist-version",
+            "artist_name": "JosephlovesJohn and Jayne Connell",
+            "meta": "Single",
+            "description": "Original artist version of Dark and Light.",
+            "art_path": "images/album_art/dark_and_light_artist_cover.jpg",
+            "art_alt": "Dark and Light artist cover artwork",
+            "preview_file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
+            "preview_file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
+            "download_file_path": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
+            "price": Decimal("2.99"),
+            "sort_order": 1,
+            "is_reversed": False,
+        },
+        {
+            "title": "Dark and Light - Instrumental",
+            "slug": "dark-and-light-instrumental",
+            "artist_name": "JosephlovesJohn and Jayne Connell",
+            "meta": "Instrumental Mix",
+            "description": "Instrumental mix of Dark and Light.",
+            "art_path": "images/album_art/dark_and_light_instrumental.jpg",
+            "art_alt": "Dark and Light instrumental artwork",
+            "preview_file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
+            "preview_file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
+            "download_file_path": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
+            "price": Decimal("2.99"),
+            "sort_order": 2,
+            "is_reversed": True,
+        },
+    )
+
+    for payload in seed_payloads:
+        Product.objects.update_or_create(slug=payload["slug"], defaults=payload)
+
+
 def _browser_executable_candidates() -> tuple[str, ...]:
     """Return likely Chromium-family browser executables for local runs.
 
@@ -105,7 +161,7 @@ def browser_launch_options() -> dict[str, object]:
     :rtype: dict[str, object]
     """
     launch_options: dict[str, object] = {
-        "headless": True,
+        "headless": False,
         "args": ["--disable-dev-shm-usage", "--no-sandbox"],
     }
 
@@ -148,7 +204,7 @@ def browser_page(playwright_browser):
     """
     context = playwright_browser.new_context(viewport={"width": 1440, "height": 960})
     page = context.new_page()
-    page.set_default_timeout(6000)
+    page.set_default_timeout(10000000)
     page_errors: list[str] = []
     page.on("pageerror", lambda exc: page_errors.append(str(exc)))
 

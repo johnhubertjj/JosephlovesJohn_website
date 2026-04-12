@@ -1,0 +1,50 @@
+{% extends 'main_site/base.html' %}
+{% load static %}
+
+{% block title %}{% block shop_title %}Music Shop | JosephlovesJohn{% endblock %}{% endblock %}
+
+{% block styles %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'main_site/css/site.css' %}" />
+    <link rel="stylesheet" href="{% static 'shop/css/shop.css' %}" />
+{% endblock %}
+
+{% block content %}
+    {% include 'main_site/includes/layout/top_nav.html' %}
+
+    <main class="shop-shell">
+        <div class="shop-shell__inner">
+            <a class="shop-back-link" href="{% url 'main_site:music' %}#music">
+                <span class="fas fa-arrow-left" aria-hidden="true"></span>
+                <span>Back to music</span>
+            </a>
+
+            <header class="shop-hero">
+                <div>
+                    <p class="shop-eyebrow">Portfolio Shop</p>
+                    <h1>{% block shop_heading %}Digital Music Checkout{% endblock %}</h1>
+                    <p class="shop-subtitle">{% block shop_subtitle %}A reusable storefront flow for direct-to-listener releases.{% endblock %}</p>
+                </div>
+                <nav class="shop-account-links" aria-label="Shop account">
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'shop:account' %}">Account</a>
+                        <a href="{% url 'shop:logout' %}">Log out</a>
+                    {% else %}
+                        <a href="{% url 'shop:login' %}">Log in</a>
+                        <a href="{% url 'shop:register' %}">Create account</a>
+                    {% endif %}
+                </nav>
+            </header>
+
+            {% if messages %}
+                <ul class="shop-messages" aria-live="polite">
+                    {% for message in messages %}
+                        <li class="shop-message is-{{ message.tags|default:'info' }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% block shop_content %}{% endblock %}
+        </div>
+    </main>
+{% endblock %}

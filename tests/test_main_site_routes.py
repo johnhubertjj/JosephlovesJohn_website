@@ -33,5 +33,8 @@ def test_music_route_exposes_share_modal_and_player_markup(client) -> None:
     body = response.content.decode()
 
     assert "music-share-modal" in body
+    assert "music-cart-modal" in body
+    assert "floating-cart-button" in body
     assert "music-player-frame" in body
     assert body.count("music-share-trigger") >= 2
+    assert body.count("music-buy-trigger") >= 2

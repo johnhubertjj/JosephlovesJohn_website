@@ -19,6 +19,8 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         'id="main"',
         'id="footer"',
         'id="music-share-modal"',
+        'id="music-cart-modal"',
+        'id="floating-cart-button"',
         'id="art-lightbox"',
     ):
         assert fragment in body
@@ -54,6 +56,7 @@ def test_music_page_smoke_renders_all_manifest_items_and_share_controls(client) 
     assert len(response.context["music_items"]) == len(views.MUSIC_LIBRARY_MANIFEST)
     assert body.count("music-library-item") == len(views.MUSIC_LIBRARY_MANIFEST)
     assert body.count("music-share-trigger") == len(views.MUSIC_LIBRARY_MANIFEST)
+    assert body.count("music-buy-trigger") == len(views.MUSIC_LIBRARY_MANIFEST)
     assert body.count("music-player-frame") == len(views.MUSIC_LIBRARY_MANIFEST)
 
     for item in views.MUSIC_LIBRARY_MANIFEST:

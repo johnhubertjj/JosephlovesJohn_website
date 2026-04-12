@@ -62,7 +62,7 @@ repos:
 
       - id: ruff
         name: ruff
-        entry: uv run ruff check josephlovesjohn_site main_site mastering tests
+        entry: uv run ruff check josephlovesjohn_site main_site mastering shop tests --exclude shop/migrations
         language: system
         pass_filenames: false
         always_run: true
