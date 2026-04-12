@@ -59,7 +59,7 @@ MUSIC_LIBRARY_MANIFEST = (
         "player_id": "dark-and-light-artist-player",
         "file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
         "file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
-        "price_display": "£2.99",
+        "price_display": "£1.00",
         "is_reversed": False,
     },
     {
@@ -71,7 +71,7 @@ MUSIC_LIBRARY_MANIFEST = (
         "player_id": "dark-and-light-instrumental-player",
         "file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
         "file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
-        "price_display": "£2.99",
+        "price_display": "£1.00",
         "is_reversed": True,
     },
 )

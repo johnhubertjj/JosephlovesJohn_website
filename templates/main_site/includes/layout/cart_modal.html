@@ -1,8 +1,15 @@
 {% load static %}
-<div id="music-cart-modal" class="music-cart-modal{% if not cart_summary.is_empty %} has-items{% endif %}" aria-hidden="true">
+<div
+    id="music-cart-modal"
+    class="music-cart-modal{% if not cart_summary.is_empty %} has-items{% endif %}"
+    aria-hidden="true"
+    data-music-url="{% url 'main_site:music' %}"
+>
     <div class="music-cart-backdrop" data-cart-close></div>
     <section class="music-cart-dialog" role="dialog" aria-modal="true" aria-labelledby="music-cart-title">
-        <button type="button" class="music-cart-close" data-cart-close aria-label="Close cart">&times;</button>
+        <button type="button" class="music-cart-close" data-cart-close aria-label="Close cart">
+            <span class="music-cart-close-icon" aria-hidden="true">&times;</span>
+        </button>
         <header class="music-cart-header">
             <p class="music-cart-kicker">Cart</p>
             <h3 id="music-cart-title">Your selections</h3>
@@ -34,7 +41,7 @@
             </div>
             <div class="music-cart-actions">
                 <a href="{{ cart_summary.account_url }}" class="music-cart-text-link">Account</a>
-                <a href="{{ cart_summary.checkout_url }}" class="button primary music-cart-checkout{% if cart_summary.is_empty %} is-disabled{% endif %}" data-cart-checkout>Checkout</a>
+                <a href="{{ cart_summary.checkout_url }}" class="button primary music-cart-checkout music-accent-button{% if cart_summary.is_empty %} is-disabled{% endif %}" data-cart-checkout>Checkout</a>
             </div>
         </footer>
     </section>

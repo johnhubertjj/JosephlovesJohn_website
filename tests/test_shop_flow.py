@@ -93,8 +93,8 @@ def test_guest_success_page_requires_recent_session_order(client, seeded_product
     order = Order.objects.create(
         full_name="Guest Buyer",
         email="guest@example.com",
-        subtotal=Decimal("2.99"),
-        total=Decimal("2.99"),
+        subtotal=Decimal("1.00"),
+        total=Decimal("1.00"),
     )
     OrderItem.objects.create(
         order=order,

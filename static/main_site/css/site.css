@@ -50,7 +50,8 @@
         opacity: 1;
     }
 
-    .intro-signup-form .button {
+    .intro-signup-form .button,
+    .music-accent-button {
         white-space: nowrap;
         margin: 0;
         font-weight: 700;
@@ -59,12 +60,20 @@
         color: #10121a !important;
         border-color: rgba(255, 255, 255, 0.95);
         box-shadow: 0 0.45rem 1rem rgba(0, 0, 0, 0.28);
+        transition:
+            background 0.2s ease,
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
     }
 
     .intro-signup-form .button:hover,
-    .intro-signup-form .button:focus-visible {
+    .intro-signup-form .button:focus-visible,
+    .music-accent-button:hover,
+    .music-accent-button:focus-visible {
         background: linear-gradient(135deg, #ffffff, #eef2ff);
         transform: translateY(-1px);
+        box-shadow: 0 0.65rem 1.2rem rgba(0, 0, 0, 0.32);
     }
 
     .music-library-item {
@@ -555,25 +564,50 @@
         box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
     }
 
-    .music-cart-close {
+    #music-cart-modal .music-cart-close {
         position: absolute;
         top: 0.55rem;
         right: 0.65rem;
         width: 2rem;
         height: 2rem;
-        border: 0;
-        border-radius: 999px;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.76);
-        font-size: 1.7rem;
-        line-height: 1;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 999px !important;
+        background: transparent !important;
+        color: rgba(255, 255, 255, 0.76) !important;
+        font-size: 1rem !important;
+        line-height: 1 !important;
         cursor: pointer;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        letter-spacing: 0 !important;
+        font-weight: 400 !important;
+        min-width: 0 !important;
+        height: 2rem !important;
+        text-transform: none !important;
+        text-decoration: none !important;
     }
 
-    .music-cart-close:hover,
-    .music-cart-close:focus-visible {
-        color: #ffffff;
-        background: rgba(130, 178, 255, 0.12);
+    #music-cart-modal .music-cart-close:hover,
+    #music-cart-modal .music-cart-close:focus-visible {
+        color: #ffffff !important;
+        background: rgba(130, 178, 255, 0.12) !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    #music-cart-modal .music-cart-close-icon {
+        display: block;
+        font-size: 1.45rem;
+        line-height: 1;
+        transform: translateX(-0.03em) translateY(-0.02em);
+        pointer-events: none;
     }
 
     .music-cart-header {
@@ -659,24 +693,41 @@
         letter-spacing: 0.04rem;
     }
 
-    .music-cart-remove {
+    #music-cart-modal .music-cart-remove {
         grid-column: 2 / 4;
         justify-self: start;
-        border: 0;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.76);
-        letter-spacing: 0.08rem;
-        text-transform: uppercase;
-        font-size: 0.68rem;
+        border: 0 !important;
+        background: transparent !important;
+        color: rgba(255, 255, 255, 0.76) !important;
+        letter-spacing: 0.08rem !important;
+        text-transform: uppercase !important;
+        font-size: 0.68rem !important;
         cursor: pointer;
-        padding: 0;
+        padding: 0 !important;
+        margin: 0 !important;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.2rem;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        line-height: 1.2 !important;
+        height: auto !important;
+        min-width: 0 !important;
+        font-weight: 500 !important;
+        display: inline !important;
+        border-radius: 0 !important;
+        vertical-align: baseline;
     }
 
-    .music-cart-remove:hover,
-    .music-cart-remove:focus-visible,
+    #music-cart-modal .music-cart-remove:hover,
+    #music-cart-modal .music-cart-remove:focus-visible,
     .music-cart-text-link:hover,
     .music-cart-text-link:focus-visible {
-        color: #ffffff;
+        color: #ffffff !important;
+        outline: none !important;
+        box-shadow: none !important;
     }
 
     .music-cart-footer {

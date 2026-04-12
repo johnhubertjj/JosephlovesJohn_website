@@ -28,7 +28,7 @@ class Product(models.Model):
     preview_file_mp3 = models.CharField(max_length=255, blank=True)
     download_file_path = models.CharField(max_length=255)
     product_kind = models.CharField(max_length=20, choices=ProductKind.choices, default=ProductKind.SINGLE)
-    price = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("2.99"))
+    price = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("1.00"))
     sort_order = models.PositiveIntegerField(default=0)
     is_published = models.BooleanField(default=True)
     is_reversed = models.BooleanField(default=False)

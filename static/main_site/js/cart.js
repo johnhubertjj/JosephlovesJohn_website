@@ -14,6 +14,7 @@
     var emptyState = modal.querySelector("[data-cart-empty]");
     var countTargets = document.querySelectorAll("[data-cart-count]");
     var buyButtons = document.querySelectorAll("[data-cart-add-url]");
+    var musicUrl = modal.getAttribute("data-music-url") || "/music/";
     var lastTrigger = null;
 
     function getCookie(name) {
@@ -106,6 +107,17 @@
         }
     }
 
+    function returnToMusicView() {
+        if (window.location.pathname !== musicUrl) {
+            window.location.href = musicUrl;
+            return;
+        }
+
+        if (window.location.hash !== "#music") {
+            window.location.hash = "music";
+        }
+    }
+
     function postJson(url) {
         return fetch(url, {
             method: "POST",
@@ -122,21 +134,33 @@
         });
     }
 
-    floatingButton.addEventListener("click", function () {
+    floatingButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
         openModal(floatingButton);
     });
 
     closeButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
+        button.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
             closeModal();
         });
     });
 
     modal.addEventListener("click", function (event) {
+        event.stopPropagation();
         if (event.target === modal || event.target.hasAttribute("data-cart-close")) {
             closeModal();
+            returnToMusicView();
         }
     });
+
+    if (dialog) {
+        dialog.addEventListener("click", function (event) {
+            event.stopPropagation();
+        });
+    }
 
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && modal.classList.contains("is-visible")) {
@@ -144,13 +168,14 @@
         }
     });
 
-    modal.addEventListener("click", function (event) {
+    dialog.addEventListener("click", function (event) {
         var removeButton = event.target.closest("[data-cart-remove-url]");
         if (!removeButton) {
             return;
         }
 
         event.preventDefault();
+        event.stopPropagation();
         postJson(removeButton.getAttribute("data-cart-remove-url"))
             .then(function (summary) {
                 applySummary(summary);
@@ -164,7 +189,9 @@
     });
 
     buyButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
+        button.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
             var url = button.getAttribute("data-cart-add-url");
             if (!url) {
                 return;
