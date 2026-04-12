@@ -47,6 +47,7 @@ Only enable `SECURE_HSTS_PRELOAD=true` once you are certain the domain and relev
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_API_VERSION=2026-02-25.clover
 STRIPE_CURRENCY=gbp
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 ### Contact Form Email
@@ -84,6 +85,27 @@ uv run python manage.py migrate
 uv run python manage.py collectstatic --noinput
 uv run python manage.py check --deploy
 ```
+
+## Stripe Webhook Setup
+
+The shop now exposes a Stripe webhook endpoint at:
+
+```text
+/shop/stripe/webhook/
+```
+
+In Stripe, register a webhook endpoint that sends at least:
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+
+For local testing with the Stripe CLI:
+
+```bash
+stripe listen --forward-to localhost:8000/shop/stripe/webhook/
+```
+
+Copy the reported `whsec_...` value into `STRIPE_WEBHOOK_SECRET`.
 
 ## Static Files
 

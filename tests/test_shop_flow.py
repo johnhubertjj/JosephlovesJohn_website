@@ -1,5 +1,6 @@
 """Integration tests for the reusable shop flow."""
 
+import json
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -163,6 +164,37 @@ def test_success_page_confirms_paid_stripe_session_and_clears_cart(
     assert seeded_product.title in response.content.decode()
 
 
+def test_success_page_still_allows_guest_after_webhook_confirmation(
+    client, seeded_product: Product, fake_stripe_checkout
+) -> None:
+    """Webhook-confirmed guest orders should still unlock on the Stripe redirect."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+    client.get(reverse("shop:checkout"))
+    order = Order.objects.get()
+
+    fake_stripe_checkout["sessions"]["cs_test_1"].update(
+        {
+            "status": "complete",
+            "payment_status": "paid",
+            "payment_intent": "pi_test_123",
+            "customer_details": {
+                "name": "Webhook Buyer",
+                "email": "webhook@example.com",
+            },
+        }
+    )
+    order.mark_paid(payment_intent_id="pi_test_123")
+    order.full_name = "Webhook Buyer"
+    order.email = "webhook@example.com"
+    order.save(update_fields=["full_name", "email", "status", "stripe_payment_intent_id", "paid_at"])
+
+    response = client.get(reverse("shop:success", args=[order.pk]), {"session_id": "cs_test_1"})
+
+    assert response.status_code == 200
+    assert client.session["shop_recent_orders"][0] == order.pk
+    assert seeded_product.title in response.content.decode()
+
+
 def test_canceled_checkout_renders_retry_page(client, seeded_product: Product) -> None:
     """Returning from a canceled Stripe checkout should show a visible retry state."""
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
@@ -241,6 +273,91 @@ def test_pending_guest_success_page_requires_verified_stripe_session(
     response = client.get(reverse("shop:success", args=[order.pk]), {"session_id": "cs_test_pending"})
 
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize("event_type", ["checkout.session.completed", "checkout.session.async_payment_succeeded"])
+def test_stripe_webhook_confirms_matching_order(
+    client, seeded_product: Product, monkeypatch: pytest.MonkeyPatch, event_type: str
+) -> None:
+    """Signed webhook events should mark the matching order paid."""
+    order = Order.objects.create(
+        full_name="Guest Buyer",
+        email="guest@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.PENDING,
+        stripe_checkout_session_id="cs_test_webhook",
+    )
+    OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+
+    checkout_session = {
+        "id": "cs_test_webhook",
+        "status": "complete",
+        "payment_status": "paid",
+        "payment_intent": "pi_webhook_123",
+        "customer_details": {
+            "name": "Webhook Buyer",
+            "email": "webhook@example.com",
+        },
+        "metadata": {"order_id": str(order.pk)},
+    }
+
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(
+            construct_event=lambda payload, sig_header, secret: {  # noqa: ARG005
+                "type": event_type,
+                "data": {"object": checkout_session},
+            }
+        )
+    )
+    monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
+    monkeypatch.setattr(shop_views.settings, "STRIPE_WEBHOOK_SECRET", "whsec_test")
+
+    response = client.post(
+        reverse("shop:stripe_webhook"),
+        data=json.dumps({"id": "evt_test"}).encode(),
+        content_type="application/json",
+        HTTP_STRIPE_SIGNATURE="t=1,v1=test",
+    )
+    order.refresh_from_db()
+
+    assert response.status_code == 200
+    assert order.status == Order.Status.CONFIRMED
+    assert order.full_name == "Webhook Buyer"
+    assert order.email == "webhook@example.com"
+    assert order.stripe_payment_intent_id == "pi_webhook_123"
+
+
+def test_stripe_webhook_rejects_invalid_signature(
+    client, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Invalid webhook signatures should be rejected."""
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(
+            construct_event=lambda payload, sig_header, secret: (_ for _ in ()).throw(ValueError("bad signature"))
+        )
+    )
+    monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
+    monkeypatch.setattr(shop_views.settings, "STRIPE_WEBHOOK_SECRET", "whsec_test")
+
+    response = client.post(
+        reverse("shop:stripe_webhook"),
+        data=b"{}",
+        content_type="application/json",
+        HTTP_STRIPE_SIGNATURE="bad",
+    )
+
+    assert response.status_code == 400
 
 
 def test_register_view_creates_profile_and_logs_user_in(client) -> None:

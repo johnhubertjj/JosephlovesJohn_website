@@ -149,6 +149,7 @@ if _env_bool("USE_X_FORWARDED_PROTO", default=False):
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_CURRENCY = os.environ.get("STRIPE_CURRENCY", "gbp")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
