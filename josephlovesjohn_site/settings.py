@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+
 from josephlovesjohn_site.sentry import setup_sentry_from_env
 
 
@@ -103,7 +104,7 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
         }
     }
 
