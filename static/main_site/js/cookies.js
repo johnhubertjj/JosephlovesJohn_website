@@ -18,14 +18,24 @@
         document.cookie = name + "=" + value + "; path=/; max-age=31536000; SameSite=Lax";
     }
 
-    function applyPreferenceState(preference) {
-        document.documentElement.setAttribute("data-cookie-preference", preference || "");
-        document.body.setAttribute("data-cookie-preference", preference || "");
+    function emitPreferenceChange(preference) {
+        if (typeof CustomEvent !== "function") {
+            return;
+        }
+
         document.dispatchEvent(
             new CustomEvent("site:cookie-preference-changed", {
                 detail: { preference: preference || "" }
             })
         );
+    }
+
+    function applyPreferenceState(preference) {
+        document.documentElement.setAttribute("data-cookie-preference", preference || "");
+        if (document.body) {
+            document.body.setAttribute("data-cookie-preference", preference || "");
+        }
+        emitPreferenceChange(preference);
     }
 
     function getSavedPreference() {
@@ -45,7 +55,6 @@
     function savePreference(preference) {
         setCookie(preferenceCookieName, preference);
         setCookie(noticeCookieName, noticeDismissedValue);
-        applyPreferenceState(preference);
     }
 
     function setBannerVisibility(visible) {
@@ -69,12 +78,28 @@
 
     function applyBannerState() {
         var preference = getSavedPreference();
-        applyPreferenceState(preference);
         setBannerVisibility(!preference);
+        applyPreferenceState(preference);
+    }
+
+    function closestFromEventTarget(target, selector) {
+        if (!target) {
+            return null;
+        }
+
+        if (typeof target.closest === "function") {
+            return target.closest(selector);
+        }
+
+        if (target.parentElement && typeof target.parentElement.closest === "function") {
+            return target.parentElement.closest(selector);
+        }
+
+        return null;
     }
 
     document.addEventListener("click", function (event) {
-        var essentialOnlyButton = event.target.closest("[data-cookie-essential-only]");
+        var essentialOnlyButton = closestFromEventTarget(event.target, "[data-cookie-essential-only]");
         if (essentialOnlyButton) {
             event.preventDefault();
             savePreference(essentialOnlyValue);
@@ -82,7 +107,7 @@
             return;
         }
 
-        var allowOptionalButton = event.target.closest("[data-cookie-accept-all]");
+        var allowOptionalButton = closestFromEventTarget(event.target, "[data-cookie-accept-all]");
         if (allowOptionalButton) {
             event.preventDefault();
             savePreference(allowOptionalValue);
@@ -90,7 +115,7 @@
             return;
         }
 
-        var manageButton = event.target.closest("[data-cookie-manage]");
+        var manageButton = closestFromEventTarget(event.target, "[data-cookie-manage]");
         if (manageButton) {
             event.preventDefault();
             setBannerVisibility(true);

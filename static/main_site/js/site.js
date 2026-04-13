@@ -27,6 +27,30 @@
         }
     }
 
+    function resetOpenButton() {
+        if (!openButton) {
+            return;
+        }
+
+        openButton.disabled = false;
+        openButton.textContent = "Open signup form";
+    }
+
+    function teardownKitSignup() {
+        if (!signupEmbed) {
+            return;
+        }
+
+        signupEmbed.innerHTML = "";
+        signupEmbed.hidden = true;
+        kitLoaded = false;
+        signupRoot.classList.remove("is-loading-signup", "is-signup-live");
+        if (signupGate) {
+            signupGate.hidden = false;
+        }
+        resetOpenButton();
+    }
+
     function loadKitSignup() {
         if (kitLoaded || !signupEmbed || !kitSrc) {
             return;
@@ -55,13 +79,22 @@
     }
 
     document.addEventListener("site:cookie-preference-changed", function (event) {
-        if (event.detail && event.detail.preference === "all") {
-            loadKitSignup();
+        if (!event.detail) {
+            return;
         }
+
+        if (event.detail.preference === "all") {
+            loadKitSignup();
+            return;
+        }
+
+        teardownKitSignup();
     });
 
     if (getCookiePreference() === "all") {
         loadKitSignup();
+    } else {
+        teardownKitSignup();
     }
 
     new MutationObserver(function () {
