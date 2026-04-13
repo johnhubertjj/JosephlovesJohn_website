@@ -1,6 +1,7 @@
 """Tests for environment-driven Django settings helpers."""
 
 import importlib
+from pathlib import Path
 
 import pytest
 from josephlovesjohn_site import settings
@@ -40,12 +41,14 @@ def test_env_list_strips_blank_entries(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_settings_use_sqlite_when_database_url_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     """The project should keep SQLite as the local-development fallback."""
     monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
 
     reloaded = importlib.reload(settings)
     try:
         assert reloaded.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
         assert str(reloaded.DATABASES["default"]["NAME"]).endswith("db.sqlite3")
     finally:
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
         importlib.reload(settings)
 
 
@@ -56,6 +59,7 @@ def test_settings_use_database_url_when_present(monkeypatch: pytest.MonkeyPatch)
         "postgresql://render_user:secret@render-postgres:5432/jlj_prod",
     )
     monkeypatch.setenv("DATABASE_CONN_MAX_AGE", "900")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
 
     reloaded = importlib.reload(settings)
     try:
@@ -66,6 +70,56 @@ def test_settings_use_database_url_when_present(monkeypatch: pytest.MonkeyPatch)
         assert reloaded.DATABASES["default"]["PORT"] == 5432
         assert reloaded.DATABASES["default"]["CONN_MAX_AGE"] == 900
     finally:
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
         monkeypatch.delenv("DATABASE_URL", raising=False)
         monkeypatch.delenv("DATABASE_CONN_MAX_AGE", raising=False)
+        importlib.reload(settings)
+
+
+def test_settings_load_dotenv_values_when_present(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Local .env values should be loaded when the shell does not provide them."""
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text(
+        "DEBUG=false\nSECRET_KEY=from-dotenv\nALLOWED_HOSTS=example.com,www.example.com\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setenv("DOTENV_PATH", str(dotenv_path))
+    monkeypatch.delenv("DEBUG", raising=False)
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.DEBUG is False
+        assert reloaded.SECRET_KEY == "from-dotenv"
+        assert reloaded.ALLOWED_HOSTS == ["example.com", "www.example.com"]
+    finally:
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        monkeypatch.delenv("DEBUG", raising=False)
+        monkeypatch.delenv("SECRET_KEY", raising=False)
+        monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
+        importlib.reload(settings)
+
+
+def test_dotenv_does_not_override_real_environment_variables(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Actual environment variables should take precedence over .env values."""
+    dotenv_path = tmp_path / ".env"
+    dotenv_path.write_text("SECRET_KEY=from-dotenv\n", encoding="utf-8")
+
+    monkeypatch.setenv("DOTENV_PATH", str(dotenv_path))
+    monkeypatch.setenv("SECRET_KEY", "from-shell")
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SECRET_KEY == "from-shell"
+    finally:
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        monkeypatch.delenv("SECRET_KEY", raising=False)
         importlib.reload(settings)

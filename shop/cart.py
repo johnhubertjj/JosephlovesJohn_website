@@ -2,7 +2,6 @@
 
 from decimal import Decimal
 
-from django.templatetags.static import static
 from django.urls import reverse
 
 from .models import Product
@@ -133,7 +132,7 @@ def build_cart_summary(request):
                 "price": str(product.price),
                 "price_display": product.price_display,
                 "art_path": product.art_path,
-                "art_url": static(product.art_path),
+                "art_url": product.art_url,
                 "art_alt": product.art_alt or product.title,
                 "remove_url": reverse("shop:cart_remove", kwargs={"slug": product.slug}),
             }

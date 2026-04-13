@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 from django.core.files.base import ContentFile
 from django.db import OperationalError
+from django.test import override_settings
 from main_site import views
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
@@ -217,6 +218,27 @@ def test_build_gig_photo_item_falls_back_to_source_image_when_thumb_missing(crea
     }
 
 
+def test_resolve_asset_source_supports_external_urls() -> None:
+    """Absolute asset URLs should be returned directly without static lookup."""
+    url = "https://assets.example.com/images/gig_photos/live.jpg"
+
+    assert views._resolve_asset_source(static_path=url) == {
+        "path": url,
+        "url": url,
+        "is_static": False,
+    }
+
+
+@override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
+def test_resolve_asset_source_uses_public_asset_base_url_without_local_static_file() -> None:
+    """Gallery items should resolve through the CDN even when the file is not in the repo."""
+    assert views._resolve_asset_source(static_path="images/gig_photos/live.jpg") == {
+        "path": "images/gig_photos/live.jpg",
+        "url": "https://assets.example.com/images/gig_photos/live.jpg",
+        "is_static": True,
+    }
+
+
 @pytest.mark.django_db
 def test_get_album_art_items_combines_album_art_and_animations(create_static_asset) -> None:
     """Album art entries should combine still artwork and animations in sort order."""
@@ -316,6 +338,9 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
     assert [item["title"] for item in items] == ["First Track", "Second Track"]
     assert {item["share_path"] for item in items} == {"/music/"}
     assert all(item["buy_path"].startswith("/shop/cart/add/") for item in items)
+    assert items[0]["art_url"] == "/static/images/album_art/first.jpg"
+    assert items[0]["file_wav_url"] == "/static/audio/first.wav"
+    assert items[0]["file_mp3_url"] == "/static/audio/first.mp3"
     assert items[1]["is_reversed"] is True
 
 

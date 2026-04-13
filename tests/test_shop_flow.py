@@ -1,6 +1,7 @@
 """Integration tests for the reusable shop flow."""
 
 import json
+import sys
 from decimal import Decimal
 from types import SimpleNamespace
 
@@ -937,4 +938,131 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
     assert response.status_code == 200
     assert f"Order #{order.id}" in body
     assert seeded_product.title in body
-    assert seeded_product.download_file_path in body
+    assert reverse("shop:download", args=[order.items.get().pk]) in body
+
+
+def test_guest_download_requires_recent_session_order(
+    client, seeded_product: Product, create_private_download_asset
+) -> None:
+    """Guest downloads should only work from the same session that paid."""
+    create_private_download_asset(seeded_product.download_file_path, content=b"paid file")
+    order = Order.objects.create(
+        full_name="Guest Buyer",
+        email="guest@example.com",
+        subtotal=Decimal("1.00"),
+        total=Decimal("1.00"),
+    )
+    item = OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+
+    blocked = client.get(reverse("shop:download", args=[item.pk]))
+    assert blocked.status_code == 404
+
+    session = client.session
+    session["shop_recent_orders"] = [order.pk]
+    session.save()
+
+    allowed = client.get(reverse("shop:download", args=[item.pk]))
+    assert allowed.status_code == 200
+    assert allowed.get("Content-Disposition", "").startswith("attachment;")
+
+
+def test_account_owner_can_download_private_file(
+    client, django_user_model, seeded_product: Product, create_private_download_asset
+) -> None:
+    """Authenticated owners should be able to fetch their private downloads."""
+    create_private_download_asset(seeded_product.download_file_path, content=b"private bytes")
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+    )
+    item = OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("shop:download", args=[item.pk]))
+
+    assert response.status_code == 200
+    assert response.get("Content-Disposition", "").startswith("attachment;")
+
+
+def test_private_download_route_redirects_to_presigned_r2_url(
+    client, django_user_model, seeded_product: Product, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Authorized download requests should redirect to a short-lived R2 URL when configured."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+    )
+    item = OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+    client.force_login(user)
+
+    class FakeS3Client:
+        def generate_presigned_url(self, operation, Params, ExpiresIn):  # noqa: N803 - boto shape
+            assert operation == "get_object"
+            assert Params["Key"] == seeded_product.download_file_path
+            assert ExpiresIn == 120
+            return "https://signed.example.com/private-download"
+
+    fake_boto3 = SimpleNamespace(client=lambda *args, **kwargs: FakeS3Client())
+    monkeypatch.setitem(sys.modules, "boto3", fake_boto3)
+    monkeypatch.setattr(shop_views.settings, "PRIVATE_DOWNLOADS_BUCKET_NAME", "jlj-private")
+    monkeypatch.setattr(
+        shop_views.settings,
+        "PRIVATE_DOWNLOADS_ENDPOINT_URL",
+        "https://example-account.r2.cloudflarestorage.com",
+    )
+    monkeypatch.setattr(shop_views.settings, "PRIVATE_DOWNLOADS_ACCESS_KEY_ID", "key")
+    monkeypatch.setattr(shop_views.settings, "PRIVATE_DOWNLOADS_SECRET_ACCESS_KEY", "secret")
+    monkeypatch.setattr(shop_views.settings, "PRIVATE_DOWNLOADS_REGION", "auto")
+    monkeypatch.setattr(shop_views.settings, "PRIVATE_DOWNLOADS_KEY_PREFIX", "")
+    monkeypatch.setattr(shop_views.settings, "PRIVATE_DOWNLOADS_URL_EXPIRY", 120)
+
+    response = client.get(reverse("shop:download", args=[item.pk]))
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "https://signed.example.com/private-download"

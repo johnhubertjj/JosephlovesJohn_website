@@ -11,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import ImproperlyConfigured
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
@@ -21,6 +21,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
 
 from .cart import add_product, build_cart_summary, clear_cart, get_cart_products, remove_product
+from .downloads import build_download_response
 from .forms import CheckoutConsentForm, RegisterForm, ShopAuthenticationForm
 from .models import CustomerProfile, Order, OrderItem, Product
 
@@ -82,6 +83,24 @@ def _remember_recent_order(request, order_id):
         *[value for value in recent_orders if value != order_id],
     ][:10]
     request.session.modified = True
+
+
+def _ensure_user_can_access(request, order):
+    """Restrict authenticated orders to the owning user."""
+    if order.user_id and (
+        not request.user.is_authenticated or order.user_id != request.user.id
+    ):
+        raise Http404("Order not found")
+
+
+def _ensure_guest_session_can_access(request, order):
+    """Restrict guest orders to the session that completed payment."""
+    if order.user_id:
+        return
+
+    allowed_orders = request.session.get("shop_recent_orders", [])
+    if order.pk not in allowed_orders:
+        raise Http404("Order not found")
 
 
 def _sync_customer_profile_from_order(order):
@@ -442,32 +461,14 @@ class OrderSuccessView(TemplateView):
         """
         context = super().get_context_data(**kwargs)
         order = get_object_or_404(Order.objects.prefetch_related("items", "items__product"), pk=kwargs["order_id"])
-        self._ensure_user_can_access(order)
+        _ensure_user_can_access(self.request, order)
         if self.request.GET.get("session_id"):
             self._synchronize_checkout_session(order)
         elif not order.is_paid:
             raise Http404("Order not found")
-        self._ensure_guest_session_can_access(order)
+        _ensure_guest_session_can_access(self.request, order)
         context["order"] = order
         return context
-
-    def _ensure_user_can_access(self, order):
-        """Restrict logged-in orders to the owning user."""
-
-        if order.user_id and (
-            not self.request.user.is_authenticated or order.user_id != self.request.user.id
-        ):
-            raise Http404("Order not found")
-
-    def _ensure_guest_session_can_access(self, order):
-        """Restrict guest orders to the session that completed payment."""
-
-        if order.user_id:
-            return
-
-        allowed_orders = self.request.session.get("shop_recent_orders", [])
-        if order.pk not in allowed_orders:
-            raise Http404("Order not found")
 
     def _synchronize_checkout_session(self, order):
         """Verify the returned Stripe session and unlock the download page."""
@@ -486,6 +487,22 @@ class OrderSuccessView(TemplateView):
         _remember_recent_order(self.request, order.pk)
         if order_was_just_confirmed:
             messages.success(self.request, "Payment confirmed. Your music is ready below.")
+
+
+class OrderDownloadView(View):
+    """Deliver a purchased file to an authorized customer."""
+
+    def get(self, request, item_id):
+        """Redirect to a signed download URL or stream a local private file."""
+        item = get_object_or_404(OrderItem.objects.select_related("order"), pk=item_id)
+        order = item.order
+        _ensure_user_can_access(request, order)
+        _ensure_guest_session_can_access(request, order)
+        download_name = item.download_file_path.rsplit("/", 1)[-1] or f"order-{order.pk}-download"
+        response = build_download_response(item.download_file_path, download_name=download_name)
+        if isinstance(response, FileResponse):
+            return response
+        return response
 
 
 @method_decorator(csrf_exempt, name="dispatch")
