@@ -1,6 +1,4 @@
 {% extends 'shop/base.html' %}
-{% load static %}
-
 {% block shop_title %}Order confirmed | JosephlovesJohn{% endblock %}
 {% block shop_heading %}Order confirmed{% endblock %}
 {% block shop_subtitle %}Stripe has confirmed your payment, and your tracks are ready below for immediate download.{% endblock %}
@@ -20,7 +18,7 @@
                             <strong>{{ item.title_snapshot }}</strong>
                             <p>{{ item.artist_snapshot }}</p>
                         </div>
-                        <a class="button" href="{% static item.download_file_path %}" download>Download</a>
+                        <a class="button" href="{{ item.download_url }}" download>Download</a>
                     </li>
                 {% endfor %}
             </ul>

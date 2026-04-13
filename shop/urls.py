@@ -5,6 +5,7 @@ from django.urls import path
 from .views import (
     AccountView,
     CheckoutView,
+    OrderDownloadView,
     OrderSuccessView,
     RegisterView,
     ShopLoginView,
@@ -21,6 +22,7 @@ urlpatterns = [
     path("cart/remove/<slug:slug>/", cart_remove, name="cart_remove"),
     path("checkout/", CheckoutView.as_view(), name="checkout"),
     path("stripe/webhook/", StripeWebhookView.as_view(), name="stripe_webhook"),
+    path("download/<int:item_id>/", OrderDownloadView.as_view(), name="download"),
     path("success/<int:order_id>/", OrderSuccessView.as_view(), name="success"),
     path("login/", ShopLoginView.as_view(), name="login"),
     path("logout/", ShopLogoutView.as_view(), name="logout"),

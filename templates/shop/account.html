@@ -1,6 +1,4 @@
 {% extends 'shop/base.html' %}
-{% load static %}
-
 {% block shop_title %}Account | JosephlovesJohn{% endblock %}
 {% block shop_heading %}Your account{% endblock %}
 {% block shop_subtitle %}Saved details, previous orders, and download access all live here.{% endblock %}
@@ -44,7 +42,7 @@
                                 {% for item in order.items.all %}
                                     <li>
                                         <span>{{ item.title_snapshot }}</span>
-                                        <a href="{% static item.download_file_path %}" download>Download</a>
+                                        <a href="{{ item.download_url }}" download>Download</a>
                                     </li>
                                 {% endfor %}
                             </ul>

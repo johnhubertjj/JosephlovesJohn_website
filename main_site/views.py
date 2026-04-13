@@ -9,8 +9,8 @@ from django.contrib import messages
 from django.core.mail import EmailMessage
 from django.db import OperationalError, ProgrammingError
 from django.shortcuts import redirect, render
-from django.templatetags.static import static as static_url
 from django.urls import reverse
+from josephlovesjohn_site.assets import is_external_url, public_asset_url
 from shop.models import Product
 
 from .forms import ContactForm
@@ -257,11 +257,19 @@ def _resolve_asset_source(static_path="", uploaded_file=None):
             "is_static": False,
         }
 
-    relative_path = _normalize_static_path(static_path)
-    if relative_path and _static_file_exists(relative_path):
+    raw_path = (static_path or "").strip()
+    if is_external_url(raw_path):
+        return {
+            "path": raw_path,
+            "url": raw_path,
+            "is_static": False,
+        }
+
+    relative_path = _normalize_static_path(raw_path)
+    if relative_path and (settings.PUBLIC_ASSET_BASE_URL or _static_file_exists(relative_path)):
         return {
             "path": relative_path,
-            "url": static_url(relative_path),
+            "url": public_asset_url(relative_path),
             "is_static": True,
         }
 
@@ -464,10 +472,13 @@ def _get_music_library_items():
                 "title": product.title,
                 "meta": product.meta,
                 "art_path": product.art_path,
+                "art_url": product.art_url,
                 "art_alt": product.art_alt or product.title,
                 "player_id": product.player_id,
                 "file_wav": product.preview_file_wav,
+                "file_wav_url": product.preview_wav_url,
                 "file_mp3": product.preview_file_mp3,
+                "file_mp3_url": product.preview_mp3_url,
                 "price_display": product.price_display,
                 "is_reversed": product.is_reversed,
                 "share_path": share_path,

@@ -62,6 +62,28 @@ def create_media_asset(media_base_dir: Path):
     return _create
 
 
+@pytest.fixture
+def private_downloads_base_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """Point private download helpers at a temporary download directory."""
+    downloads_dir = tmp_path / "private_downloads"
+    downloads_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(main_site_views.settings, "PRIVATE_DOWNLOADS_ROOT", downloads_dir, raising=False)
+    return downloads_dir
+
+
+@pytest.fixture
+def create_private_download_asset(private_downloads_base_dir: Path):
+    """Create a temporary private download asset and return its relative path."""
+
+    def _create(relative_path: str, content: bytes = b"download") -> str:
+        target = private_downloads_base_dir / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        return relative_path
+
+    return _create
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Register project-specific pytest command-line options.
 

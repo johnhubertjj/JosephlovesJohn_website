@@ -109,6 +109,56 @@ STRIPE_CURRENCY=gbp
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
+### Optional public asset CDN
+
+If you move large audio/image assets to Cloudflare R2 or another public bucket,
+set a single base URL and keep the existing `audio/...` and `images/...` paths
+in the database:
+
+```env
+PUBLIC_ASSET_BASE_URL=https://your-public-bucket-domain
+```
+
+With this set, the site will resolve relative asset paths such as
+`audio/song.mp3` and `images/gig_photos/photo.jpg` against that public bucket
+instead of the local repo's `static/` directory.
+
+### Optional private paid downloads
+
+If paid download files should stay private in Cloudflare R2, configure a
+separate private bucket and let Django generate short-lived signed links:
+
+```env
+PRIVATE_DOWNLOADS_BUCKET_NAME=jlj-private-downloads
+PRIVATE_DOWNLOADS_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
+PRIVATE_DOWNLOADS_ACCESS_KEY_ID=replace-me
+PRIVATE_DOWNLOADS_SECRET_ACCESS_KEY=replace-me
+PRIVATE_DOWNLOADS_REGION=auto
+PRIVATE_DOWNLOADS_KEY_PREFIX=
+PRIVATE_DOWNLOADS_URL_EXPIRY=300
+```
+
+If you also want the public `/music/` page to stream preview files from a
+private bucket, the app can sign those too. By default the preview settings
+fall back to the private download credentials above, but you can override them
+separately if needed:
+
+```env
+PRIVATE_PREVIEWS_BUCKET_NAME=
+PRIVATE_PREVIEWS_ENDPOINT_URL=
+PRIVATE_PREVIEWS_ACCESS_KEY_ID=
+PRIVATE_PREVIEWS_SECRET_ACCESS_KEY=
+PRIVATE_PREVIEWS_REGION=auto
+PRIVATE_PREVIEWS_KEY_PREFIX=
+PRIVATE_PREVIEWS_URL_EXPIRY=900
+```
+
+You can also use local private files instead by setting:
+
+```env
+PRIVATE_DOWNLOADS_ROOT=/opt/render/project/src/media/private_downloads
+```
+
 ### Email/contact
 
 ```env

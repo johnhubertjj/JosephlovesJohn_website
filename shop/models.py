@@ -4,8 +4,12 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
+from josephlovesjohn_site.assets import public_asset_url
+
+from .downloads import preview_asset_url
 
 
 class Product(models.Model):
@@ -74,6 +78,36 @@ class Product(models.Model):
         :rtype: str
         """
         return reverse("shop:cart_add", kwargs={"slug": self.slug})
+
+    @property
+    def art_url(self):
+        """Return the public artwork URL for storefront rendering."""
+        return public_asset_url(self.art_path)
+
+    @property
+    def preview_wav_url(self):
+        """Return a signed private WAV preview URL when configured."""
+        if not self.preview_file_wav:
+            return ""
+        try:
+            return preview_asset_url(self.preview_file_wav)
+        except Http404:
+            return public_asset_url(self.preview_file_wav)
+
+    @property
+    def preview_mp3_url(self):
+        """Return a signed private MP3 preview URL when configured."""
+        if not self.preview_file_mp3:
+            return ""
+        try:
+            return preview_asset_url(self.preview_file_mp3)
+        except Http404:
+            return public_asset_url(self.preview_file_mp3)
+
+    @property
+    def download_url(self):
+        """Return the public download URL for the product."""
+        return public_asset_url(self.download_file_path)
 
 
 class CustomerProfile(models.Model):
@@ -231,3 +265,13 @@ class OrderItem(models.Model):
         :rtype: str
         """
         return self.art_alt_snapshot
+
+    @property
+    def art_url(self):
+        """Return the public artwork URL for summary rendering."""
+        return public_asset_url(self.art_path_snapshot)
+
+    @property
+    def download_url(self):
+        """Return the protected application download URL for the purchased file."""
+        return reverse("shop:download", kwargs={"item_id": self.pk})
