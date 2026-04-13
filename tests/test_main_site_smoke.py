@@ -20,6 +20,8 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         'id="main"',
         'id="footer"',
         'data-cookie-banner',
+        'data-cookie-essential-only',
+        'data-cookie-accept-all',
         'id="music-share-modal"',
         'id="music-cart-modal"',
         'id="floating-cart-button"',
@@ -42,14 +44,16 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
-    """The intro route should expose the embedded signup form and mastering CTA."""
+    """The intro route should expose the delayed signup form gate and mastering CTA."""
     response = client.get(reverse("main_site:intro"))
     body = response.content.decode()
 
     assert response.status_code == 200
     assert 'aria-label="Sign up for updates"' in body
-    assert 'data-uid="408ee57c19"' in body
-    assert 'src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in body
+    assert 'data-signup-root' in body
+    assert 'data-kit-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in body
+    assert 'data-signup-gate' in body
+    assert "Open signup form" in body
     assert 'href="https://josephlovesjohn.kit.com/408ee57c19"' in body
     assert f'href="{reverse("mastering:home")}"' in body
 

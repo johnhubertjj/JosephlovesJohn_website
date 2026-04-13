@@ -1,6 +1,9 @@
 (function () {
     var noticeCookieName = "site_cookie_notice";
+    var preferenceCookieName = "site_cookie_preference";
     var noticeDismissedValue = "dismissed";
+    var essentialOnlyValue = "essential";
+    var allowOptionalValue = "all";
 
     function getCookie(name) {
         var value = "; " + document.cookie;
@@ -11,8 +14,38 @@
         return "";
     }
 
-    function setDismissed() {
-        document.cookie = noticeCookieName + "=" + noticeDismissedValue + "; path=/; max-age=31536000; SameSite=Lax";
+    function setCookie(name, value) {
+        document.cookie = name + "=" + value + "; path=/; max-age=31536000; SameSite=Lax";
+    }
+
+    function applyPreferenceState(preference) {
+        document.documentElement.setAttribute("data-cookie-preference", preference || "");
+        document.body.setAttribute("data-cookie-preference", preference || "");
+        document.dispatchEvent(
+            new CustomEvent("site:cookie-preference-changed", {
+                detail: { preference: preference || "" }
+            })
+        );
+    }
+
+    function getSavedPreference() {
+        var explicitPreference = getCookie(preferenceCookieName);
+        if (explicitPreference === essentialOnlyValue || explicitPreference === allowOptionalValue) {
+            return explicitPreference;
+        }
+
+        // Older visits only stored that the notice was dismissed. Treat those as essential-only.
+        if (getCookie(noticeCookieName) === noticeDismissedValue) {
+            return essentialOnlyValue;
+        }
+
+        return "";
+    }
+
+    function savePreference(preference) {
+        setCookie(preferenceCookieName, preference);
+        setCookie(noticeCookieName, noticeDismissedValue);
+        applyPreferenceState(preference);
     }
 
     function setBannerVisibility(visible) {
@@ -35,14 +68,24 @@
     }
 
     function applyBannerState() {
-        setBannerVisibility(getCookie(noticeCookieName) !== noticeDismissedValue);
+        var preference = getSavedPreference();
+        applyPreferenceState(preference);
+        setBannerVisibility(!preference);
     }
 
     document.addEventListener("click", function (event) {
-        var dismissButton = event.target.closest("[data-cookie-dismiss]");
-        if (dismissButton) {
+        var essentialOnlyButton = event.target.closest("[data-cookie-essential-only]");
+        if (essentialOnlyButton) {
             event.preventDefault();
-            setDismissed();
+            savePreference(essentialOnlyValue);
+            applyBannerState();
+            return;
+        }
+
+        var allowOptionalButton = event.target.closest("[data-cookie-accept-all]");
+        if (allowOptionalButton) {
+            event.preventDefault();
+            savePreference(allowOptionalValue);
             applyBannerState();
             return;
         }

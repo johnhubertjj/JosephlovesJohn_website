@@ -1,7 +1,17 @@
 (function () {
-    var signupRoot = document.querySelector(".intro-signup-form");
+    var signupRoot = document.querySelector("[data-signup-root]");
     if (!signupRoot) {
         return;
+    }
+
+    var signupGate = signupRoot.querySelector("[data-signup-gate]");
+    var signupEmbed = signupRoot.querySelector("[data-signup-embed]");
+    var openButton = signupRoot.querySelector("[data-signup-open]");
+    var kitSrc = signupRoot.getAttribute("data-kit-src") || "";
+    var kitLoaded = false;
+
+    function getCookiePreference() {
+        return document.documentElement.getAttribute("data-cookie-preference") || "";
     }
 
     function styleKitSignup() {
@@ -17,8 +27,56 @@
         }
     }
 
-    styleKitSignup();
-    new MutationObserver(styleKitSignup).observe(signupRoot, {
+    function loadKitSignup() {
+        if (kitLoaded || !signupEmbed || !kitSrc) {
+            return;
+        }
+
+        kitLoaded = true;
+        signupRoot.classList.add("is-loading-signup");
+        signupEmbed.hidden = false;
+
+        if (openButton) {
+            openButton.disabled = true;
+            openButton.textContent = "Loading form";
+        }
+
+        var script = document.createElement("script");
+        script.async = true;
+        script.src = kitSrc;
+        script.setAttribute("data-uid", "408ee57c19");
+        signupEmbed.appendChild(script);
+    }
+
+    if (openButton) {
+        openButton.addEventListener("click", function () {
+            loadKitSignup();
+        });
+    }
+
+    document.addEventListener("site:cookie-preference-changed", function (event) {
+        if (event.detail && event.detail.preference === "all") {
+            loadKitSignup();
+        }
+    });
+
+    if (getCookiePreference() === "all") {
+        loadKitSignup();
+    }
+
+    new MutationObserver(function () {
+        styleKitSignup();
+
+        if (!signupRoot.querySelector(".formkit-form, .seva-form")) {
+            return;
+        }
+
+        signupRoot.classList.remove("is-loading-signup");
+        signupRoot.classList.add("is-signup-live");
+        if (signupGate) {
+            signupGate.hidden = true;
+        }
+    }).observe(signupRoot, {
         childList: true,
         subtree: true
     });
