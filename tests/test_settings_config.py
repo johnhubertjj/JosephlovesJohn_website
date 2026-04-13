@@ -1,5 +1,7 @@
 """Tests for environment-driven Django settings helpers."""
 
+import importlib
+
 import pytest
 from josephlovesjohn_site import settings
 
@@ -33,3 +35,37 @@ def test_env_list_strips_blank_entries(monkeypatch: pytest.MonkeyPatch) -> None:
         "www.example.com",
         "api.example.com",
     ]
+
+
+def test_settings_use_sqlite_when_database_url_is_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The project should keep SQLite as the local-development fallback."""
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
+        assert str(reloaded.DATABASES["default"]["NAME"]).endswith("db.sqlite3")
+    finally:
+        importlib.reload(settings)
+
+
+def test_settings_use_database_url_when_present(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Production-style DATABASE_URL values should configure Postgres."""
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://render_user:secret@render-postgres:5432/jlj_prod",
+    )
+    monkeypatch.setenv("DATABASE_CONN_MAX_AGE", "900")
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql"
+        assert reloaded.DATABASES["default"]["NAME"] == "jlj_prod"
+        assert reloaded.DATABASES["default"]["USER"] == "render_user"
+        assert reloaded.DATABASES["default"]["HOST"] == "render-postgres"
+        assert reloaded.DATABASES["default"]["PORT"] == 5432
+        assert reloaded.DATABASES["default"]["CONN_MAX_AGE"] == 900
+    finally:
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+        monkeypatch.delenv("DATABASE_CONN_MAX_AGE", raising=False)
+        importlib.reload(settings)

@@ -1,45 +1,104 @@
-# Deployment Notes
+# Render Deployment Notes
 
-This document covers the main site and shop deployment only. The mastering site is intentionally out of scope for now.
+This document covers the main site and shop deployment only. The mastering site remains in the same Django service, but its UI entry point can stay hidden.
 
-## Preconditions
+## Recommended Production Shape
 
-- Python environment synced with project dependencies
-- Real production domain ready
-- HTTPS enabled on the host or proxy
-- Persistent database and persistent media storage available
+Deploy on Render as:
 
-## Required Environment Variables
+- 1 web service for Django
+- 1 managed Postgres database
+- 1 persistent disk mounted at `/opt/render/project/src/media`
 
-### Core Django
+Current app behavior matches that setup:
+
+- static files are served with WhiteNoise
+- uploaded media stays on the filesystem
+- local development still falls back to SQLite when `DATABASE_URL` is unset
+- production should use Postgres through `DATABASE_URL`
+
+## Prerequisites
+
+- Repo pushed to GitHub, GitLab, or Bitbucket
+- Production domain ready
+- Stripe live credentials ready
+- Gmail app password or another SMTP credential ready
+- Render account with access to paid services if using a persistent disk
+
+## Render Service Configuration
+
+### Web service
+
+Create a Render **Web Service** from this repo with:
+
+- Runtime: Python
+- Branch: your production branch
+- Root directory: repo root
+- Auto deploy: On Commit
+
+Use these commands:
+
+```bash
+# Build Command
+uv sync --frozen && uv run python manage.py collectstatic --noinput && uv run python manage.py check --deploy
+
+# Pre-Deploy Command
+uv run python manage.py migrate --noinput
+
+# Start Command
+uv run gunicorn josephlovesjohn_site.wsgi:application --bind 0.0.0.0:$PORT
+```
+
+### Persistent disk
+
+Attach a Render **Persistent Disk** to the web service:
+
+- Mount path: `/opt/render/project/src/media`
+- Start with the smallest practical size
+
+Notes:
+
+- keep the service to a single instance while media is disk-backed
+- disk-backed uploads persist across deploys
+- object storage is still the better long-term option if you later need multiple web instances
+
+### Postgres
+
+Create a Render **Postgres** database in the same region as the web service.
+
+Use the database's **Internal Database URL** as `DATABASE_URL`.
+
+## Environment Variables
+
+Set these on the Render web service.
+
+### Core Django/runtime
 
 ```env
 DEBUG=false
 SECRET_KEY=replace-with-a-long-random-secret
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+PYTHON_VERSION=3.14.3
+UV_VERSION=0.7.12
+DATABASE_URL=postgresql://...
+DATABASE_CONN_MAX_AGE=600
 ```
 
-### HTTPS / Proxy
-
-If the app is behind a reverse proxy that terminates SSL:
+### Host and HTTPS
 
 ```env
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,your-service.onrender.com
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com,https://your-service.onrender.com
 USE_X_FORWARDED_PROTO=true
 SECURE_SSL_REDIRECT=true
 SESSION_COOKIE_SECURE=true
 CSRF_COOKIE_SECURE=true
 SECURE_HSTS_SECONDS=31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS=true
+SECURE_HSTS_PRELOAD=false
+SECURE_REFERRER_POLICY=strict-origin-when-cross-origin
 ```
 
-Optional:
-
-```env
-SECURE_HSTS_PRELOAD=true
-```
-
-Only enable `SECURE_HSTS_PRELOAD=true` once you are certain the domain and relevant subdomains will stay HTTPS-only.
+Only switch `SECURE_HSTS_PRELOAD=true` on once you are certain the domain and relevant subdomains will remain HTTPS-only.
 
 ### Stripe
 
@@ -50,9 +109,7 @@ STRIPE_CURRENCY=gbp
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-### Contact Form Email
-
-For Gmail SMTP:
+### Email/contact
 
 ```env
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
@@ -63,6 +120,15 @@ EMAIL_HOST_PASSWORD=your-gmail-app-password
 EMAIL_USE_TLS=true
 DEFAULT_FROM_EMAIL=josephlovesjohn@gmail.com
 CONTACT_RECIPIENT_EMAIL=josephlovesjohn@gmail.com
+```
+
+### Legal/business
+
+```env
+LEGAL_BUSINESS_NAME=JosephlovesJohn
+BUSINESS_CONTACT_EMAIL=josephlovesjohn@gmail.com
+BUSINESS_POSTAL_ADDRESS=
+VAT_NUMBER=
 ```
 
 ### Sentry
@@ -76,25 +142,72 @@ SENTRY_SEND_DEFAULT_PII=false
 SENTRY_DEBUG=false
 ```
 
-## Deploy Commands
+## First Deploy Tutorial
 
-Run these on the server during deploy:
+### 1. Create the Postgres database
+
+- In Render, choose **New > Postgres**
+- Pick the same region you want for the web service
+- After creation, copy the **Internal Database URL**
+
+### 2. Create the web service
+
+- In Render, choose **New > Web Service**
+- Connect this repository
+- Fill in the commands shown above
+- Add all required environment variables
+
+### 3. Attach the persistent disk
+
+- Open the web service
+- Add a persistent disk
+- Mount it at `/opt/render/project/src/media`
+
+### 4. Deploy
+
+Render will:
+
+- install dependencies with `uv sync --frozen`
+- collect static files
+- run `manage.py check --deploy`
+- run migrations before switching the deploy live
+- start Gunicorn
+
+### 5. Create the admin user
+
+After the first deploy:
+
+- open the Render Shell for the web service
+- run:
 
 ```bash
-uv run python manage.py migrate
-uv run python manage.py collectstatic --noinput
-uv run python manage.py check --deploy
+uv run python manage.py createsuperuser
 ```
 
-## Stripe Webhook Setup
+### 6. Verify persistent media
 
-The shop now exposes a Stripe webhook endpoint at:
+- log into `/admin/`
+- upload one small gallery asset
+- confirm it renders on the live site
+- redeploy
+- confirm the asset still exists
+
+### 7. Add the custom domain
+
+- Open **Settings > Custom Domains** for the web service
+- Add your domain and follow the DNS instructions
+- Include both apex and `www` if you want both
+- Remove stray `AAAA` records if Render flags them during validation
+
+### 8. Configure the Stripe webhook
+
+Register this endpoint in Stripe:
 
 ```text
-/shop/stripe/webhook/
+https://yourdomain.com/shop/stripe/webhook/
 ```
 
-In Stripe, register a webhook endpoint that sends at least:
+Subscribe at minimum to:
 
 - `checkout.session.completed`
 - `checkout.session.async_payment_succeeded`
@@ -107,51 +220,15 @@ stripe listen --forward-to localhost:8000/shop/stripe/webhook/
 
 Copy the reported `whsec_...` value into `STRIPE_WEBHOOK_SECRET`.
 
-## Static Files
-
-- Static files are served with WhiteNoise in production.
-- `collectstatic` writes to `staticfiles/`.
-- In local development, Django continues to use the normal staticfiles backend instead of the manifest backend.
-
-## Media Files
-
-Admin-uploaded gallery assets use `MEDIA_ROOT`.
-
-That means production needs persistent media storage. If the deploy platform uses ephemeral disk, uploaded images/videos will disappear on redeploy unless you move media to durable storage.
-
-Current default:
-
-```env
-MEDIA_URL=/media/
-```
-
-Current storage backend is local filesystem storage, so plan accordingly.
-
-## Database
-
-The app currently defaults to SQLite. That is fine for local development but not ideal for a real production deployment.
-
-Recommended next step:
-
-- move production to Postgres
-
-That change has not been implemented in the repo yet.
-
 ## Post-Deploy Smoke Checks
 
 After deploy, verify:
 
-1. Home page loads with the animated background and icons visible.
-2. Intro page loads the Kit signup form.
-3. Contact form sends mail successfully.
-4. Admin loads and uploaded art/media still renders.
-5. Add a song to cart and complete a Stripe test/live checkout.
-6. Paid order success page shows downloads.
-
-## Known Production Follow-Up
-
-Stripe checkout currently confirms payment when the user lands on the success page. There is not yet a Stripe webhook in the repo.
-
-That means the next production-hardening step after this deployment work should be:
-
-- add a Stripe webhook for checkout/session completion
+1. Home page loads and static assets render correctly.
+2. Legal pages load on their standalone routes.
+3. Intro page loads the Kit signup form.
+4. Contact form sends mail successfully.
+5. Admin loads and uploaded media still renders after redeploy.
+6. Add a song to cart and reach checkout.
+7. Complete a Stripe test or live checkout.
+8. Success page shows downloads and webhook delivery succeeds.
