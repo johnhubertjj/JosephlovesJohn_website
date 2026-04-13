@@ -2,6 +2,7 @@
 
 import mimetypes
 from pathlib import Path
+from typing import TypedDict, cast
 
 from django.conf import settings
 from django.contrib import messages
@@ -14,6 +15,14 @@ from shop.models import Product
 
 from .forms import ContactForm
 from .models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
+
+
+class HeaderSocialLinkItem(TypedDict):
+    """Typed representation of a rendered header social link."""
+
+    href: str
+    icon_class: str
+    label: str
 
 LEGAL_PAGE_CONTENT = {
     "privacy": {
@@ -189,7 +198,7 @@ LEGAL_PAGE_CONTENT = {
 
 LEGAL_PAGE_ORDER = ("privacy", "cookies", "terms", "refunds")
 
-SPOTIFY_SOCIAL_LINK = {
+SPOTIFY_SOCIAL_LINK: HeaderSocialLinkItem = {
     "href": "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg",
     "icon_class": "icon brands fa-spotify",
     "label": "Spotify",
@@ -310,19 +319,22 @@ def _build_album_art_item(
     return item
 
 
-def _get_header_social_links():
+def _get_header_social_links() -> list[HeaderSocialLinkItem]:
     """Return active header social links in display order."""
     try:
-        links = list(
-            HeaderSocialLink.objects.filter(is_active=True)
-            .order_by("sort_order", "id")
-            .values("href", "icon_class", "label")
+        links = cast(
+            list[HeaderSocialLinkItem],
+            list(
+                HeaderSocialLink.objects.filter(is_active=True)
+                .order_by("sort_order", "id")
+                .values("href", "icon_class", "label")
+            ),
         )
     except (OperationalError, ProgrammingError):
         return []
 
-    spotify_link = None
-    ordered_links = []
+    spotify_link: HeaderSocialLinkItem | None = None
+    ordered_links: list[HeaderSocialLinkItem] = []
     bandcamp_index = None
 
     for link in links:
