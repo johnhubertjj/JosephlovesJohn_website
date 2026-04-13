@@ -118,11 +118,9 @@ def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_serv
 
 
 
-def test_mastering_transition_and_menu_open_works_from_main_site(browser_page, live_server) -> None:
-    """The mastering CTA should preserve transition state and expose the menu UI."""
-    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
-    browser_page.locator('#top-nav a[data-mastering-link="true"]').click()
-    browser_page.wait_for_url("**/mastering-services/?from_home=1")
+def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> None:
+    """The mastering route should still load and expose the menu UI."""
+    browser_page.goto(_route_url(live_server, "mastering:home") + "?from_home=1", wait_until="load")
 
     body_class = browser_page.locator("body").get_attribute("class") or ""
     assert "is-from-home" in body_class

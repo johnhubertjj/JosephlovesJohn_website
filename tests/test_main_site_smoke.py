@@ -16,7 +16,6 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
     assert response.status_code == 200
     for fragment in (
-        'id="top-nav"',
         'id="header"',
         'id="main"',
         'id="footer"',
