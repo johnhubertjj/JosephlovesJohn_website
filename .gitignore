@@ -83,4 +83,3 @@ static/images/*
 # Docs irrelevant to code
 docs/django_prelaunch_checklist.pdf
 docs/cloudflare_r2.md
-
