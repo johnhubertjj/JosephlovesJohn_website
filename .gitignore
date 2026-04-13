@@ -78,3 +78,6 @@ static/audio/
 static/images/*
 #!static/images/gig_photos/thumbs/
 #!static/images/gig_photos/thumbs/*.jpg
+
+# Docs irrelevant to code
+docs/django_prelaunch_checklist.pdf
