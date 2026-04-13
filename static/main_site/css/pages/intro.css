@@ -1,0 +1,225 @@
+#main article#intro .image.main.intro-main-image {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#main article#intro > p {
+    max-width: 46rem;
+    margin: 0 0 1.1rem 0;
+}
+
+.intro-signup-copy {
+    margin-top: 1rem !important;
+}
+
+.intro-signup-form {
+    margin: 0.35rem 0 0;
+    max-width: 42rem;
+    width: 100%;
+}
+
+.intro-signup-form .formkit-form,
+.intro-signup-form .seva-form {
+    align-items: center !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+.intro-signup-form .formkit-form[data-uid="408ee57c19"] [data-style="clean"],
+.intro-signup-form .formkit-form[data-uid="408ee57c19"][min-width~="700"] [data-style="clean"],
+.intro-signup-form .formkit-form[data-uid="408ee57c19"][min-width~="800"] [data-style="clean"] {
+    padding: 0 !important;
+}
+
+.intro-signup-form .formkit-fields,
+.intro-signup-form .formkit-subheader {
+    max-width: 100% !important;
+}
+
+.intro-signup-form .formkit-form,
+.intro-signup-form .formkit-fields,
+.intro-signup-form .formkit-field,
+.intro-signup-form .formkit-powered-by-convertkit-container {
+    margin-bottom: 0 !important;
+}
+
+.intro-signup-form .formkit-form > *,
+.intro-signup-form .formkit-fields > *,
+.intro-signup-form .formkit-field > * {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+}
+
+.intro-signup-form .formkit-fields {
+    align-items: center !important;
+    display: flex !important;
+    gap: 0.75rem !important;
+    justify-content: flex-start !important;
+    margin: 0 !important;
+}
+
+.intro-signup-form .formkit-field {
+    flex: 1 1 20rem !important;
+    margin: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+}
+
+.intro-signup-form .formkit-input {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    min-height: 2.75rem !important;
+    padding: 0 1rem !important;
+    width: 100% !important;
+}
+
+.intro-signup-form .formkit-input::placeholder {
+    color: rgba(255, 255, 255, 0.68) !important;
+    opacity: 1;
+}
+
+.intro-signup-form .formkit-input::-webkit-input-placeholder {
+    color: rgba(255, 255, 255, 0.68) !important;
+}
+
+.intro-signup-form .formkit-input::-moz-placeholder {
+    color: rgba(255, 255, 255, 0.68) !important;
+    opacity: 1;
+}
+
+.intro-signup-form noscript {
+    display: inline-flex;
+}
+
+.intro-signup-form noscript .button,
+.music-accent-button {
+    white-space: nowrap;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.16rem;
+    background: linear-gradient(135deg, #ffffff, #dfe6ff);
+    color: #10121a !important;
+    border: 1px solid rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 0.45rem 1rem rgba(0, 0, 0, 0.28);
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.intro-signup-form noscript .button:hover,
+.intro-signup-form noscript .button:focus-visible,
+.music-accent-button:hover,
+.music-accent-button:focus-visible {
+    background: linear-gradient(135deg, #ffffff, #eef2ff);
+    transform: translateY(-1px);
+    box-shadow: 0 0.65rem 1.2rem rgba(0, 0, 0, 0.32);
+}
+
+.intro-signup-form .formkit-submit {
+    flex: 0 0 auto !important;
+    font-size: 0.8rem !important;
+    letter-spacing: 0.2rem !important;
+    line-height: calc(2.75rem - 2px) !important;
+    margin: 0 !important;
+    max-width: 10.5rem !important;
+    min-width: 9rem !important;
+    overflow: hidden !important;
+    padding: 0 1rem 0 1.12rem !important;
+    text-align: center !important;
+    width: auto !important;
+}
+
+.intro-signup-form .formkit-submit > *,
+.intro-signup-form .formkit-submit > * > * {
+    align-items: center !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: inherit !important;
+    cursor: inherit !important;
+    display: flex !important;
+    height: 100% !important;
+    justify-content: center !important;
+    line-height: 2.75rem !important;
+    margin: 0 !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+    text-align: center !important;
+    width: 100% !important;
+}
+
+.intro-signup-form .formkit-header,
+.intro-signup-form .formkit-subheader,
+.intro-signup-form .formkit-guarantee {
+    color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.intro-signup-form .formkit-powered-by-convertkit-container,
+.intro-signup-form .formkit-powered-by-convertkit-container a,
+.intro-signup-form [data-element="powered-by"],
+.intro-signup-form [data-element="powered-by"] a {
+    color: rgba(255, 255, 255, 0.42) !important;
+}
+
+.intro-signup-form .formkit-powered-by-convertkit-container a:hover,
+.intro-signup-form .formkit-powered-by-convertkit-container a:focus-visible,
+.intro-signup-form [data-element="powered-by"] a:hover,
+.intro-signup-form [data-element="powered-by"] a:focus-visible {
+    color: rgba(255, 255, 255, 0.58) !important;
+}
+
+.intro-signup-form .formkit-alert {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+    margin-top: 0.8rem !important;
+}
+
+@media screen and (max-width: 980px) {
+    #main article#intro .image.main.intro-main-image {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 630px) {
+    #main article#intro .image.main.intro-main-image {
+        width: 100%;
+    }
+
+    .intro-signup-form .formkit-fields {
+        align-items: stretch !important;
+        flex-direction: column !important;
+        gap: 0.45rem !important;
+    }
+
+    .intro-signup-form .formkit-field {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+    }
+
+    .intro-signup-form .formkit-submit,
+    .intro-signup-form noscript .button {
+        font-size: 0.8rem !important;
+        letter-spacing: 0.2rem !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .intro-signup-form .formkit-submit > *,
+    .intro-signup-form .formkit-submit > * > * {
+        font-size: inherit !important;
+        letter-spacing: inherit !important;
+    }
+}

@@ -23,6 +23,16 @@ def static_base_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def media_base_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """Point uploaded media helpers at a temporary media directory."""
+    media_dir = tmp_path / "media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(main_site_views.settings, "MEDIA_ROOT", media_dir, raising=False)
+    monkeypatch.setattr(main_site_views.settings, "MEDIA_URL", "/media/", raising=False)
+    return media_dir
+
+
+@pytest.fixture
 def create_static_asset(static_base_dir: Path):
     """Create a temporary static asset and return its relative path.
 
@@ -32,6 +42,19 @@ def create_static_asset(static_base_dir: Path):
 
     def _create(relative_path: str, content: bytes = b"asset") -> str:
         target = static_base_dir / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        return relative_path
+
+    return _create
+
+
+@pytest.fixture
+def create_media_asset(media_base_dir: Path):
+    """Create a temporary uploaded-media asset and return its relative path."""
+
+    def _create(relative_path: str, content: bytes = b"asset") -> str:
+        target = media_base_dir / relative_path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(content)
         return relative_path

@@ -2,7 +2,6 @@
 
 import pytest
 from django.urls import reverse
-from main_site import views
 
 pytestmark = [pytest.mark.browser, pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 
@@ -20,7 +19,8 @@ def test_intro_route_sets_hash_and_activates_intro_article(browser_page, live_se
 
     assert browser_page.evaluate("window.location.hash") == "#intro"
     assert browser_page.locator("article#intro.active").is_visible()
-    assert browser_page.locator("#intro-signup-email").is_visible()
+    assert browser_page.locator(".intro-signup-form").is_visible()
+    assert browser_page.locator('script[data-uid="408ee57c19"]').count() == 1
 
 
 
@@ -43,10 +43,8 @@ def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_p
     modal = browser_page.locator("#music-share-modal")
     modal.wait_for()
     assert modal.get_attribute("aria-hidden") == "false"
-    assert (
-        browser_page.locator("#music-share-title").inner_text().strip().lower()
-        == views.MUSIC_LIBRARY_MANIFEST[0]["title"].lower()
-    )
+    first_title = browser_page.locator(".music-library-item h3").first.inner_text().strip().lower()
+    assert browser_page.locator("#music-share-title").inner_text().strip().lower() == first_title
     assert browser_page.locator("#music-share-link").input_value().endswith("/music/")
 
     browser_page.locator(".music-share-dialog").click()
@@ -101,7 +99,8 @@ def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_serv
     lightbox = browser_page.locator("#art-lightbox")
     lightbox.wait_for()
     assert lightbox.get_attribute("aria-hidden") == "false"
-    assert "/static/images/gig_photos/" in (browser_page.locator(".art-lightbox-image").get_attribute("src") or "")
+    lightbox_src = browser_page.locator(".art-lightbox-image").get_attribute("src") or ""
+    assert "/static/images/gig_photos/" in lightbox_src or "/media/gig_photos/" in lightbox_src
     assert browser_page.locator(".art-lightbox-caption").inner_text().strip()
 
     lightbox.click(position={"x": 8, "y": 8})

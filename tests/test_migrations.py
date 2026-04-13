@@ -4,11 +4,13 @@ from importlib import import_module
 
 import pytest
 from django.apps import apps as django_apps
-from main_site.models import GigPhoto
+from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
 
 migration_0001 = import_module("main_site.migrations.0001_initial")
 migration_0002 = import_module("main_site.migrations.0002_normalize_gig_photo_titles")
+migration_0003 = import_module("main_site.migrations.0003_albumart_animationasset_alter_gigphoto_options_and_more")
+migration_0004 = import_module("main_site.migrations.0004_headersociallink_primarynavitem")
 shop_migration_0002 = import_module("shop.migrations.0002_seed_music_products")
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
@@ -77,3 +79,63 @@ def test_shop_seed_music_products_populates_catalog_once() -> None:
 
     assert first_pass == ["dark-and-light-artist-version", "dark-and-light-instrumental"]
     assert list(Product.objects.order_by("sort_order").values_list("slug", flat=True)) == first_pass
+
+
+def test_sort_order_normalization_rewrites_gig_photos_to_zero_based_values() -> None:
+    """The 0003 migration should normalize legacy 10/20/30 sort orders."""
+    GigPhoto.objects.all().delete()
+    GigPhoto.objects.create(title="Third", image_path="three.jpg", sort_order=30)
+    GigPhoto.objects.create(title="First", image_path="one.jpg", sort_order=10)
+    GigPhoto.objects.create(title="Second", image_path="two.jpg", sort_order=20)
+
+    migration_0003.renumber_gig_photo_sort_orders(django_apps, None)
+
+    assert list(GigPhoto.objects.order_by("sort_order").values_list("sort_order", flat=True)) == [0, 1, 2]
+
+
+def test_seed_album_art_and_animation_assets_populates_defaults_once() -> None:
+    """The 0003 migration should seed the new artwork tables without duplicates."""
+    AlbumArt.objects.all().delete()
+    AnimationAsset.objects.all().delete()
+
+    migration_0003.seed_album_art_and_animation_assets(django_apps, None)
+    first_album_titles = list(AlbumArt.objects.order_by("sort_order").values_list("title", flat=True))
+    first_animation_titles = list(AnimationAsset.objects.order_by("sort_order").values_list("title", flat=True))
+
+    migration_0003.seed_album_art_and_animation_assets(django_apps, None)
+
+    assert first_album_titles == [
+        "Dark and Light - Artist Cover",
+        "Dark and Light - Instrumental Artwork",
+        "Current Artist Profile",
+    ]
+    assert first_animation_titles == [
+        "Symbol Animation",
+        "Buddlea Animation",
+    ]
+    assert list(AlbumArt.objects.order_by("sort_order").values_list("title", flat=True)) == first_album_titles
+    assert list(AnimationAsset.objects.order_by("sort_order").values_list("title", flat=True)) == first_animation_titles
+
+
+def test_seed_header_and_nav_items_populates_defaults_once() -> None:
+    """The 0004 migration should seed the new header and nav tables without duplicates."""
+    HeaderSocialLink.objects.all().delete()
+    PrimaryNavItem.objects.all().delete()
+
+    migration_0004.seed_header_and_nav_items(django_apps, None)
+    first_social_labels = list(HeaderSocialLink.objects.order_by("sort_order").values_list("label", flat=True))
+    first_nav_labels = list(PrimaryNavItem.objects.order_by("sort_order").values_list("label", flat=True))
+
+    migration_0004.seed_header_and_nav_items(django_apps, None)
+
+    assert first_social_labels == [
+        "Bandcamp",
+        "Instagram",
+        "YouTube",
+        "Amazon Music",
+        "Apple Music",
+        "TikTok",
+    ]
+    assert first_nav_labels == ["Intro", "Music", "Art", "Contact"]
+    assert list(HeaderSocialLink.objects.order_by("sort_order").values_list("label", flat=True)) == first_social_labels
+    assert list(PrimaryNavItem.objects.order_by("sort_order").values_list("label", flat=True)) == first_nav_labels
