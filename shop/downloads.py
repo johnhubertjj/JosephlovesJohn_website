@@ -21,7 +21,7 @@ def _private_object_key(relative_path: str, *, key_prefix: str) -> str:
 def _r2_client(*, endpoint_url: str, access_key_id: str, secret_access_key: str, region: str):
     """Build an R2-compatible S3 client."""
     try:
-        import boto3
+        import boto3  # type: ignore[import-untyped]
     except ImportError as exc:  # pragma: no cover - exercised only when dependency is missing.
         raise RuntimeError("boto3 is required for private R2 links.") from exc
 

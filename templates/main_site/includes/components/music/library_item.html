@@ -1,6 +1,7 @@
+{% load asset_urls %}
 <section class="music-library-item{% if item.is_reversed %} is-reversed{% endif %}">
     <figure class="music-library-art">
-        <img src="{{ item.art_url }}" alt="{{ item.art_alt }}" />
+        <img src="{{ item.art_url|default:item.art_path|asset_url }}" alt="{{ item.art_alt }}" />
     </figure>
     <div class="music-library-player-panel">
         <div class="music-library-player-head">
@@ -34,8 +35,8 @@
         <div
             id="{{ item.player_id }}"
             class="music-player-frame"
-            data-file-wav="{{ item.file_wav_url }}"
-            data-file-mp3="{{ item.file_mp3_url }}"
+            data-file-wav="{{ item.file_wav_url|default:item.file_wav|asset_url }}"
+            data-file-mp3="{{ item.file_mp3_url|default:item.file_mp3|asset_url }}"
         ></div>
     </div>
 </section>
