@@ -1,6 +1,8 @@
 @import url("base/variables.css");
 @import url("pages/intro.css");
+@import url("pages/legal.css");
 @import url("components/music-library.css");
 @import url("components/share-modal.css");
 @import url("components/cart-modal.css");
 @import url("components/art-gallery.css");
+@import url("components/cookie-banner.css");

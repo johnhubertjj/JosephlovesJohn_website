@@ -1,0 +1,59 @@
+{% extends 'main_site/base.html' %}
+{% load static %}
+
+{% block title %}{{ page.title }} | JosephlovesJohn{% endblock %}
+
+{% block styles %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'main_site/css/site.css' %}" />
+{% endblock %}
+
+{% block content %}
+    {% include 'main_site/includes/layout/top_nav.html' %}
+
+    <main class="legal-shell">
+        <div class="legal-shell__inner">
+            <a class="legal-back-link" href="{% url 'main_site:main' %}">
+                <span class="fas fa-arrow-left" aria-hidden="true"></span>
+                <span>Back to site</span>
+            </a>
+
+            <section class="legal-card">
+                <header class="legal-header">
+                    <p class="legal-eyebrow">{{ page.eyebrow }}</p>
+                    <h1>{{ page.title }}</h1>
+                    <p class="legal-subtitle">{{ page.subtitle }}</p>
+                </header>
+
+                <div class="legal-contact">
+                    <h2>Contact</h2>
+                    <address>
+                        {% for line in contact_lines %}
+                            <div>{{ line }}</div>
+                        {% endfor %}
+                    </address>
+                </div>
+
+                <div class="legal-sections">
+                    {% for section in page.sections %}
+                        <section class="legal-section">
+                            <h2>{{ section.heading }}</h2>
+                            {% for paragraph in section.paragraphs %}
+                                <p>{{ paragraph }}</p>
+                            {% endfor %}
+                            {% if section.bullets %}
+                                <ul>
+                                    {% for bullet in section.bullets %}
+                                        <li>{{ bullet }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </section>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </main>
+
+    {% include 'main_site/includes/layout/footer.html' %}
+{% endblock %}

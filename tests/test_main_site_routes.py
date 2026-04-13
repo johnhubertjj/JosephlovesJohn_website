@@ -38,3 +38,20 @@ def test_music_route_exposes_share_modal_and_player_markup(client) -> None:
     assert "music-player-frame" in body
     assert body.count("music-share-trigger") >= 2
     assert body.count("music-buy-trigger") >= 2
+
+
+@pytest.mark.parametrize(
+    ("route_name", "expected_text"),
+    [
+        ("main_site:privacy", "Privacy Policy"),
+        ("main_site:cookies", "Cookies Policy"),
+        ("main_site:terms", "Terms of Sale"),
+        ("main_site:refunds", "Refunds and Digital Downloads"),
+    ],
+)
+def test_legal_routes_render(client, route_name: str, expected_text: str) -> None:
+    """Legal-information pages should render successfully."""
+    response = client.get(reverse(route_name))
+
+    assert response.status_code == 200
+    assert expected_text in response.content.decode()

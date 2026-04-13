@@ -1,5 +1,6 @@
 """Black-box tests for main site helper functions."""
 
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -141,6 +142,21 @@ def test_normalize_static_path_strips_prefixes() -> None:
     assert views._normalize_static_path("/static/images/example.jpg") == "images/example.jpg"
     assert views._normalize_static_path(" static/images/example.jpg ") == "images/example.jpg"
     assert views._normalize_static_path("images/example.jpg") == "images/example.jpg"
+
+
+def test_uploaded_file_exists_returns_false_without_a_usable_name() -> None:
+    """Uploaded-file checks should fail closed when no file name is available."""
+    assert views._uploaded_file_exists(None) is False
+    assert views._uploaded_file_exists(SimpleNamespace(name="")) is False
+
+
+def test_uploaded_file_exists_returns_false_when_storage_errors() -> None:
+    """Uploaded-file checks should fail closed when storage lookups error."""
+    storage = Mock()
+    storage.exists.side_effect = OSError("storage unavailable")
+    file_field = SimpleNamespace(name="uploads/test.jpg", storage=storage)
+
+    assert views._uploaded_file_exists(file_field) is False
 
 
 def test_build_gig_photo_item_falls_back_to_source_image_when_thumb_missing(create_static_asset) -> None:

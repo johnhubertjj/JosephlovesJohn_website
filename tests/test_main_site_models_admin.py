@@ -2,6 +2,7 @@
 
 import pytest
 from django.contrib import admin
+from django.core.exceptions import ValidationError
 from main_site.admin import (
     AlbumArtAdmin,
     AnimationAssetAdmin,
@@ -189,3 +190,17 @@ def test_animation_admin_configuration_matches_gallery_workflow() -> None:
     )
     assert admin_instance.list_editable == ("sort_order", "is_active", "featured")
     assert admin_instance.ordering == ("sort_order", "id")
+
+
+@pytest.mark.parametrize(
+    ("asset", "message"),
+    [
+        (GigPhoto(title="Missing gig photo"), "Add either an image upload or a static image path."),
+        (AlbumArt(title="Missing album art"), "Add either an image upload or a static image path."),
+        (AnimationAsset(title="Missing animation"), "Add either an animation upload or a static file path."),
+    ],
+)
+def test_gallery_assets_require_a_file_source(asset, message: str) -> None:
+    """Gallery assets should validate that a path or upload has been supplied."""
+    with pytest.raises(ValidationError, match=message):
+        asset.clean()

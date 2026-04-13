@@ -18,6 +18,20 @@
 <body class="{% block body_class %}is-preload{% endblock %}">
 {% block content %}{% endblock %}
 
+<aside class="cookie-banner" data-cookie-banner hidden aria-live="polite">
+    <div class="cookie-banner__content">
+        <p class="cookie-banner__title">Cookies on JosephlovesJohn</p>
+        <p class="cookie-banner__copy">
+            We use essential cookies to keep the shop, cart, login, and security features working. Optional cookies are used only for third-party embedded content such as the mailing-list signup form.
+        </p>
+    </div>
+    <div class="cookie-banner__actions">
+        <button type="button" class="button primary" data-cookie-accept>Accept optional cookies</button>
+        <button type="button" class="button" data-cookie-reject>Use essential only</button>
+        <a href="{% url 'main_site:cookies' %}">Read cookie policy</a>
+    </div>
+</aside>
+
 <div id="bg"></div>
 
 {% block pre_scripts %}{% endblock %}
@@ -28,6 +42,7 @@
 <script src="{% static 'assets/js/breakpoints.min.js' %}"></script>
 <script src="{% static 'assets/js/util.js' %}"></script>
 <script src="{% static 'assets/js/main.js' %}"></script>
+<script src="{% static 'main_site/js/cookies.js' %}"></script>
 {% endblock %}
 </body>
 </html>

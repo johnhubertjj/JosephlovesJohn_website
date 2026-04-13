@@ -5,16 +5,18 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 
 
-class CheckoutForm(forms.Form):
-    """Collect customer details for the portfolio checkout flow."""
+class CheckoutConsentForm(forms.Form):
+    """Collect the required acknowledgements before redirecting to Stripe."""
 
-    full_name = forms.CharField(max_length=180)
-    email = forms.EmailField()
-    notes = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={"rows": 4}),
+    accept_terms = forms.BooleanField(
+        label="I have read the privacy, cookies, terms, and refunds information for this purchase."
     )
-    save_details = forms.BooleanField(required=False)
+    accept_digital_supply = forms.BooleanField(
+        label=(
+            "I want immediate access to my digital download after payment and understand that the usual "
+            "14-day cancellation right ends once supply begins."
+        )
+    )
 
 
 class ShopAuthenticationForm(AuthenticationForm):

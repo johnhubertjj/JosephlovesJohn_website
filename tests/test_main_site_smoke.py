@@ -20,12 +20,18 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         'id="header"',
         'id="main"',
         'id="footer"',
+        'data-cookie-banner',
         'id="music-share-modal"',
         'id="music-cart-modal"',
         'id="floating-cart-button"',
         'id="art-lightbox"',
     ):
         assert fragment in body
+
+    for route_name in ("main_site:privacy", "main_site:cookies", "main_site:terms", "main_site:refunds"):
+        assert f'href="{reverse(route_name)}"' in body
+
+    assert 'data-cookie-manage' in body
 
     for item in response.context["primary_nav_items"]:
         assert item["label"] in body
@@ -37,15 +43,15 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
-    """The intro route should expose the Kit signup embed and mastering CTA."""
+    """The intro route should expose the consent-gated signup block and mastering CTA."""
     response = client.get(reverse("main_site:intro"))
     body = response.content.decode()
 
     assert response.status_code == 200
     assert 'aria-label="Sign up for updates"' in body
-    assert 'data-uid="408ee57c19"' in body
-    assert 'src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in body
+    assert 'data-cookie-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in body
     assert 'href="https://josephlovesjohn.kit.com/408ee57c19"' in body
+    assert 'Allow optional cookies to load the embedded signup form' in body
     assert f'href="{reverse("mastering:home")}"' in body
 
 

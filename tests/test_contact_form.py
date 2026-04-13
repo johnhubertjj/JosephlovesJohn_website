@@ -58,3 +58,18 @@ def test_contact_form_shows_validation_errors(client) -> None:
     assert "This field is required." in body
     assert "Enter a valid email address." in body
     assert len(mail.outbox) == 0
+
+
+def test_contact_page_renders_only_instagram_and_tiktok_icons(client) -> None:
+    """The contact page should expose only the supported social messaging links."""
+    response = client.get(reverse("main_site:contact"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'href="https://ig.me/m/josephlovesjohn_music"' in body
+    assert 'href="https://www.tiktok.com/@joseph_loves_john"' in body
+    assert "fa-instagram" in body
+    assert "fa-tiktok" in body
+    assert "fa-twitter" not in body
+    assert "fa-facebook-f" not in body
+    assert "fa-github" not in body

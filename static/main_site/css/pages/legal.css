@@ -1,0 +1,77 @@
+.legal-shell {
+    min-height: 100vh;
+    padding: 6.5rem 1.5rem 3rem;
+    position: relative;
+    width: 100%;
+    z-index: 3;
+}
+
+.legal-shell__inner {
+    margin: 0 auto;
+    width: min(100%, 58rem);
+}
+
+.legal-back-link {
+    align-items: center;
+    color: rgba(255, 255, 255, 0.82);
+    display: inline-flex;
+    gap: 0.55rem;
+    letter-spacing: 0.08rem;
+    margin-bottom: 1.25rem;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.legal-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.95rem;
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+}
+
+.legal-header h1,
+.legal-section h2,
+.legal-contact h2 {
+    margin-top: 0;
+}
+
+.legal-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.18rem;
+    margin: 0 0 0.55rem;
+    opacity: 0.72;
+    text-transform: uppercase;
+}
+
+.legal-subtitle {
+    margin-bottom: 1.5rem;
+    max-width: 42rem;
+    opacity: 0.82;
+}
+
+.legal-contact {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.legal-contact address {
+    font-style: normal;
+    line-height: 1.7;
+}
+
+.legal-sections {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.legal-section p:last-child,
+.legal-section ul:last-child {
+    margin-bottom: 0;
+}
+
+.legal-section ul {
+    margin: 0.75rem 0 0;
+    padding-left: 1.25rem;
+}

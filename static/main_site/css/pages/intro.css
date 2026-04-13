@@ -129,6 +129,7 @@
 .intro-signup-form .formkit-submit {
     flex: 0 0 auto !important;
     font-size: 0.8rem !important;
+    font-weight: 700 !important;
     letter-spacing: 0.2rem !important;
     line-height: calc(2.75rem - 2px) !important;
     margin: 0 !important;

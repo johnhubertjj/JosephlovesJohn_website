@@ -1,0 +1,100 @@
+.cookie-banner {
+    align-items: flex-start;
+    background: rgba(18, 18, 24, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    bottom: 0;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    left: 0;
+    padding: 1rem 1.25rem;
+    position: fixed;
+    right: 0;
+    z-index: 20;
+}
+
+.cookie-banner[hidden] {
+    display: none;
+}
+
+.cookie-banner__title {
+    font-size: 0.86rem;
+    letter-spacing: 0.08rem;
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+}
+
+.cookie-banner__copy {
+    margin: 0;
+    max-width: 44rem;
+    opacity: 0.82;
+}
+
+.cookie-banner__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+.footer-links {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+}
+
+.footer-links a,
+.footer-cookie-button {
+    background: none;
+    border: 0;
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font: inherit;
+    letter-spacing: 0.12rem;
+    padding: 0;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible,
+.footer-cookie-button:hover,
+.footer-cookie-button:focus-visible {
+    color: #ffffff;
+}
+
+.intro-signup-form {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.intro-signup-note {
+    font-size: 0.85rem;
+    margin: 0;
+    opacity: 0.82;
+}
+
+.intro-signup-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.intro-signup-form.is-loaded .intro-signup-note,
+.intro-signup-form.is-loaded .intro-signup-actions,
+.intro-signup-form.is-loaded .intro-signup-link {
+    display: none;
+}
+
+@media screen and (max-width: 736px) {
+    .cookie-banner {
+        flex-direction: column;
+    }
+
+    .cookie-banner__actions {
+        justify-content: flex-start;
+    }
+}
