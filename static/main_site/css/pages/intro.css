@@ -20,6 +20,63 @@
     width: 100%;
 }
 
+.intro-signup-gate {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 1.15rem 1.2rem 1.2rem;
+}
+
+.intro-signup-note {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.95rem;
+    letter-spacing: 0.03rem;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.intro-signup-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    margin-top: 1rem;
+}
+
+.intro-signup-open {
+    min-width: 13.5rem;
+}
+
+.intro-signup-secondary {
+    border-bottom: dotted 1px rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 0.7rem;
+    letter-spacing: 0.22rem;
+    padding-bottom: 0.14rem;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition:
+        border-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.intro-signup-secondary:hover,
+.intro-signup-secondary:focus-visible {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.intro-signup-embed[hidden] {
+    display: none !important;
+}
+
+.intro-signup-form.is-loading-signup .intro-signup-open {
+    opacity: 0.75;
+}
+
+.intro-signup-form.is-signup-live .intro-signup-embed {
+    margin-top: 0;
+}
+
 .intro-signup-form .formkit-form,
 .intro-signup-form .seva-form {
     align-items: center !important;
@@ -196,6 +253,26 @@
 @media screen and (max-width: 630px) {
     #main article#intro .image.main.intro-main-image {
         width: 100%;
+    }
+
+    .intro-signup-gate {
+        padding: 1rem;
+    }
+
+    .intro-signup-actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+
+    .intro-signup-open,
+    .intro-signup-secondary {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .intro-signup-secondary {
+        text-align: center;
     }
 
     .intro-signup-form .formkit-fields {

@@ -140,6 +140,19 @@ def test_music_library_item_component_renders_reusable_share_and_player_structur
 
 
 @pytest.mark.integration
+def test_intro_signup_component_renders_click_to_load_gate() -> None:
+    """The intro signup partial should defer Kit until the user explicitly opens it."""
+    html = render_to_string("main_site/includes/components/intro/signup_form.html")
+
+    assert 'data-signup-root' in html
+    assert 'data-kit-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in html
+    assert 'data-signup-gate' in html
+    assert "Open signup form" in html
+    assert "provided by Kit and may use cookies" in html
+    assert 'data-signup-embed' in html
+
+
+@pytest.mark.integration
 def test_gig_photo_grid_component_renders_empty_state() -> None:
     """The gig-photo grid partial should expose a reusable empty-state message."""
     html = render_to_string(

@@ -38,6 +38,24 @@
     justify-content: flex-end;
 }
 
+.cookie-banner__actions .button {
+    margin: 0;
+    min-width: 0;
+}
+
+.cookie-banner__policy-link {
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.72rem;
+    letter-spacing: 0.16rem;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.cookie-banner__policy-link:hover,
+.cookie-banner__policy-link:focus-visible {
+    color: #ffffff;
+}
+
 #wrapper {
     justify-content: flex-start;
     padding-bottom: 1.25rem;

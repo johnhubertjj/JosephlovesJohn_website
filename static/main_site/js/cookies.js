@@ -1,6 +1,9 @@
 (function () {
     var noticeCookieName = "site_cookie_notice";
+    var preferenceCookieName = "site_cookie_preference";
     var noticeDismissedValue = "dismissed";
+    var essentialOnlyValue = "essential";
+    var allowOptionalValue = "all";
 
     function getCookie(name) {
         var value = "; " + document.cookie;
@@ -11,8 +14,47 @@
         return "";
     }
 
-    function setDismissed() {
-        document.cookie = noticeCookieName + "=" + noticeDismissedValue + "; path=/; max-age=31536000; SameSite=Lax";
+    function setCookie(name, value) {
+        document.cookie = name + "=" + value + "; path=/; max-age=31536000; SameSite=Lax";
+    }
+
+    function emitPreferenceChange(preference) {
+        if (typeof CustomEvent !== "function") {
+            return;
+        }
+
+        document.dispatchEvent(
+            new CustomEvent("site:cookie-preference-changed", {
+                detail: { preference: preference || "" }
+            })
+        );
+    }
+
+    function applyPreferenceState(preference) {
+        document.documentElement.setAttribute("data-cookie-preference", preference || "");
+        if (document.body) {
+            document.body.setAttribute("data-cookie-preference", preference || "");
+        }
+        emitPreferenceChange(preference);
+    }
+
+    function getSavedPreference() {
+        var explicitPreference = getCookie(preferenceCookieName);
+        if (explicitPreference === essentialOnlyValue || explicitPreference === allowOptionalValue) {
+            return explicitPreference;
+        }
+
+        // Older visits only stored that the notice was dismissed. Treat those as essential-only.
+        if (getCookie(noticeCookieName) === noticeDismissedValue) {
+            return essentialOnlyValue;
+        }
+
+        return "";
+    }
+
+    function savePreference(preference) {
+        setCookie(preferenceCookieName, preference);
+        setCookie(noticeCookieName, noticeDismissedValue);
     }
 
     function setBannerVisibility(visible) {
@@ -35,19 +77,45 @@
     }
 
     function applyBannerState() {
-        setBannerVisibility(getCookie(noticeCookieName) !== noticeDismissedValue);
+        var preference = getSavedPreference();
+        setBannerVisibility(!preference);
+        applyPreferenceState(preference);
+    }
+
+    function closestFromEventTarget(target, selector) {
+        if (!target) {
+            return null;
+        }
+
+        if (typeof target.closest === "function") {
+            return target.closest(selector);
+        }
+
+        if (target.parentElement && typeof target.parentElement.closest === "function") {
+            return target.parentElement.closest(selector);
+        }
+
+        return null;
     }
 
     document.addEventListener("click", function (event) {
-        var dismissButton = event.target.closest("[data-cookie-dismiss]");
-        if (dismissButton) {
+        var essentialOnlyButton = closestFromEventTarget(event.target, "[data-cookie-essential-only]");
+        if (essentialOnlyButton) {
             event.preventDefault();
-            setDismissed();
+            savePreference(essentialOnlyValue);
             applyBannerState();
             return;
         }
 
-        var manageButton = event.target.closest("[data-cookie-manage]");
+        var allowOptionalButton = closestFromEventTarget(event.target, "[data-cookie-accept-all]");
+        if (allowOptionalButton) {
+            event.preventDefault();
+            savePreference(allowOptionalValue);
+            applyBannerState();
+            return;
+        }
+
+        var manageButton = closestFromEventTarget(event.target, "[data-cookie-manage]");
         if (manageButton) {
             event.preventDefault();
             setBannerVisibility(true);
