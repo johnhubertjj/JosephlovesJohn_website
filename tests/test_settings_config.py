@@ -1,7 +1,6 @@
 """Tests for environment-driven Django settings helpers."""
 
 import pytest
-
 from josephlovesjohn_site import settings
 
 pytestmark = pytest.mark.smoke

@@ -1,5 +1,7 @@
 """Admin registrations for the main site app."""
 
+from typing import ClassVar
+
 from django.contrib import admin
 
 from .models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
@@ -8,8 +10,8 @@ from .models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, Primar
 class OrderedSiteItemAdmin(admin.ModelAdmin):
     """Shared admin configuration for ordered site collections."""
 
-    list_editable = ("sort_order", "is_active")
-    ordering = ("sort_order", "id")
+    list_editable: ClassVar[tuple[str, ...]] = ("sort_order", "is_active")
+    ordering: ClassVar[tuple[str, ...]] = ("sort_order", "id")
 
 
 @admin.register(HeaderSocialLink)
@@ -49,7 +51,7 @@ class AlbumArtAdmin(OrderedSiteItemAdmin):
     """Expose album artwork controls in the Django admin."""
 
     list_display = ("title", "sort_order", "is_active", "featured", "image_path", "image_file")
-    list_editable = ("sort_order", "is_active", "featured")
+    list_editable: ClassVar[tuple[str, ...]] = ("sort_order", "is_active", "featured")
     search_fields = ("title", "image_path", "alt_text", "image_file")
 
 
@@ -58,5 +60,5 @@ class AnimationAssetAdmin(OrderedSiteItemAdmin):
     """Expose animation artwork controls in the Django admin."""
 
     list_display = ("title", "media_kind", "sort_order", "is_active", "featured", "file_path", "file_upload")
-    list_editable = ("sort_order", "is_active", "featured")
+    list_editable: ClassVar[tuple[str, ...]] = ("sort_order", "is_active", "featured")
     search_fields = ("title", "file_path", "poster_path", "alt_text", "file_upload", "poster_upload")
