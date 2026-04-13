@@ -22,12 +22,57 @@
             {% elif checkout_canceled %}
                 <p class="shop-inline-note">Your cart is still here. When you're ready, try Stripe Checkout again.</p>
             {% else %}
-                <p class="shop-inline-note">Use the button below to continue to Stripe and complete your purchase.</p>
+                <p class="shop-inline-note">Review the digital-download details below, confirm the required acknowledgements, and then continue to Stripe.</p>
             {% endif %}
 
-            <a href="{% url 'shop:checkout' %}" class="button primary shop-primary-button">Continue to Stripe Checkout</a>
+            <div class="shop-policy-summary">
+                <p><strong>Delivery:</strong> Digital download only. No physical shipping applies.</p>
+                <p><strong>Payment:</strong> Card details are handled on Stripe-hosted checkout pages.</p>
+                <p><strong>Currency:</strong> Prices are shown in GBP.</p>
+            </div>
+
+            <form method="post" class="shop-form" novalidate>
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="shop-form-field shop-form-field--checkbox{% if field.errors %} has-errors{% endif %}">
+                        <label for="{{ field.id_for_label }}" class="shop-checkbox-label">
+                            {{ field }}
+                            <span>{{ field.label }}</span>
+                        </label>
+                        {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
+                    </div>
+                {% endfor %}
+                <button
+                    type="submit"
+                    class="button primary shop-primary-button"
+                    data-checkout-submit
+                    {% if not form.accept_terms.value %}disabled{% endif %}
+                >
+                    Continue to Stripe Checkout
+                </button>
+            </form>
         </section>
 
         {% include 'shop/includes/order_summary.html' with items=checkout_items total_display=checkout_subtotal_display summary_title='This order' only %}
     </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script>
+        (function () {
+            var checkbox = document.getElementById("id_accept_terms");
+            var submitButton = document.querySelector("[data-checkout-submit]");
+            if (!checkbox || !submitButton) {
+                return;
+            }
+
+            function syncButtonState() {
+                submitButton.disabled = !checkbox.checked;
+            }
+
+            checkbox.addEventListener("change", syncButtonState);
+            syncButtonState();
+        })();
+    </script>
 {% endblock %}

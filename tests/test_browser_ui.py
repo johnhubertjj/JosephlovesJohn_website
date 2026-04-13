@@ -21,6 +21,7 @@ def test_intro_route_sets_hash_and_activates_intro_article(browser_page, live_se
     assert browser_page.locator("article#intro.active").is_visible()
     assert browser_page.locator(".intro-signup-form").is_visible()
     assert browser_page.locator('script[data-uid="408ee57c19"]').count() == 1
+    assert browser_page.locator('[data-cookie-banner]').is_visible()
 
 
 
@@ -117,11 +118,9 @@ def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_serv
 
 
 
-def test_mastering_transition_and_menu_open_works_from_main_site(browser_page, live_server) -> None:
-    """The mastering CTA should preserve transition state and expose the menu UI."""
-    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
-    browser_page.locator('#top-nav a[data-mastering-link="true"]').click()
-    browser_page.wait_for_url("**/mastering-services/?from_home=1")
+def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> None:
+    """The mastering route should still load and expose the menu UI."""
+    browser_page.goto(_route_url(live_server, "mastering:home") + "?from_home=1", wait_until="load")
 
     body_class = browser_page.locator("body").get_attribute("class") or ""
     assert "is-from-home" in body_class
@@ -130,3 +129,18 @@ def test_mastering_transition_and_menu_open_works_from_main_site(browser_page, l
     browser_page.wait_for_function("document.body.classList.contains('is-menu-visible')")
     assert browser_page.locator("#menu .close").is_visible()
     assert browser_page.locator('#menu a[href="#services"]').is_visible()
+
+
+def test_legal_links_open_routed_legal_page(browser_page, live_server) -> None:
+    """Policy links should navigate to the standalone legal route."""
+    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
+
+    browser_page.locator('#footer a[href="/privacy/"]').click()
+    browser_page.wait_for_url("**/privacy/")
+
+    assert browser_page.url.endswith("/privacy/")
+    assert browser_page.locator(".legal-card").is_visible()
+    assert browser_page.locator("#footer").is_visible()
+
+    browser_page.locator(".legal-back-link").click()
+    browser_page.wait_for_url("**/")

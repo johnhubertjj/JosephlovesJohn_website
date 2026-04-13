@@ -5,7 +5,7 @@ body.is-cart-modal-visible {
 .floating-cart-button {
     position: fixed;
     right: 1.2rem;
-    bottom: 1.2rem;
+    bottom: calc(1.2rem + var(--cookie-banner-height, 0px));
     z-index: 9998;
     display: inline-flex;
     align-items: center;
@@ -68,7 +68,7 @@ body.is-cart-modal-visible {
 .music-cart-dialog {
     position: absolute;
     right: 1.25rem;
-    bottom: 5.2rem;
+    bottom: calc(5.2rem + var(--cookie-banner-height, 0px));
     width: min(100% - 2rem, 31rem);
     padding: 1.2rem;
     border: 1px solid rgba(130, 178, 255, 0.45);

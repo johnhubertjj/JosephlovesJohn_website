@@ -12,4 +12,8 @@ urlpatterns = [
     path("music/", views.music, name="music"),
     path("art/", views.art, name="art"),
     path("contact/", views.contact, name="contact"),
+    path("privacy/", views.privacy, name="privacy"),
+    path("cookies/", views.cookies, name="cookies"),
+    path("terms/", views.terms, name="terms"),
+    path("refunds/", views.refunds, name="refunds"),
 ]

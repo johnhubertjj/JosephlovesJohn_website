@@ -1,5 +1,6 @@
 """Black-box tests for main site helper functions."""
 
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -47,11 +48,48 @@ def test_get_header_social_links_returns_active_database_rows_in_order() -> None
             "label": "Bandcamp",
         },
         {
+            "href": "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg",
+            "icon_class": "icon brands fa-spotify",
+            "label": "Spotify",
+        },
+        {
             "href": "https://example.com/youtube",
             "icon_class": "icon brands fa-youtube",
             "label": "YouTube",
         },
     ]
+
+
+@pytest.mark.django_db
+def test_get_header_social_links_moves_spotify_to_second_position() -> None:
+    """Spotify should always render immediately after Bandcamp."""
+    HeaderSocialLink.objects.all().delete()
+    HeaderSocialLink.objects.create(
+        label="Bandcamp",
+        href="https://example.com/bandcamp",
+        icon_class="icon brands fa-bandcamp",
+        sort_order=0,
+        is_active=True,
+    )
+    HeaderSocialLink.objects.create(
+        label="Spotify",
+        href="https://example.com/old-spotify",
+        icon_class="icon brands fa-spotify",
+        sort_order=4,
+        is_active=True,
+    )
+    HeaderSocialLink.objects.create(
+        label="Instagram",
+        href="https://example.com/instagram",
+        icon_class="icon brands fa-instagram",
+        sort_order=1,
+        is_active=True,
+    )
+
+    links = views._get_header_social_links()
+
+    assert [link["label"] for link in links] == ["Bandcamp", "Spotify", "Instagram"]
+    assert links[1]["href"] == "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg"
 
 
 @pytest.mark.django_db
@@ -141,6 +179,21 @@ def test_normalize_static_path_strips_prefixes() -> None:
     assert views._normalize_static_path("/static/images/example.jpg") == "images/example.jpg"
     assert views._normalize_static_path(" static/images/example.jpg ") == "images/example.jpg"
     assert views._normalize_static_path("images/example.jpg") == "images/example.jpg"
+
+
+def test_uploaded_file_exists_returns_false_without_a_usable_name() -> None:
+    """Uploaded-file checks should fail closed when no file name is available."""
+    assert views._uploaded_file_exists(None) is False
+    assert views._uploaded_file_exists(SimpleNamespace(name="")) is False
+
+
+def test_uploaded_file_exists_returns_false_when_storage_errors() -> None:
+    """Uploaded-file checks should fail closed when storage lookups error."""
+    storage = Mock()
+    storage.exists.side_effect = OSError("storage unavailable")
+    file_field = SimpleNamespace(name="uploads/test.jpg", storage=storage)
+
+    assert views._uploaded_file_exists(file_field) is False
 
 
 def test_build_gig_photo_item_falls_back_to_source_image_when_thumb_missing(create_static_asset) -> None:

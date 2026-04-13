@@ -123,8 +123,61 @@
 }
 
 .shop-form-field input[type='checkbox'] {
-    width: auto;
-    margin-right: 0.5rem;
+    appearance: auto;
+    display: inline-block;
+    float: none;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin: 0;
+    opacity: 1;
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 0.2rem;
+    background: rgba(255, 255, 255, 0.1);
+    accent-color: #ffffff;
+    box-shadow: 0 0 0 1px rgba(10, 12, 18, 0.35);
+}
+
+.shop-form-field--checkbox {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.shop-form-field--checkbox .shop-checkbox-label {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.50rem;
+    margin-bottom: 0;
+}
+
+.shop-form-field--checkbox .shop-checkbox-label span {
+    display: flex;
+    align-items: center;
+    min-height: 0.95rem;
+    line-height: 1.5;
+    font-size: 0.72rem;
+    letter-spacing: 0.05rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+@media screen and (max-width: 736px) {
+    .shop-form-field--checkbox .shop-checkbox-label span {
+        white-space: normal;
+    }
+}
+
+.shop-policy-summary {
+    display: grid;
+    gap: 0.45rem;
+    margin-bottom: 1.1rem;
+}
+
+.shop-policy-summary p {
+    margin: 0;
 }
 
 .shop-field-error {
@@ -256,6 +309,12 @@
     padding: 0;
     display: grid;
     gap: 0.55rem;
+}
+
+.shop-primary-button[disabled] {
+    cursor: not-allowed;
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .shop-history-order li {

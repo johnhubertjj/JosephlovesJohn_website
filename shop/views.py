@@ -21,7 +21,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
 
 from .cart import add_product, build_cart_summary, clear_cart, get_cart_products, remove_product
-from .forms import RegisterForm, ShopAuthenticationForm
+from .forms import CheckoutConsentForm, RegisterForm, ShopAuthenticationForm
 from .models import CustomerProfile, Order, OrderItem, Product
 
 stripe: Any | None = None
@@ -271,9 +271,13 @@ class CheckoutView(View):
 
         if request.GET.get("canceled"):
             messages.info(request, "Checkout was canceled, so your cart is still waiting for you.")
-            return render(request, self.template_name, self._context(products, checkout_canceled=True))
+            return render(
+                request,
+                self.template_name,
+                self._context(products, form=CheckoutConsentForm(), checkout_canceled=True),
+            )
 
-        return self._start_checkout(request, products)
+        return render(request, self.template_name, self._context(products, form=CheckoutConsentForm()))
 
     def post(self, request):
         """Start Stripe Checkout from a form POST as a compatibility fallback.
@@ -288,9 +292,13 @@ class CheckoutView(View):
             messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
             return redirect("main_site:music")
 
-        return self._start_checkout(request, products)
+        form = CheckoutConsentForm(request.POST)
+        if not form.is_valid():
+            return render(request, self.template_name, self._context(products, form=form))
 
-    def _start_checkout(self, request, products):
+        return self._start_checkout(request, products, form=form)
+
+    def _start_checkout(self, request, products, *, form=None):
         """Create the pending order and redirect to Stripe Checkout."""
 
         order = self._build_order(request, products)
@@ -299,7 +307,11 @@ class CheckoutView(View):
             checkout_session = self._create_checkout_session(request, order)
         except ImproperlyConfigured as exc:
             order.delete()
-            return render(request, self.template_name, self._context(products, checkout_error=str(exc)))
+            return render(
+                request,
+                self.template_name,
+                self._context(products, form=form or CheckoutConsentForm(), checkout_error=str(exc)),
+            )
         except Exception:
             order.delete()
             return render(
@@ -307,6 +319,7 @@ class CheckoutView(View):
                 self.template_name,
                 self._context(
                     products,
+                    form=form or CheckoutConsentForm(),
                     checkout_error="Stripe checkout could not be started right now. Please try again in a moment.",
                 ),
             )
@@ -395,7 +408,7 @@ class CheckoutView(View):
 
         return stripe_module.checkout.Session.create(**session_kwargs)
 
-    def _context(self, products, checkout_error="", checkout_canceled=False):
+    def _context(self, products, *, form, checkout_error="", checkout_canceled=False):
         """Build the checkout rendering context.
 
         :param products: Products in the cart.
@@ -407,6 +420,7 @@ class CheckoutView(View):
         return {
             "checkout_items": products,
             "checkout_subtotal_display": f"£{subtotal:.2f}",
+            "form": form,
             "checkout_error": checkout_error,
             "checkout_canceled": checkout_canceled,
         }

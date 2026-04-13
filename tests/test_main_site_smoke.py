@@ -16,16 +16,21 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
     assert response.status_code == 200
     for fragment in (
-        'id="top-nav"',
         'id="header"',
         'id="main"',
         'id="footer"',
+        'data-cookie-banner',
         'id="music-share-modal"',
         'id="music-cart-modal"',
         'id="floating-cart-button"',
         'id="art-lightbox"',
     ):
         assert fragment in body
+
+    for route_name in ("main_site:privacy", "main_site:cookies", "main_site:terms", "main_site:refunds"):
+        assert f'href="{reverse(route_name)}"' in body
+
+    assert 'data-cookie-manage' in body
 
     for item in response.context["primary_nav_items"]:
         assert item["label"] in body
@@ -37,7 +42,7 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
-    """The intro route should expose the Kit signup embed and mastering CTA."""
+    """The intro route should expose the embedded signup form and mastering CTA."""
     response = client.get(reverse("main_site:intro"))
     body = response.content.decode()
 

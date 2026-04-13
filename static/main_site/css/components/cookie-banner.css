@@ -1,0 +1,143 @@
+.cookie-banner {
+    align-items: flex-start;
+    background: rgba(18, 18, 24, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    bottom: 0;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    left: 0;
+    padding: 1rem 1.25rem;
+    position: fixed;
+    right: 0;
+    z-index: 20;
+}
+
+.cookie-banner[hidden] {
+    display: none;
+}
+
+.cookie-banner__title {
+    font-size: 0.86rem;
+    letter-spacing: 0.08rem;
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+}
+
+.cookie-banner__copy {
+    margin: 0;
+    max-width: 44rem;
+    opacity: 0.82;
+}
+
+.cookie-banner__actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+#wrapper {
+    justify-content: flex-start;
+    padding-bottom: 1.25rem;
+}
+
+.footer-links {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+}
+
+.footer-link {
+    background: none;
+    border: 0;
+    color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.6rem;
+    letter-spacing: 0.2rem;
+    line-height: 1;
+    padding: 0;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+button.footer-link {
+    appearance: none;
+    background: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+}
+
+#footer {
+    margin-top: auto;
+    padding-top: 3.5rem;
+    text-align: center;
+    width: 100%;
+}
+
+#footer .copyright {
+    letter-spacing: 0.16rem;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.footer-link:hover,
+.footer-link:focus-visible {
+    color: #ffffff;
+}
+
+body.is-footer-visible-article #footer {
+    filter: none;
+    margin-top: auto;
+    opacity: 1;
+    transform: none;
+}
+
+body.is-footer-visible-article #wrapper {
+    justify-content: flex-start;
+    padding-bottom: 1rem;
+}
+
+body.is-footer-visible-article #main {
+    margin-bottom: 4.75rem;
+}
+
+body.is-footer-visible-article #footer .copyright {
+    opacity: 0.75;
+}
+
+@media screen and (max-width: 736px) {
+    .cookie-banner {
+        flex-direction: column;
+    }
+
+    .cookie-banner__actions {
+        justify-content: flex-start;
+    }
+
+    #footer {
+        padding-top: 2.25rem;
+        text-align: center;
+    }
+
+    .footer-links {
+        gap: 1.1rem 1.7rem;
+        justify-content: center;
+    }
+
+    body.is-footer-visible-article #main {
+        margin-bottom: 2.75rem;
+    }
+
+    #footer .copyright {
+        text-align: center;
+    }
+}

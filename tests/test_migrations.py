@@ -11,6 +11,7 @@ migration_0001 = import_module("main_site.migrations.0001_initial")
 migration_0002 = import_module("main_site.migrations.0002_normalize_gig_photo_titles")
 migration_0003 = import_module("main_site.migrations.0003_albumart_animationasset_alter_gigphoto_options_and_more")
 migration_0004 = import_module("main_site.migrations.0004_headersociallink_primarynavitem")
+migration_0005 = import_module("main_site.migrations.0005_spotify_social_link")
 shop_migration_0002 = import_module("shop.migrations.0002_seed_music_products")
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
@@ -139,3 +140,21 @@ def test_seed_header_and_nav_items_populates_defaults_once() -> None:
     assert first_nav_labels == ["Intro", "Music", "Art", "Contact"]
     assert list(HeaderSocialLink.objects.order_by("sort_order").values_list("label", flat=True)) == first_social_labels
     assert list(PrimaryNavItem.objects.order_by("sort_order").values_list("label", flat=True)) == first_nav_labels
+
+
+def test_spotify_seed_migration_inserts_second_social_link() -> None:
+    """The 0005 migration should add Spotify immediately after Bandcamp."""
+    HeaderSocialLink.objects.all().delete()
+
+    migration_0004.seed_header_and_nav_items(django_apps, None)
+    migration_0005.add_spotify_social_link(django_apps, None)
+
+    assert list(HeaderSocialLink.objects.order_by("sort_order").values_list("label", flat=True)) == [
+        "Bandcamp",
+        "Spotify",
+        "Instagram",
+        "YouTube",
+        "Amazon Music",
+        "Apple Music",
+        "TikTok",
+    ]
