@@ -1,7 +1,6 @@
 (function () {
-    var consentCookieName = "site_cookie_consent";
-    var consentAcceptedValue = "accepted";
-    var consentRejectedValue = "essential";
+    var noticeCookieName = "site_cookie_notice";
+    var noticeDismissedValue = "dismissed";
 
     function getCookie(name) {
         var value = "; " + document.cookie;
@@ -12,12 +11,8 @@
         return "";
     }
 
-    function setConsent(value) {
-        document.cookie = consentCookieName + "=" + value + "; path=/; max-age=31536000; SameSite=Lax";
-    }
-
-    function getConsent() {
-        return getCookie(consentCookieName);
+    function setDismissed() {
+        document.cookie = noticeCookieName + "=" + noticeDismissedValue + "; path=/; max-age=31536000; SameSite=Lax";
     }
 
     function setBannerVisibility(visible) {
@@ -29,60 +24,16 @@
         banner.hidden = !visible;
     }
 
-    function loadOptionalEmbeds() {
-        document.querySelectorAll("[data-cookie-src]").forEach(function (container) {
-            if (container.getAttribute("data-cookie-loaded") === "true") {
-                return;
-            }
-
-            var src = container.getAttribute("data-cookie-src");
-            if (!src) {
-                return;
-            }
-
-            var script = document.createElement("script");
-            script.async = true;
-            script.src = src;
-            container.appendChild(script);
-            container.setAttribute("data-cookie-loaded", "true");
-
-            var wrapper = container.closest(".intro-signup-form");
-            if (wrapper) {
-                wrapper.classList.add("is-loaded");
-            }
-        });
-    }
-
-    function applyConsent() {
-        var consent = getConsent();
-        if (consent === consentAcceptedValue) {
-            loadOptionalEmbeds();
-            setBannerVisibility(false);
-            return;
-        }
-
-        if (consent === consentRejectedValue) {
-            setBannerVisibility(false);
-            return;
-        }
-
-        setBannerVisibility(true);
+    function applyBannerState() {
+        setBannerVisibility(getCookie(noticeCookieName) !== noticeDismissedValue);
     }
 
     document.addEventListener("click", function (event) {
-        var acceptButton = event.target.closest("[data-cookie-accept]");
-        if (acceptButton) {
+        var dismissButton = event.target.closest("[data-cookie-dismiss]");
+        if (dismissButton) {
             event.preventDefault();
-            setConsent(consentAcceptedValue);
-            applyConsent();
-            return;
-        }
-
-        var rejectButton = event.target.closest("[data-cookie-reject]");
-        if (rejectButton) {
-            event.preventDefault();
-            setConsent(consentRejectedValue);
-            applyConsent();
+            setDismissed();
+            applyBannerState();
             return;
         }
 
@@ -93,5 +44,5 @@
         }
     });
 
-    applyConsent();
+    applyBannerState();
 })();

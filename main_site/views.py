@@ -130,6 +130,9 @@ LEGAL_PAGE_CONTENT = {
                     "confirmed before download access is unlocked.",
                     "Where VAT becomes applicable, checkout and order records should reflect the "
                     "price charged and any required tax treatment.",
+                    "The mailing-list signup form is treated as an essential embedded service when "
+                    "you choose to use it, because the provider needs cookies or similar storage to "
+                    "render and submit the form correctly.",
                 ],
             },
             {
@@ -379,20 +382,20 @@ def _get_album_art_items():
         if item:
             items.append((asset.sort_order, 0, asset.id, item))
 
-    for asset in configured_animations:
+    for animation in configured_animations:
         item = _build_album_art_item(
-            kind=asset.media_kind,
-            title=asset.title,
-            asset_path=asset.file_path,
-            asset_file=asset.file_upload,
-            alt_text=asset.alt_text,
-            featured=asset.featured,
-            fit_contain=asset.fit_contain,
-            poster_path=asset.poster_path,
-            poster_file=asset.poster_upload,
+            kind=animation.media_kind,
+            title=animation.title,
+            asset_path=animation.file_path,
+            asset_file=animation.file_upload,
+            alt_text=animation.alt_text,
+            featured=animation.featured,
+            fit_contain=animation.fit_contain,
+            poster_path=animation.poster_path,
+            poster_file=animation.poster_upload,
         )
         if item:
-            items.append((asset.sort_order, 1, asset.id, item))
+            items.append((animation.sort_order, 1, animation.id, item))
 
     items.sort(key=lambda row: (row[0], row[1], row[2]))
     return [row[3] for row in items]

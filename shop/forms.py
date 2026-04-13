@@ -11,12 +11,6 @@ class CheckoutConsentForm(forms.Form):
     accept_terms = forms.BooleanField(
         label="I have read the privacy, cookies, terms, and refunds information for this purchase."
     )
-    accept_digital_supply = forms.BooleanField(
-        label=(
-            "I want immediate access to my digital download after payment and understand that the usual "
-            "14-day cancellation right ends once supply begins."
-        )
-    )
 
 
 class ShopAuthenticationForm(AuthenticationForm):

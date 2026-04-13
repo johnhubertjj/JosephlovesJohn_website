@@ -42,17 +42,37 @@
                         {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
                     </div>
                 {% endfor %}
-                <p class="shop-inline-note shop-inline-note--legal">
-                    Before payment, please review the
-                    <a href="{% url 'main_site:terms' %}">terms</a>,
-                    <a href="{% url 'main_site:refunds' %}">refunds and digital downloads</a>,
-                    <a href="{% url 'main_site:privacy' %}">privacy policy</a>,
-                    and <a href="{% url 'main_site:cookies' %}">cookies policy</a>.
-                </p>
-                <button type="submit" class="button primary shop-primary-button">Continue to Stripe Checkout</button>
+                <button
+                    type="submit"
+                    class="button primary shop-primary-button"
+                    data-checkout-submit
+                    {% if not form.accept_terms.value %}disabled{% endif %}
+                >
+                    Continue to Stripe Checkout
+                </button>
             </form>
         </section>
 
         {% include 'shop/includes/order_summary.html' with items=checkout_items total_display=checkout_subtotal_display summary_title='This order' only %}
     </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script>
+        (function () {
+            var checkbox = document.getElementById("id_accept_terms");
+            var submitButton = document.querySelector("[data-checkout-submit]");
+            if (!checkbox || !submitButton) {
+                return;
+            }
+
+            function syncButtonState() {
+                submitButton.disabled = !checkbox.checked;
+            }
+
+            checkbox.addEventListener("change", syncButtonState);
+            syncButtonState();
+        })();
+    </script>
 {% endblock %}

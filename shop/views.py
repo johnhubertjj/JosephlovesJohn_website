@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 from http import HTTPStatus
-from typing import cast
+from typing import Any, cast
 
 from django.conf import settings
 from django.contrib import messages
@@ -24,10 +24,14 @@ from .cart import add_product, build_cart_summary, clear_cart, get_cart_products
 from .forms import CheckoutConsentForm, RegisterForm, ShopAuthenticationForm
 from .models import CustomerProfile, Order, OrderItem, Product
 
+stripe: Any | None = None
+
 try:
-    import stripe
+    import stripe as stripe_sdk
 except ImportError:  # pragma: no cover - exercised only when Stripe is not installed.
-    stripe = None
+    pass
+else:
+    stripe = stripe_sdk
 
 
 def _get_stripe_module():

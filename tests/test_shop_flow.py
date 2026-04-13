@@ -15,7 +15,6 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 VALID_CHECKOUT_CONSENTS = {
     "accept_terms": "on",
-    "accept_digital_supply": "on",
 }
 
 

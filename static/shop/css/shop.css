@@ -152,10 +152,6 @@
     margin: 0;
 }
 
-.shop-inline-note--legal {
-    margin-top: 0.25rem;
-}
-
 .shop-field-error {
     margin: 0.45rem 0 0;
     color: #ffb5b5;
@@ -285,6 +281,12 @@
     padding: 0;
     display: grid;
     gap: 0.55rem;
+}
+
+.shop-primary-button[disabled] {
+    cursor: not-allowed;
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .shop-history-order li {

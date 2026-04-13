@@ -46,6 +46,7 @@ django_settings_module = "josephlovesjohn_site.settings"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "josephlovesjohn_site.settings"
+addopts = "--strict-config --strict-markers"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
 markers = [
