@@ -7,6 +7,8 @@ development of the site and its supporting apps.
 import os
 from pathlib import Path
 
+import dj_database_url
+
 from josephlovesjohn_site.sentry import setup_sentry_from_env
 
 
@@ -88,12 +90,23 @@ TEMPLATES = [
 WSGI_APPLICATION = "josephlovesjohn_site.wsgi.application"
 ASGI_APPLICATION = "josephlovesjohn_site.asgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DATABASE_CONN_MAX_AGE = _env_int("DATABASE_CONN_MAX_AGE", default=600 if not DEBUG else 0)
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=DATABASE_CONN_MAX_AGE,
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": str(BASE_DIR / "db.sqlite3"),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
