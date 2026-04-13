@@ -22,6 +22,16 @@
         }
 
         banner.hidden = !visible;
+        window.requestAnimationFrame(updateBannerOffset);
+    }
+
+    function updateBannerOffset() {
+        var banner = document.querySelector("[data-cookie-banner]");
+        var visible = !!banner && !banner.hidden;
+        var height = visible ? banner.offsetHeight : 0;
+
+        document.documentElement.style.setProperty("--cookie-banner-height", height + "px");
+        document.body.classList.toggle("has-cookie-banner", visible);
     }
 
     function applyBannerState() {
@@ -45,4 +55,5 @@
     });
 
     applyBannerState();
+    window.addEventListener("resize", updateBannerOffset);
 })();

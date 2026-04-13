@@ -131,3 +131,18 @@ def test_mastering_transition_and_menu_open_works_from_main_site(browser_page, l
     browser_page.wait_for_function("document.body.classList.contains('is-menu-visible')")
     assert browser_page.locator("#menu .close").is_visible()
     assert browser_page.locator('#menu a[href="#services"]').is_visible()
+
+
+def test_legal_links_open_routed_legal_page(browser_page, live_server) -> None:
+    """Policy links should navigate to the standalone legal route."""
+    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
+
+    browser_page.locator('#footer a[href="/privacy/"]').click()
+    browser_page.wait_for_url("**/privacy/")
+
+    assert browser_page.url.endswith("/privacy/")
+    assert browser_page.locator(".legal-card").is_visible()
+    assert browser_page.locator("#footer").is_visible()
+
+    browser_page.locator(".legal-back-link").click()
+    browser_page.wait_for_url("**/")

@@ -38,18 +38,26 @@
     justify-content: flex-end;
 }
 
+#wrapper {
+    justify-content: flex-start;
+    padding-bottom: 1.25rem;
+}
+
 .footer-links {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.85rem;
+    gap: 2.5rem;
     justify-content: center;
     margin-bottom: 0.85rem;
 }
 
-.footer-links a {
+.footer-link {
     background: none;
+    border: 0;
     color: rgba(255, 255, 255, 0.78);
+    cursor: pointer;
+    font: inherit;
     font-size: 0.6rem;
     letter-spacing: 0.2rem;
     line-height: 1;
@@ -58,26 +66,52 @@
     text-transform: uppercase;
 }
 
-.footer-cookie-button {
+button.footer-link {
     appearance: none;
-    background: none;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 0.3rem;
-    color: rgba(255, 255, 255, 0.78);
-    cursor: pointer;
-    font: inherit;
-    font-size: 0.6rem;
-    letter-spacing: 0.18rem;
-    line-height: 1;
-    padding: 0.65rem 0.9rem;
-    text-transform: uppercase;
+    background: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-width: 0 !important;
+    padding: 0 !important;
 }
 
-.footer-links a:hover,
-.footer-links a:focus-visible,
-.footer-cookie-button:hover,
-.footer-cookie-button:focus-visible {
+#footer {
+    margin-top: auto;
+    padding-top: 3.5rem;
+    text-align: center;
+    width: 100%;
+}
+
+#footer .copyright {
+    letter-spacing: 0.16rem;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.footer-link:hover,
+.footer-link:focus-visible {
     color: #ffffff;
+}
+
+body.is-footer-visible-article #footer {
+    filter: none;
+    margin-top: auto;
+    opacity: 1;
+    transform: none;
+}
+
+body.is-footer-visible-article #wrapper {
+    justify-content: flex-start;
+    padding-bottom: 1rem;
+}
+
+body.is-footer-visible-article #main {
+    margin-bottom: 4.75rem;
+}
+
+body.is-footer-visible-article #footer .copyright {
+    opacity: 0.75;
 }
 
 @media screen and (max-width: 736px) {
@@ -89,7 +123,21 @@
         justify-content: flex-start;
     }
 
+    #footer {
+        padding-top: 2.25rem;
+        text-align: center;
+    }
+
     .footer-links {
-        gap: 0.6rem;
+        gap: 1.1rem 1.7rem;
+        justify-content: center;
+    }
+
+    body.is-footer-visible-article #main {
+        margin-bottom: 2.75rem;
+    }
+
+    #footer .copyright {
+        text-align: center;
     }
 }

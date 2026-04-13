@@ -144,6 +144,27 @@
 		var	delay = 325,
 			locked = false;
 
+		var shouldKeepFooterVisible = function($article) {
+
+			return !!($article && $article.length > 0 && $article.is('[data-keep-footer="true"]'));
+
+		};
+
+		var updateShellChrome = function($article) {
+
+			var keepFooterVisible = shouldKeepFooterVisible($article);
+
+			$body.toggleClass('is-footer-visible-article', keepFooterVisible);
+
+			$header.hide();
+
+			if (keepFooterVisible)
+				$footer.show();
+			else
+				$footer.hide();
+
+		};
+
 		// Methods.
 			$main._show = function(id, initial) {
 
@@ -168,8 +189,7 @@
 								$main_articles.removeClass('active');
 
 							// Hide header, footer.
-								$header.hide();
-								$footer.hide();
+								updateShellChrome($article);
 
 							// Show main, article.
 								$main.show();
@@ -207,6 +227,8 @@
 								// Hide current article.
 									$currentArticle.hide();
 
+								updateShellChrome($article);
+
 								// Show article.
 									$article.show();
 
@@ -242,8 +264,7 @@
 							setTimeout(function() {
 
 								// Hide header, footer.
-									$header.hide();
-									$footer.hide();
+									updateShellChrome($article);
 
 								// Show main, article.
 									$main.show();
@@ -303,6 +324,7 @@
 							// Show footer, header.
 								$footer.show();
 								$header.show();
+								$body.removeClass('is-footer-visible-article');
 
 							// Unmark as visible.
 								$body.removeClass('is-article-visible');
@@ -338,6 +360,7 @@
 						// Show footer, header.
 							$footer.show();
 							$header.show();
+							$body.removeClass('is-footer-visible-article');
 
 						// Unmark as visible.
 							setTimeout(function() {
@@ -463,7 +486,6 @@
 			}
 
 		// Initialize.
-
 			// Hide main, articles.
 				$main.hide();
 				$main_articles.hide();

@@ -48,11 +48,48 @@ def test_get_header_social_links_returns_active_database_rows_in_order() -> None
             "label": "Bandcamp",
         },
         {
+            "href": "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg",
+            "icon_class": "icon brands fa-spotify",
+            "label": "Spotify",
+        },
+        {
             "href": "https://example.com/youtube",
             "icon_class": "icon brands fa-youtube",
             "label": "YouTube",
         },
     ]
+
+
+@pytest.mark.django_db
+def test_get_header_social_links_moves_spotify_to_second_position() -> None:
+    """Spotify should always render immediately after Bandcamp."""
+    HeaderSocialLink.objects.all().delete()
+    HeaderSocialLink.objects.create(
+        label="Bandcamp",
+        href="https://example.com/bandcamp",
+        icon_class="icon brands fa-bandcamp",
+        sort_order=0,
+        is_active=True,
+    )
+    HeaderSocialLink.objects.create(
+        label="Spotify",
+        href="https://example.com/old-spotify",
+        icon_class="icon brands fa-spotify",
+        sort_order=4,
+        is_active=True,
+    )
+    HeaderSocialLink.objects.create(
+        label="Instagram",
+        href="https://example.com/instagram",
+        icon_class="icon brands fa-instagram",
+        sort_order=1,
+        is_active=True,
+    )
+
+    links = views._get_header_social_links()
+
+    assert [link["label"] for link in links] == ["Bandcamp", "Spotify", "Instagram"]
+    assert links[1]["href"] == "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg"
 
 
 @pytest.mark.django_db

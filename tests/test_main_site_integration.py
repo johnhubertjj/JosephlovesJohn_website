@@ -208,6 +208,11 @@ def test_header_component_renders_primary_nav_and_social_links() -> None:
                     "label": "Bandcamp",
                 },
                 {
+                    "href": "https://example.com/spotify",
+                    "icon_class": "icon brands fa-spotify",
+                    "label": "Spotify",
+                },
+                {
                     "href": "https://example.com/instagram",
                     "icon_class": "icon brands fa-instagram",
                     "label": "Instagram",
@@ -221,8 +226,10 @@ def test_header_component_renders_primary_nav_and_social_links() -> None:
         },
     )
 
-    for link in ("https://example.com/bandcamp", "https://example.com/instagram"):
+    for link in ("https://example.com/bandcamp", "https://example.com/spotify", "https://example.com/instagram"):
         assert link in html
 
-    for label in ("Bandcamp", "Instagram", "Intro", "Music", "Art"):
+    assert html.index("Bandcamp") < html.index("Spotify") < html.index("Instagram")
+
+    for label in ("Bandcamp", "Spotify", "Instagram", "Intro", "Music", "Art"):
         assert label in html

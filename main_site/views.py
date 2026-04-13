@@ -155,7 +155,7 @@ LEGAL_PAGE_CONTENT = {
     },
     "refunds": {
         "title": "Refunds and Digital Downloads",
-        "eyebrow": "Refunds",
+        "eyebrow": "",
         "subtitle": "Important information about cancellation rights and support for digital music downloads.",
         "sections": [
             {
@@ -185,6 +185,14 @@ LEGAL_PAGE_CONTENT = {
             },
         ],
     },
+}
+
+LEGAL_PAGE_ORDER = ("privacy", "cookies", "terms", "refunds")
+
+SPOTIFY_SOCIAL_LINK = {
+    "href": "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg",
+    "icon_class": "icon brands fa-spotify",
+    "label": "Spotify",
 }
 
 
@@ -305,13 +313,36 @@ def _build_album_art_item(
 def _get_header_social_links():
     """Return active header social links in display order."""
     try:
-        return list(
+        links = list(
             HeaderSocialLink.objects.filter(is_active=True)
             .order_by("sort_order", "id")
             .values("href", "icon_class", "label")
         )
     except (OperationalError, ProgrammingError):
         return []
+
+    spotify_link = None
+    ordered_links = []
+    bandcamp_index = None
+
+    for link in links:
+        label = (link.get("label") or "").strip().lower()
+        icon_class = (link.get("icon_class") or "").lower()
+
+        if label == "spotify" or "fa-spotify" in icon_class:
+            spotify_link = SPOTIFY_SOCIAL_LINK.copy()
+            continue
+
+        ordered_links.append(link)
+        if label == "bandcamp":
+            bandcamp_index = len(ordered_links) - 1
+
+    if spotify_link is None:
+        spotify_link = SPOTIFY_SOCIAL_LINK.copy()
+
+    insert_at = bandcamp_index + 1 if bandcamp_index is not None else min(1, len(ordered_links))
+    ordered_links.insert(insert_at, spotify_link)
+    return ordered_links
 
 
 def _get_primary_nav_items():
@@ -457,7 +488,6 @@ def _site_context(active_section, *, contact_form=None):
 
 def _legal_page_context(page_key):
     """Build the rendering context for a legal-information page."""
-
     page = LEGAL_PAGE_CONTENT[page_key]
     business_name = settings.LEGAL_BUSINESS_NAME
     contact_email = settings.BUSINESS_CONTACT_EMAIL
