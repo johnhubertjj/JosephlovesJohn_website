@@ -24,12 +24,14 @@
 			xxsmall:  [ null,      '360px'  ]
 		});
 
-	// Play initial animations on page load.
-		$window.on('load', function() {
-			window.setTimeout(function() {
+		// Release the shell as soon as the DOM is ready so the background can
+		// still animate without holding back the homepage content/LCP.
+			var clearPreload = function() {
 				$body.removeClass('is-preload');
-			}, 100);
-		});
+			};
+
+			$(clearPreload);
+			$window.on('pageshow', clearPreload);
 
 	// Fix: Flexbox min-height bug on IE.
 		if (browser.name == 'ie') {

@@ -116,8 +116,57 @@
 })();
 
 (function () {
-    var frames = document.querySelectorAll(".music-player-frame");
-    var canUsePlayerjs = typeof Playerjs !== "undefined";
+    var musicArticle = document.getElementById("music");
+    if (!musicArticle) {
+        return;
+    }
+
+    var frames = musicArticle.querySelectorAll(".music-player-frame");
+    var shellWrapper = document.getElementById("wrapper");
+    var playerScriptPromise = null;
+    var playersInitialized = false;
+    var playerScriptPath = (shellWrapper && shellWrapper.getAttribute("data-playerjs-src")) || "";
+
+    function loadPlayerJs() {
+        if (typeof Playerjs !== "undefined") {
+            return Promise.resolve(true);
+        }
+
+        if (!playerScriptPath) {
+            return Promise.resolve(false);
+        }
+
+        if (playerScriptPromise) {
+            return playerScriptPromise;
+        }
+
+        playerScriptPromise = new Promise(function (resolve) {
+            var existingScript = document.querySelector('script[data-playerjs-script="true"]');
+            if (existingScript) {
+                existingScript.addEventListener("load", function () {
+                    resolve(typeof Playerjs !== "undefined");
+                });
+                existingScript.addEventListener("error", function () {
+                    resolve(false);
+                });
+                return;
+            }
+
+            var script = document.createElement("script");
+            script.src = playerScriptPath;
+            script.async = true;
+            script.setAttribute("data-playerjs-script", "true");
+            script.addEventListener("load", function () {
+                resolve(typeof Playerjs !== "undefined");
+            });
+            script.addEventListener("error", function () {
+                resolve(false);
+            });
+            document.body.appendChild(script);
+        });
+
+        return playerScriptPromise;
+    }
 
     function shouldPreferCompressedAudio() {
         var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -268,11 +317,17 @@
         }, 125);
     }
 
-    frames.forEach(function (frame) {
+    function renderFrame(frame, canUsePlayerjs) {
         var file = pickPreferredAudioFile(frame);
         if (!file) {
             return;
         }
+
+        if (frame.dataset.playerReady === "1") {
+            return;
+        }
+
+        frame.dataset.playerReady = "1";
 
         if (canUsePlayerjs) {
             try {
@@ -298,7 +353,42 @@
             '<source src="' + file + '" type="' + getAudioMimeType(file) + '">' +
             "</audio>";
         frame.classList.add("is-enhanced");
+    }
+
+    function initializePlayers() {
+        if (playersInitialized) {
+            return;
+        }
+
+        playersInitialized = true;
+
+        loadPlayerJs().then(function (canUsePlayerjs) {
+            frames.forEach(function (frame) {
+                renderFrame(frame, canUsePlayerjs);
+            });
+        });
+    }
+
+    function maybeInitializePlayers() {
+        if (!musicArticle.classList.contains("active")) {
+            return;
+        }
+
+        initializePlayers();
+    }
+
+    new MutationObserver(function () {
+        maybeInitializePlayers();
+    }).observe(musicArticle, {
+        attributes: true,
+        attributeFilter: ["class"]
     });
+
+    window.addEventListener("hashchange", function () {
+        window.setTimeout(maybeInitializePlayers, 0);
+    });
+
+    maybeInitializePlayers();
 })();
 
 (function () {

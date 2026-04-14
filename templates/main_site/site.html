@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-    <div id="wrapper">
+    <div id="wrapper" data-playerjs-src="{% static 'assets/js/playerjs_v4.js' %}">
         {% include 'main_site/includes/layout/header.html' %}
 
         <div id="main">
@@ -41,7 +41,6 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'assets/js/playerjs_v4.js' %}"></script>
 <script src="{% static 'main_site/js/site.js' %}"></script>
 <script src="{% static 'main_site/js/cart.js' %}"></script>
 {% endblock %}

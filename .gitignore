@@ -77,6 +77,7 @@ static/audio/
 
 # Keep full-size gig photos local, but allow optimized thumbnails in git.
 static/images/*
+static/images/album_art/*
 #!static/images/gig_photos/thumbs/
 #!static/images/gig_photos/thumbs/*.jpg
 
