@@ -95,6 +95,31 @@ def _local_download_response(relative_path: str, *, download_name: str) -> FileR
     )
 
 
+def _bundled_static_download_response(relative_path: str, *, download_name: str) -> FileResponse:
+    """Stream a repo-tracked static file for local/simple storefront downloads."""
+    normalized = normalize_asset_path(relative_path)
+    if not normalized or is_external_url(normalized):
+        raise Http404("Download not found")
+
+    root = (Path(settings.BASE_DIR) / "static").resolve()
+    candidate = (root / normalized).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise Http404("Download not found") from exc
+
+    if not candidate.is_file():
+        raise Http404("Download not found")
+
+    content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+    return FileResponse(
+        candidate.open("rb"),
+        as_attachment=True,
+        filename=download_name,
+        content_type=content_type,
+    )
+
+
 def build_download_response(relative_path: str, *, download_name: str):
     """Return either a presigned redirect or a local file response."""
     if is_external_url(relative_path):
@@ -115,7 +140,10 @@ def build_download_response(relative_path: str, *, download_name: str):
             )
         )
 
-    return _local_download_response(relative_path, download_name=download_name)
+    try:
+        return _local_download_response(relative_path, download_name=download_name)
+    except Http404:
+        return _bundled_static_download_response(relative_path, download_name=download_name)
 
 
 def preview_asset_url(relative_path: str) -> str:

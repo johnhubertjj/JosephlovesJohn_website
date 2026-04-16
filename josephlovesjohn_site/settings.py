@@ -156,7 +156,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 PUBLIC_ASSET_BASE_URL = os.environ.get("PUBLIC_ASSET_BASE_URL", "").strip().rstrip("/")
-PRIVATE_DOWNLOADS_ROOT = Path(os.environ.get("PRIVATE_DOWNLOADS_ROOT", str(MEDIA_ROOT / "private_downloads")))
+PRIVATE_DOWNLOADS_ROOT = Path(
+    os.environ.get("PRIVATE_DOWNLOADS_ROOT", "").strip() or str(MEDIA_ROOT / "private_downloads")
+)
 PRIVATE_DOWNLOADS_BUCKET_NAME = os.environ.get("PRIVATE_DOWNLOADS_BUCKET_NAME", "").strip()
 PRIVATE_DOWNLOADS_ENDPOINT_URL = os.environ.get("PRIVATE_DOWNLOADS_ENDPOINT_URL", "").strip()
 PRIVATE_DOWNLOADS_ACCESS_KEY_ID = os.environ.get("PRIVATE_DOWNLOADS_ACCESS_KEY_ID", "").strip()

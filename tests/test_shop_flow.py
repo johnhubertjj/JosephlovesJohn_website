@@ -6,6 +6,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
+import stripe as stripe_sdk
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
@@ -133,9 +134,51 @@ def test_stripe_value_returns_default_when_value_is_none() -> None:
     assert shop_views._stripe_value(None, "name", "fallback") == "fallback"
 
 
+def test_stripe_value_reads_stripe_sdk_objects_without_get_method() -> None:
+    """Stripe helper access should support Stripe SDK objects backed by _data."""
+    checkout_session = stripe_sdk.checkout.Session.construct_from(
+        {"metadata": {"order_id": "21"}},
+        "sk_test_123",
+    )
+
+    assert shop_views._stripe_value(checkout_session, "metadata", {}) == checkout_session.metadata
+
+
 def test_stripe_identifier_supports_expandable_objects() -> None:
     """Stripe identifier helpers should read IDs from expandable objects."""
     assert shop_views._stripe_identifier(SimpleNamespace(id="pi_test_123")) == "pi_test_123"
+
+
+@pytest.mark.django_db
+def test_apply_paid_checkout_session_supports_nested_stripe_sdk_objects() -> None:
+    """Paid session synchronization should handle Stripe SDK metadata/detail objects."""
+    order = Order.objects.create(
+        full_name="Guest Buyer",
+        email="guest@example.com",
+        subtotal=Decimal("2.00"),
+        total=Decimal("2.00"),
+        status=Order.Status.PENDING,
+    )
+    checkout_session = stripe_sdk.checkout.Session.construct_from(
+        {
+            "id": "cs_test_nested",
+            "status": "complete",
+            "payment_status": "paid",
+            "metadata": {"order_id": str(order.pk)},
+            "customer_details": {"name": "Updated Buyer", "email": "updated@example.com"},
+            "payment_intent": "pi_test_123",
+        },
+        "sk_test_123",
+    )
+
+    order_was_just_confirmed = shop_views._apply_paid_checkout_session_to_order(order, checkout_session)
+
+    order.refresh_from_db()
+    assert order_was_just_confirmed is True
+    assert order.full_name == "Updated Buyer"
+    assert order.email == "updated@example.com"
+    assert order.stripe_payment_intent_id == "pi_test_123"
+    assert order.is_paid is True
 
 
 def test_sync_customer_profile_from_order_updates_profile_and_email(django_user_model) -> None:
@@ -981,6 +1024,41 @@ def test_account_owner_can_download_private_file(
 ) -> None:
     """Authenticated owners should be able to fetch their private downloads."""
     create_private_download_asset(seeded_product.download_file_path, content=b"private bytes")
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+    )
+    item = OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("shop:download", args=[item.pk]))
+
+    assert response.status_code == 200
+    assert response.get("Content-Disposition", "").startswith("attachment;")
+
+
+def test_account_owner_can_download_bundled_static_file_when_private_storage_is_unset(
+    client, django_user_model, seeded_product: Product
+) -> None:
+    """Authenticated owners should still receive repo-tracked audio files when no private store is configured."""
     user = django_user_model.objects.create_user(
         username="collector",
         email="collector@example.com",

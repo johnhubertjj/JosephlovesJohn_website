@@ -76,6 +76,20 @@ def test_settings_use_database_url_when_present(monkeypatch: pytest.MonkeyPatch)
         importlib.reload(settings)
 
 
+def test_blank_private_downloads_root_falls_back_to_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Blank private download roots should not collapse to the repo root."""
+    monkeypatch.setenv("PRIVATE_DOWNLOADS_ROOT", "")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.PRIVATE_DOWNLOADS_ROOT == reloaded.MEDIA_ROOT / "private_downloads"
+    finally:
+        monkeypatch.delenv("PRIVATE_DOWNLOADS_ROOT", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
 def test_settings_load_dotenv_values_when_present(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -55,15 +55,34 @@ def _stripe_value(value, key, default=None):
         return default
     if isinstance(value, dict):
         return value.get(key, default)
+    data = getattr(value, "_data", None)
+    if isinstance(data, dict):
+        return data.get(key, default)
 
-    getter = getattr(value, "get", None)
-    if callable(getter):
-        try:
-            return getter(key, default)
-        except TypeError:
-            pass
+    try:
+        return value[key]
+    except (KeyError, TypeError, IndexError):
+        pass
 
-    return getattr(value, key, default)
+    try:
+        return getattr(value, key)
+    except AttributeError:
+        return default
+
+
+def _stripe_mapping(value):
+    """Normalize Stripe metadata/details objects to plain dictionaries."""
+
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+
+    data = getattr(value, "_data", None)
+    if isinstance(data, dict):
+        return data
+
+    return {}
 
 
 def _stripe_identifier(value):
@@ -120,7 +139,7 @@ def _sync_customer_profile_from_order(order):
 
 def _apply_paid_checkout_session_to_order(order, checkout_session):
     """Mark an order as paid when Stripe confirms a matching Checkout session."""
-    metadata = _stripe_value(checkout_session, "metadata", {}) or {}
+    metadata = _stripe_mapping(_stripe_value(checkout_session, "metadata", {}))
     if (
         _stripe_value(checkout_session, "status") != "complete"
         or _stripe_value(checkout_session, "payment_status") != "paid"
@@ -128,7 +147,7 @@ def _apply_paid_checkout_session_to_order(order, checkout_session):
     ):
         raise Http404("Order not found")
 
-    customer_details = _stripe_value(checkout_session, "customer_details", {}) or {}
+    customer_details = _stripe_mapping(_stripe_value(checkout_session, "customer_details", {}))
     customer_name = customer_details.get("name") or order.full_name
     customer_email = (
         customer_details.get("email")
@@ -157,7 +176,7 @@ def _apply_paid_checkout_session_to_order(order, checkout_session):
 
 def _fulfill_checkout_session(checkout_session):
     """Confirm an order from a Stripe Checkout session payload."""
-    metadata = _stripe_value(checkout_session, "metadata", {}) or {}
+    metadata = _stripe_mapping(_stripe_value(checkout_session, "metadata", {}))
     order_id = metadata.get("order_id")
     session_id = _stripe_value(checkout_session, "id", "")
     if not order_id or not session_id:
