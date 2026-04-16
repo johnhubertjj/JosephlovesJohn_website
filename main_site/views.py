@@ -531,6 +531,18 @@ def _legal_page_context(page_key):
     }
 
 
+def _render_site_section(request, active_section, *, contact_form=None):
+    """Render the one-page site shell with the requested active section."""
+
+    return render(request, "main_site/site.html", _site_context(active_section, contact_form=contact_form))
+
+
+def _render_legal_page(request, page_key):
+    """Render a legal-information page by key."""
+
+    return render(request, "main_site/legal_page.html", _legal_page_context(page_key))
+
+
 def main(request):
     """Render the default one-page site view.
 
@@ -539,7 +551,7 @@ def main(request):
     :returns: A rendered response for the main landing page.
     :rtype: django.http.HttpResponse
     """
-    return render(request, "main_site/site.html", _site_context(""))
+    return _render_site_section(request, "")
 
 
 def intro(request):
@@ -550,7 +562,7 @@ def intro(request):
     :returns: A rendered response for the intro route.
     :rtype: django.http.HttpResponse
     """
-    return render(request, "main_site/site.html", _site_context("intro"))
+    return _render_site_section(request, "intro")
 
 
 def music(request):
@@ -561,7 +573,7 @@ def music(request):
     :returns: A rendered response for the music route.
     :rtype: django.http.HttpResponse
     """
-    return render(request, "main_site/site.html", _site_context("music"))
+    return _render_site_section(request, "music")
 
 
 def art(request):
@@ -572,7 +584,7 @@ def art(request):
     :returns: A rendered response for the art route.
     :rtype: django.http.HttpResponse
     """
-    return render(request, "main_site/site.html", _site_context("art"))
+    return _render_site_section(request, "art")
 
 
 def contact(request):
@@ -607,36 +619,36 @@ def contact(request):
                     request,
                     "Your message could not be sent right now. Please try again in a moment.",
                 )
-                return render(request, "main_site/site.html", _site_context("contact", contact_form=form))
+                return _render_site_section(request, "contact", contact_form=form)
 
             messages.success(request, "Thanks, your message has been sent.")
             return redirect("main_site:contact")
 
         messages.error(request, "Please correct the highlighted fields and try again.")
-        return render(request, "main_site/site.html", _site_context("contact", contact_form=form))
+        return _render_site_section(request, "contact", contact_form=form)
 
-    return render(request, "main_site/site.html", _site_context("contact"))
+    return _render_site_section(request, "contact")
 
 
 def privacy(request):
     """Render the privacy policy page."""
 
-    return render(request, "main_site/legal_page.html", _legal_page_context("privacy"))
+    return _render_legal_page(request, "privacy")
 
 
 def cookies(request):
     """Render the cookies policy page."""
 
-    return render(request, "main_site/legal_page.html", _legal_page_context("cookies"))
+    return _render_legal_page(request, "cookies")
 
 
 def terms(request):
     """Render the shop terms page."""
 
-    return render(request, "main_site/legal_page.html", _legal_page_context("terms"))
+    return _render_legal_page(request, "terms")
 
 
 def refunds(request):
     """Render the refunds and digital downloads page."""
 
-    return render(request, "main_site/legal_page.html", _legal_page_context("refunds"))
+    return _render_legal_page(request, "refunds")
