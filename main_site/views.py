@@ -10,7 +10,7 @@ from django.core.mail import EmailMessage
 from django.db import OperationalError, ProgrammingError
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from josephlovesjohn_site.assets import is_external_url, public_asset_url
+from josephlovesjohn_site.assets import resolve_public_asset_source
 from shop.models import Product
 
 from .forms import ContactForm
@@ -231,23 +231,6 @@ def _uploaded_file_exists(file_field):
         return False
 
 
-def _normalize_static_path(path):
-    """Normalize a static asset path for lookups and template usage.
-
-    :param path: Raw file path value that may include leading slashes or a
-        ``static/`` prefix.
-    :type path: str | None
-    :returns: A normalized path relative to ``static/``.
-    :rtype: str
-    """
-    normalized = (path or "").strip()
-    if normalized.startswith("/"):
-        normalized = normalized.lstrip("/")
-    if normalized.startswith("static/"):
-        normalized = normalized[7:]
-    return normalized
-
-
 def _resolve_asset_source(static_path="", uploaded_file=None):
     """Resolve a gallery asset to a URL, preferring uploaded files."""
     if uploaded_file and _uploaded_file_exists(uploaded_file):
@@ -257,23 +240,7 @@ def _resolve_asset_source(static_path="", uploaded_file=None):
             "is_static": False,
         }
 
-    raw_path = (static_path or "").strip()
-    if is_external_url(raw_path):
-        return {
-            "path": raw_path,
-            "url": raw_path,
-            "is_static": False,
-        }
-
-    relative_path = _normalize_static_path(raw_path)
-    if relative_path and (settings.PUBLIC_ASSET_BASE_URL or _static_file_exists(relative_path)):
-        return {
-            "path": relative_path,
-            "url": public_asset_url(relative_path),
-            "is_static": True,
-        }
-
-    return None
+    return resolve_public_asset_source(static_path, file_exists=_static_file_exists)
 
 
 def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path="", thumbnail_file=None, alt_text=""):

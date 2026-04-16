@@ -15,11 +15,52 @@ def test_public_asset_url_returns_external_urls_unchanged() -> None:
     assert assets.public_asset_url(url) == url
 
 
+def test_resolve_public_asset_source_returns_external_urls_unchanged() -> None:
+    """Absolute asset URLs should resolve without static-file checks."""
+    url = "https://cdn.example.com/audio/song.mp3"
+
+    assert assets.resolve_public_asset_source(url) == {
+        "path": url,
+        "url": url,
+        "is_static": False,
+    }
+
+
+def test_resolve_public_asset_source_uses_file_exists_callback() -> None:
+    """Repo-backed static assets should resolve through the shared helper."""
+    assert assets.resolve_public_asset_source(
+        "/static/images/cover.jpg",
+        file_exists=lambda path: path == "images/cover.jpg",
+    ) == {
+        "path": "images/cover.jpg",
+        "url": "/static/images/cover.jpg",
+        "is_static": True,
+    }
+
+
+def test_resolve_public_asset_source_returns_none_when_file_is_missing() -> None:
+    """Missing local assets should fail closed when no CDN base URL is configured."""
+    assert assets.resolve_public_asset_source(
+        "images/missing.jpg",
+        file_exists=lambda path: False,
+    ) is None
+
+
 @override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
 def test_public_asset_url_uses_public_asset_base_url_for_relative_paths() -> None:
     """Relative paths should resolve against the configured public asset base URL."""
     assert assets.public_asset_url("audio/song.mp3") == "https://assets.example.com/audio/song.mp3"
     assert assets.public_asset_url("/static/images/cover.jpg") == "https://assets.example.com/images/cover.jpg"
+
+
+@override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
+def test_resolve_public_asset_source_uses_public_asset_base_url_without_file_check() -> None:
+    """Configured CDN-backed assets should resolve even if the file is not in the repo."""
+    assert assets.resolve_public_asset_source("images/cover.jpg") == {
+        "path": "images/cover.jpg",
+        "url": "https://assets.example.com/images/cover.jpg",
+        "is_static": True,
+    }
 
 
 @override_settings(STATIC_URL="/static/")

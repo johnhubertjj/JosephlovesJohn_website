@@ -275,6 +275,39 @@ class CheckoutView(View):
 
     template_name = "shop/checkout.html"
 
+    def _get_checkout_products(self, request):
+        """Return the current cart products for checkout processing."""
+
+        return get_cart_products(request)
+
+    def _redirect_empty_cart(self, request):
+        """Return the standard empty-cart redirect response."""
+
+        messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
+        return redirect("main_site:music")
+
+    def _render_checkout(
+        self,
+        request,
+        products,
+        *,
+        form=None,
+        checkout_error="",
+        checkout_canceled=False,
+    ):
+        """Render the checkout template with a normalized context."""
+
+        return render(
+            request,
+            self.template_name,
+            self._context(
+                products,
+                form=form or CheckoutConsentForm(),
+                checkout_error=checkout_error,
+                checkout_canceled=checkout_canceled,
+            ),
+        )
+
     def get(self, request):
         """Start Stripe Checkout or render a fallback page if needed.
 
@@ -283,20 +316,15 @@ class CheckoutView(View):
         :returns: Checkout page response.
         :rtype: django.http.HttpResponse
         """
-        products = get_cart_products(request)
+        products = self._get_checkout_products(request)
         if not products:
-            messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
-            return redirect("main_site:music")
+            return self._redirect_empty_cart(request)
 
         if request.GET.get("canceled"):
             messages.info(request, "Checkout was canceled, so your cart is still waiting for you.")
-            return render(
-                request,
-                self.template_name,
-                self._context(products, form=CheckoutConsentForm(), checkout_canceled=True),
-            )
+            return self._render_checkout(request, products, checkout_canceled=True)
 
-        return render(request, self.template_name, self._context(products, form=CheckoutConsentForm()))
+        return self._render_checkout(request, products)
 
     def post(self, request):
         """Start Stripe Checkout from a form POST as a compatibility fallback.
@@ -306,14 +334,13 @@ class CheckoutView(View):
         :returns: Redirect or rendered error response.
         :rtype: django.http.HttpResponse
         """
-        products = get_cart_products(request)
+        products = self._get_checkout_products(request)
         if not products:
-            messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
-            return redirect("main_site:music")
+            return self._redirect_empty_cart(request)
 
         form = CheckoutConsentForm(request.POST)
         if not form.is_valid():
-            return render(request, self.template_name, self._context(products, form=form))
+            return self._render_checkout(request, products, form=form)
 
         return self._start_checkout(request, products, form=form)
 
@@ -326,21 +353,14 @@ class CheckoutView(View):
             checkout_session = self._create_checkout_session(request, order)
         except ImproperlyConfigured as exc:
             order.delete()
-            return render(
-                request,
-                self.template_name,
-                self._context(products, form=form or CheckoutConsentForm(), checkout_error=str(exc)),
-            )
+            return self._render_checkout(request, products, form=form, checkout_error=str(exc))
         except Exception:
             order.delete()
-            return render(
+            return self._render_checkout(
                 request,
-                self.template_name,
-                self._context(
-                    products,
-                    form=form or CheckoutConsentForm(),
-                    checkout_error="Stripe checkout could not be started right now. Please try again in a moment.",
-                ),
+                products,
+                form=form,
+                checkout_error="Stripe checkout could not be started right now. Please try again in a moment.",
             )
 
         order.stripe_checkout_session_id = _stripe_value(checkout_session, "id", "")

@@ -7,6 +7,7 @@ import pytest
 from django.core.files.base import ContentFile
 from django.db import OperationalError
 from django.test import override_settings
+from josephlovesjohn_site import assets
 from main_site import views
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
@@ -175,11 +176,11 @@ def test_get_gig_photo_items_supports_uploaded_files(media_base_dir) -> None:
     ]
 
 
-def test_normalize_static_path_strips_prefixes() -> None:
-    """Static paths should be normalized for the helper layer."""
-    assert views._normalize_static_path("/static/images/example.jpg") == "images/example.jpg"
-    assert views._normalize_static_path(" static/images/example.jpg ") == "images/example.jpg"
-    assert views._normalize_static_path("images/example.jpg") == "images/example.jpg"
+def test_normalize_asset_path_strips_prefixes() -> None:
+    """Static paths should be normalized consistently by the shared asset helpers."""
+    assert assets.normalize_asset_path("/static/images/example.jpg") == "images/example.jpg"
+    assert assets.normalize_asset_path(" static/images/example.jpg ") == "images/example.jpg"
+    assert assets.normalize_asset_path("images/example.jpg") == "images/example.jpg"
 
 
 def test_uploaded_file_exists_returns_false_without_a_usable_name() -> None:
