@@ -1,23 +1,9 @@
 (function () {
     var body = document.body;
+    var siteUtils = window.siteUtils || {};
+    var closestFromEventTarget = siteUtils.closestFromEventTarget;
     if (!body || body.getAttribute("data-analytics-enabled") !== "true") {
         return;
-    }
-
-    function closestFromEventTarget(target, selector) {
-        if (!target) {
-            return null;
-        }
-
-        if (typeof target.closest === "function") {
-            return target.closest(selector);
-        }
-
-        if (target.parentElement && typeof target.parentElement.closest === "function") {
-            return target.parentElement.closest(selector);
-        }
-
-        return null;
     }
 
     function getStorage() {

@@ -4,15 +4,9 @@
     var noticeDismissedValue = "dismissed";
     var essentialOnlyValue = "essential";
     var allowOptionalValue = "all";
-
-    function getCookie(name) {
-        var value = "; " + document.cookie;
-        var parts = value.split("; " + name + "=");
-        if (parts.length === 2) {
-            return parts.pop().split(";").shift();
-        }
-        return "";
-    }
+    var siteUtils = window.siteUtils || {};
+    var getCookie = siteUtils.getCookie;
+    var closestFromEventTarget = siteUtils.closestFromEventTarget;
 
     function setCookie(name, value) {
         document.cookie = name + "=" + value + "; path=/; max-age=31536000; SameSite=Lax";
@@ -80,22 +74,6 @@
         var preference = getSavedPreference();
         setBannerVisibility(!preference);
         applyPreferenceState(preference);
-    }
-
-    function closestFromEventTarget(target, selector) {
-        if (!target) {
-            return null;
-        }
-
-        if (typeof target.closest === "function") {
-            return target.closest(selector);
-        }
-
-        if (target.parentElement && typeof target.parentElement.closest === "function") {
-            return target.parentElement.closest(selector);
-        }
-
-        return null;
     }
 
     document.addEventListener("click", function (event) {

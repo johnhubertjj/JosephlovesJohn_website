@@ -1,6 +1,8 @@
 (function () {
     var modal = document.getElementById("music-cart-modal");
     var floatingButton = document.getElementById("floating-cart-button");
+    var siteUtils = window.siteUtils || {};
+    var getCookie = siteUtils.getCookie;
 
     if (!modal || !floatingButton) {
         return;
@@ -29,15 +31,6 @@
                 price_gbp: button.getAttribute("data-cart-item-price") || ""
             }
         });
-    }
-
-    function getCookie(name) {
-        var value = "; " + document.cookie;
-        var parts = value.split("; " + name + "=");
-        if (parts.length === 2) {
-            return parts.pop().split(";").shift();
-        }
-        return "";
     }
 
     function getCsrfToken() {
