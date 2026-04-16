@@ -21,7 +21,8 @@ from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
 
 from .cart import add_product, build_cart_summary, clear_cart, get_cart_products, remove_product
-from .downloads import build_download_response
+from .downloads import build_download_response, download_asset_exists
+from .emails import has_valid_download_access_token, send_order_confirmation_email
 from .forms import CheckoutConsentForm, RegisterForm, ShopAuthenticationForm
 from .models import CustomerProfile, Order, OrderItem, Product
 
@@ -120,6 +121,23 @@ def _ensure_guest_session_can_access(request, order):
     allowed_orders = request.session.get("shop_recent_orders", [])
     if order.pk not in allowed_orders:
         raise Http404("Order not found")
+
+
+def _has_download_email_access(request, item):
+    """Return whether a signed email-download link authorizes this request."""
+    return has_valid_download_access_token(item, request.GET.get("access", ""))
+
+
+def _ensure_download_access(request, item):
+    """Allow downloads for paid orders via account, recent session, or signed email link."""
+    order = item.order
+    if not order.is_paid:
+        raise Http404("Order not found")
+    if _has_download_email_access(request, item):
+        return
+
+    _ensure_user_can_access(request, order)
+    _ensure_guest_session_can_access(request, order)
 
 
 def _sync_customer_profile_from_order(order):
@@ -312,6 +330,7 @@ class CheckoutView(View):
         *,
         form=None,
         checkout_error="",
+        checkout_error_title="Stripe checkout is unavailable",
         checkout_canceled=False,
     ):
         """Render the checkout template with a normalized context."""
@@ -323,8 +342,28 @@ class CheckoutView(View):
                 products,
                 form=form or CheckoutConsentForm(),
                 checkout_error=checkout_error,
+                checkout_error_title=checkout_error_title,
                 checkout_canceled=checkout_canceled,
             ),
+        )
+
+    def _download_availability_error(self, products):
+        """Return a user-facing error when one or more paid downloads are unavailable."""
+        missing_titles = [product.title for product in products if not download_asset_exists(product.download_file_path)]
+        if not missing_titles:
+            return None
+
+        if len(missing_titles) == 1:
+            return (
+                "A download is unavailable",
+                f'"{missing_titles[0]}" is not available for delivery right now, so checkout has been paused. '
+                "Please try again shortly or get in touch.",
+            )
+
+        return (
+            "Some downloads are unavailable",
+            "One or more tracks in your cart are not available for delivery right now, so checkout has been paused. "
+            "Please try again shortly or get in touch.",
         )
 
     def get(self, request):
@@ -338,6 +377,16 @@ class CheckoutView(View):
         products = self._get_checkout_products(request)
         if not products:
             return self._redirect_empty_cart(request)
+
+        availability_error = self._download_availability_error(products)
+        if availability_error:
+            error_title, error_message = availability_error
+            return self._render_checkout(
+                request,
+                products,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+            )
 
         if request.GET.get("canceled"):
             messages.info(request, "Checkout was canceled, so your cart is still waiting for you.")
@@ -360,6 +409,17 @@ class CheckoutView(View):
         form = CheckoutConsentForm(request.POST)
         if not form.is_valid():
             return self._render_checkout(request, products, form=form)
+
+        availability_error = self._download_availability_error(products)
+        if availability_error:
+            error_title, error_message = availability_error
+            return self._render_checkout(
+                request,
+                products,
+                form=form,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+            )
 
         return self._start_checkout(request, products, form=form)
 
@@ -466,7 +526,7 @@ class CheckoutView(View):
 
         return stripe_module.checkout.Session.create(**session_kwargs)
 
-    def _context(self, products, *, form, checkout_error="", checkout_canceled=False):
+    def _context(self, products, *, form, checkout_error="", checkout_error_title, checkout_canceled=False):
         """Build the checkout rendering context.
 
         :param products: Products in the cart.
@@ -484,6 +544,7 @@ class CheckoutView(View):
             "checkout_subtotal_display": f"£{subtotal:.2f}",
             "form": form,
             "checkout_error": checkout_error,
+            "checkout_error_title": checkout_error_title,
             "checkout_canceled": checkout_canceled,
         }
 
@@ -534,8 +595,19 @@ class OrderSuccessView(TemplateView):
         order_was_just_confirmed = _apply_paid_checkout_session_to_order(order, checkout_session)
         clear_cart(self.request)
         _remember_recent_order(self.request, order.pk)
+        email_was_sent = False
+        try:
+            email_was_sent = send_order_confirmation_email(self.request, order)
+        except Exception:  # pragma: no cover - exercised in production mail failures.
+            messages.warning(
+                self.request,
+                "Payment is confirmed and your downloads are ready below, but the download email could not be sent just yet.",
+            )
         if order_was_just_confirmed:
-            messages.success(self.request, "Payment confirmed. Your music is ready below.")
+            success_message = "Payment confirmed. Your music is ready below."
+            if email_was_sent:
+                success_message = "Payment confirmed. Your music is ready below, and a download email has been sent."
+            messages.success(self.request, success_message)
 
 
 class OrderDownloadView(View):
@@ -544,9 +616,8 @@ class OrderDownloadView(View):
     def get(self, request, item_id):
         """Redirect to a signed download URL or stream a local private file."""
         item = get_object_or_404(OrderItem.objects.select_related("order"), pk=item_id)
+        _ensure_download_access(request, item)
         order = item.order
-        _ensure_user_can_access(request, order)
-        _ensure_guest_session_can_access(request, order)
         download_name = item.download_file_path.rsplit("/", 1)[-1] or f"order-{order.pk}-download"
         response = build_download_response(item.download_file_path, download_name=download_name)
         if isinstance(response, FileResponse):
@@ -582,7 +653,9 @@ class StripeWebhookView(View):
 
         if event_type in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
             try:
-                _fulfill_checkout_session(checkout_session)
+                order = _fulfill_checkout_session(checkout_session)
+                if order is not None:
+                    send_order_confirmation_email(request, order)
             except Http404:
                 pass
 

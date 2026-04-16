@@ -17,7 +17,11 @@
                 <p class="shop-eyebrow">Thank you</p>
                 <h2>Order #{{ order.id }}</h2>
             </div>
-            <p class="shop-inline-note">A confirmation has been prepared for {{ order.email }}.</p>
+            {% if order.confirmation_email_sent_at and order.email %}
+                <p class="shop-inline-note">A download email has been sent to {{ order.email }}.</p>
+            {% else %}
+                <p class="shop-inline-note">Your downloads are ready below for immediate access.</p>
+            {% endif %}
             <ul class="shop-download-list">
                 {% for item in order.items.all %}
                     <li>

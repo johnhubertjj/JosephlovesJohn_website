@@ -17,7 +17,7 @@
             <div class="shop-card-header">
                 <p class="shop-eyebrow">Secure payment</p>
                 {% if checkout_error %}
-                    <h2>Stripe checkout is unavailable</h2>
+                    <h2>{{ checkout_error_title }}</h2>
                 {% elif checkout_canceled %}
                     <h2>Checkout canceled</h2>
                 {% else %}

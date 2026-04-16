@@ -29,10 +29,20 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     """Inspect completed demo orders."""
 
-    list_display = ("id", "full_name", "email", "status", "total", "created_at")
+    list_display = ("id", "full_name", "email", "status", "total", "confirmation_email_sent_at", "created_at")
     list_filter = ("status", "created_at")
     search_fields = ("full_name", "email")
-    readonly_fields = ("user", "full_name", "email", "status", "subtotal", "total", "notes", "created_at")
+    readonly_fields = (
+        "user",
+        "full_name",
+        "email",
+        "status",
+        "subtotal",
+        "total",
+        "notes",
+        "confirmation_email_sent_at",
+        "created_at",
+    )
     inlines = (OrderItemInline,)
 
 
