@@ -84,3 +84,4 @@ static/images/album_art/*
 # Docs irrelevant to code
 docs/django_prelaunch_checklist.pdf
 docs/cloudflare_r2.md
+docs/plausible_setup.local.md

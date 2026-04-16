@@ -479,6 +479,7 @@ def _get_music_library_items():
                 "file_wav_url": product.preview_wav_url,
                 "file_mp3": product.preview_file_mp3,
                 "file_mp3_url": product.preview_mp3_url,
+                "price": f"{product.price:.2f}",
                 "price_display": product.price_display,
                 "is_reversed": product.is_reversed,
                 "share_path": share_path,

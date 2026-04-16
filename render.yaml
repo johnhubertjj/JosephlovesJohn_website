@@ -1,0 +1,130 @@
+services:
+  - type: web
+    name: josephlovesjohn-site
+    runtime: python
+    plan: starter
+    autoDeploy: true
+    buildCommand: uv sync --frozen && uv run python manage.py collectstatic --noinput && uv run python manage.py check --deploy
+    preDeployCommand: uv run python manage.py migrate --noinput
+    startCommand: uv run gunicorn josephlovesjohn_site.wsgi:application --bind 0.0.0.0:$PORT
+    disk:
+      name: josephlovesjohn-media
+      mountPath: /opt/render/project/src/media
+      sizeGB: 1
+    envVars:
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: josephlovesjohn-db
+          property: connectionString
+      - key: DATABASE_CONN_MAX_AGE
+        value: "600"
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: UV_VERSION
+        value: 0.7.12
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: USE_X_FORWARDED_PROTO
+        value: "true"
+      - key: SECURE_SSL_REDIRECT
+        value: "true"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: CSRF_COOKIE_SECURE
+        value: "true"
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: SECURE_HSTS_INCLUDE_SUBDOMAINS
+        value: "true"
+      - key: SECURE_HSTS_PRELOAD
+        value: "false"
+      - key: SECURE_REFERRER_POLICY
+        value: strict-origin-when-cross-origin
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_API_VERSION
+        value: 2026-02-25.clover
+      - key: STRIPE_CURRENCY
+        value: gbp
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "true"
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: CONTACT_RECIPIENT_EMAIL
+        sync: false
+      - key: LEGAL_BUSINESS_NAME
+        value: JosephlovesJohn
+      - key: BUSINESS_CONTACT_EMAIL
+        sync: false
+      - key: BUSINESS_POSTAL_ADDRESS
+        sync: false
+      - key: VAT_NUMBER
+        sync: false
+      - key: PUBLIC_ASSET_BASE_URL
+        sync: false
+      - key: PRIVATE_DOWNLOADS_BUCKET_NAME
+        sync: false
+      - key: PRIVATE_DOWNLOADS_ENDPOINT_URL
+        sync: false
+      - key: PRIVATE_DOWNLOADS_ACCESS_KEY_ID
+        sync: false
+      - key: PRIVATE_DOWNLOADS_SECRET_ACCESS_KEY
+        sync: false
+      - key: PRIVATE_DOWNLOADS_REGION
+        value: auto
+      - key: PRIVATE_DOWNLOADS_KEY_PREFIX
+        sync: false
+      - key: PRIVATE_DOWNLOADS_URL_EXPIRY
+        value: "300"
+      - key: PRIVATE_PREVIEWS_BUCKET_NAME
+        sync: false
+      - key: PRIVATE_PREVIEWS_ENDPOINT_URL
+        sync: false
+      - key: PRIVATE_PREVIEWS_ACCESS_KEY_ID
+        sync: false
+      - key: PRIVATE_PREVIEWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: PRIVATE_PREVIEWS_REGION
+        value: auto
+      - key: PRIVATE_PREVIEWS_KEY_PREFIX
+        sync: false
+      - key: PRIVATE_PREVIEWS_URL_EXPIRY
+        value: "900"
+      - key: PLAUSIBLE_DOMAIN
+        value: josephlovesjohn.com
+      - key: PLAUSIBLE_SCRIPT_SRC
+        value: https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_RELEASE
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.0"
+      - key: SENTRY_SEND_DEFAULT_PII
+        value: "false"
+      - key: SENTRY_DEBUG
+        value: "false"
+
+databases:
+  - name: josephlovesjohn-db
+    plan: basic-256mb

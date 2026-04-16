@@ -3,11 +3,14 @@
     {% if messages %}
         <ul class="contact-form-messages">
             {% for message in messages %}
-                <li class="contact-form-message {{ message.tags }}">{{ message }}</li>
+                <li
+                    class="contact-form-message {{ message.tags }}"
+                    {% if 'success' in message.tags %}data-analytics-contact-success{% endif %}
+                >{{ message }}</li>
             {% endfor %}
         </ul>
     {% endif %}
-    <form method="post" action="{% url 'main_site:contact' %}">
+    <form method="post" action="{% url 'main_site:contact' %}" data-analytics-contact-form>
         {% csrf_token %}
         <div class="fields">
             <div class="field half">

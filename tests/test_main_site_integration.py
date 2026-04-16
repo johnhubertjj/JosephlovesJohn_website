@@ -1,6 +1,7 @@
 """Integration tests for reusable main-site components and rendered flows."""
 
 import pytest
+from django.test import override_settings
 from django.template.loader import render_to_string
 from django.urls import reverse
 from main_site import views
@@ -147,9 +148,28 @@ def test_intro_signup_component_renders_click_to_load_gate() -> None:
     assert 'data-signup-root' in html
     assert 'data-kit-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in html
     assert 'data-signup-gate' in html
+    assert 'data-analytics-signup-open' in html
+    assert 'data-analytics-signup-fallback' in html
     assert "Open signup form" in html
     assert "provided by Kit and may use cookies" in html
     assert 'data-signup-embed' in html
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+@override_settings(
+    PLAUSIBLE_DOMAIN="josephlovesjohn.com",
+    PLAUSIBLE_SCRIPT_SRC="https://plausible.io/js/pa-example.js",
+)
+def test_main_site_renders_plausible_snippet_when_enabled(client) -> None:
+    """The site shell should render Plausible only when the domain is configured."""
+    response = client.get(reverse("main_site:main"))
+    body = response.content.decode()
+
+    assert 'data-analytics-enabled="true"' in body
+    assert 'src="https://plausible.io/js/pa-example.js"' in body
+    assert "window.plausible.init();" in body
+    assert '/static/main_site/js/analytics.js' in body
 
 
 @pytest.mark.integration

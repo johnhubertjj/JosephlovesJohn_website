@@ -17,6 +17,20 @@
     var musicUrl = modal.getAttribute("data-music-url") || "/music/";
     var lastTrigger = null;
 
+    function trackAddToCart(button) {
+        if (!button || !window.siteAnalytics || typeof window.siteAnalytics.track !== "function") {
+            return;
+        }
+
+        window.siteAnalytics.track("Add to Cart", {
+            props: {
+                slug: button.getAttribute("data-cart-item-slug") || "",
+                title: button.getAttribute("data-cart-item-title") || "",
+                price_gbp: button.getAttribute("data-cart-item-price") || ""
+            }
+        });
+    }
+
     function getCookie(name) {
         var value = "; " + document.cookie;
         var parts = value.split("; " + name + "=");
@@ -201,6 +215,7 @@
             postJson(url)
                 .then(function (summary) {
                     applySummary(summary);
+                    trackAddToCart(button);
                     openModal(button);
                 })
                 .catch(function () {

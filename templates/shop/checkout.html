@@ -5,7 +5,14 @@
 {% block shop_subtitle %}Your cart is ready. We'll send you straight to Stripe's secure hosted checkout to pay for your music.{% endblock %}
 
 {% block shop_content %}
-    <div class="shop-grid shop-grid--checkout">
+    <div
+        class="shop-grid shop-grid--checkout"
+        {% if not checkout_error and not checkout_canceled %}
+            data-analytics-begin-checkout
+            data-analytics-item-count="{{ checkout_analytics.item_count }}"
+            data-analytics-total-amount="{{ checkout_analytics.total_amount }}"
+        {% endif %}
+    >
         <section class="shop-card">
             <div class="shop-card-header">
                 <p class="shop-eyebrow">Secure payment</p>

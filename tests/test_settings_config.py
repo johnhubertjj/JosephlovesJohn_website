@@ -123,3 +123,20 @@ def test_dotenv_does_not_override_real_environment_variables(
         monkeypatch.delenv("DOTENV_PATH", raising=False)
         monkeypatch.delenv("SECRET_KEY", raising=False)
         importlib.reload(settings)
+
+
+def test_settings_expose_plausible_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Analytics settings should read Plausible values from the environment."""
+    monkeypatch.setenv("PLAUSIBLE_DOMAIN", "josephlovesjohn.com")
+    monkeypatch.setenv("PLAUSIBLE_SCRIPT_SRC", "https://plausible.example/js/pa-example.js")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.PLAUSIBLE_DOMAIN == "josephlovesjohn.com"
+        assert reloaded.PLAUSIBLE_SCRIPT_SRC == "https://plausible.example/js/pa-example.js"
+    finally:
+        monkeypatch.delenv("PLAUSIBLE_DOMAIN", raising=False)
+        monkeypatch.delenv("PLAUSIBLE_SCRIPT_SRC", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)

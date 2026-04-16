@@ -438,6 +438,10 @@ class CheckoutView(View):
         subtotal = sum((product.price for product in products), Decimal("0.00"))
         return {
             "checkout_items": products,
+            "checkout_analytics": {
+                "item_count": len(products),
+                "total_amount": f"{subtotal:.2f}",
+            },
             "checkout_subtotal_display": f"£{subtotal:.2f}",
             "form": form,
             "checkout_error": checkout_error,
@@ -468,6 +472,12 @@ class OrderSuccessView(TemplateView):
             raise Http404("Order not found")
         _ensure_guest_session_can_access(self.request, order)
         context["order"] = order
+        context["purchase_analytics"] = {
+            "order_id": str(order.pk),
+            "item_count": order.items.count(),
+            "total_amount": f"{order.total:.2f}",
+            "product_titles": ", ".join(item.title_snapshot for item in order.items.all()),
+        }
         return context
 
     def _synchronize_checkout_session(self, order):

@@ -110,6 +110,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "main_site.context_processors.analytics",
                 "shop.context_processors.cart_summary",
             ],
         },
@@ -216,6 +217,11 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_CURRENCY = os.environ.get("STRIPE_CURRENCY", "gbp")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+PLAUSIBLE_DOMAIN = os.environ.get("PLAUSIBLE_DOMAIN", "").strip()
+PLAUSIBLE_SCRIPT_SRC = os.environ.get(
+    "PLAUSIBLE_SCRIPT_SRC",
+    "https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js",
+).strip()
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
@@ -230,7 +236,14 @@ BUSINESS_CONTACT_EMAIL = os.environ.get("BUSINESS_CONTACT_EMAIL", CONTACT_RECIPI
 BUSINESS_POSTAL_ADDRESS = os.environ.get("BUSINESS_POSTAL_ADDRESS", "")
 VAT_NUMBER = os.environ.get("VAT_NUMBER", "")
 
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG" if DEBUG else "INFO").strip().upper() or "INFO"
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").strip().upper() or "INFO"
+DJANGO_LOG_LEVEL = os.environ.get("DJANGO_LOG_LEVEL", "INFO" if DEBUG else LOG_LEVEL).strip().upper() or "INFO"
+DJANGO_SERVER_LOG_LEVEL = os.environ.get("DJANGO_SERVER_LOG_LEVEL", "INFO").strip().upper() or "INFO"
+DJANGO_TEMPLATE_LOG_LEVEL = os.environ.get("DJANGO_TEMPLATE_LOG_LEVEL", "WARNING").strip().upper() or "WARNING"
+DJANGO_DB_LOG_LEVEL = os.environ.get(
+    "DJANGO_DB_LOG_LEVEL",
+    "DEBUG" if _env_bool("LOG_SQL_QUERIES", default=False) else "WARNING",
+).strip().upper() or "WARNING"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -252,7 +265,7 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": LOG_LEVEL,
+            "level": DJANGO_LOG_LEVEL,
             "propagate": False,
         },
         "django.request": {
@@ -262,7 +275,17 @@ LOGGING = {
         },
         "django.server": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": DJANGO_SERVER_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.template": {
+            "handlers": ["console"],
+            "level": DJANGO_TEMPLATE_LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": DJANGO_DB_LOG_LEVEL,
             "propagate": False,
         },
     },

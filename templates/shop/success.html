@@ -4,7 +4,14 @@
 {% block shop_subtitle %}Stripe has confirmed your payment, and your tracks are ready below for immediate download.{% endblock %}
 
 {% block shop_content %}
-    <div class="shop-grid shop-grid--account">
+    <div
+        class="shop-grid shop-grid--account"
+        data-analytics-purchase
+        data-analytics-order-id="{{ purchase_analytics.order_id }}"
+        data-analytics-item-count="{{ purchase_analytics.item_count }}"
+        data-analytics-total-amount="{{ purchase_analytics.total_amount }}"
+        data-analytics-product-titles="{{ purchase_analytics.product_titles }}"
+    >
         <section class="shop-card">
             <div class="shop-card-header">
                 <p class="shop-eyebrow">Thank you</p>

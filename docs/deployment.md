@@ -109,6 +109,17 @@ STRIPE_CURRENCY=gbp
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
+### Optional analytics
+
+To enable Plausible analytics on the site shell and shop pages:
+
+```env
+PLAUSIBLE_DOMAIN=josephlovesjohn.com
+PLAUSIBLE_SCRIPT_SRC=https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js
+```
+
+With `PLAUSIBLE_DOMAIN` set, the site will track pageviews plus custom events for add-to-cart, checkout starts, order confirmations, signup opens, and successful contact-form submissions.
+
 ### Optional public asset CDN
 
 If you move large audio/image assets to Cloudflare R2 or another public bucket,

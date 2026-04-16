@@ -15,6 +15,7 @@ It includes:
 - Django 5
 - JavaScript for the site shell, media players, cart UI, cookie controls, and interactive embeds
 - Stripe Checkout for payments
+- Plausible for lightweight privacy-friendly web analytics
 - Kit (ConvertKit) for mailing-list signup embeds
 - WhiteNoise for static file serving
 - Gunicorn as the production application server
@@ -91,6 +92,7 @@ The site will then be available at [http://127.0.0.1:8000](http://127.0.0.1:8000
 
 - Render should use `DATABASE_URL` for Postgres.
 - Large media files should live in Cloudflare R2 rather than Git.
+- Plausible can be enabled by setting `PLAUSIBLE_DOMAIN` in the environment.
 - [`.env-render-only`](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/.env-render-only) is a private reference file for Render settings.
 
 ## Media and Asset Storage
