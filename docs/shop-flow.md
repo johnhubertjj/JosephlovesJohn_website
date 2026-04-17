@@ -15,7 +15,9 @@ flowchart LR
     Session["Session store<br>shop_cart, shop_recent_orders"]
     Templates["Django templates<br>site.html, shop/*.html"]
     ThemeJS["Theme JS<br>static/assets/js/main.js"]
-    SiteJS["Custom JS<br>site.js, cart.js, cookies.js"]
+    SiteJS["Custom JS<br>site.js, cart.js, cookies.js, analytics.js"]
+    Downloads["Download delivery<br>local/private files or presigned redirects"]
+    Email["Order emails<br>signed download links"]
     Stripe["Stripe Checkout + webhook"]
 
     Browser --> URLs
@@ -32,6 +34,8 @@ flowchart LR
     Browser --> SiteJS
     ShopViews --> Stripe
     Stripe --> ShopViews
+    ShopViews --> Downloads
+    ShopViews --> Email
 ```
 
 ## State And Stores
@@ -39,6 +43,7 @@ flowchart LR
 ```mermaid
 flowchart TD
     DOM["DOM state<br>open modal, visible section, copied button text"]
+    CookieState["Cookie preference<br>essential vs all"]
     CartSession["Session key: shop_cart<br>ordered list of product slugs"]
     RecentOrders["Session key: shop_recent_orders<br>guest access allow-list"]
     ProductTable["Database: Product"]
@@ -46,13 +51,16 @@ flowchart TD
     ProfileTable["Database: CustomerProfile"]
     ContentTables["Database: HeaderSocialLink, PrimaryNavItem, GigPhoto, AlbumArt, AnimationAsset"]
     Stripe["Stripe session state"]
+    EmailTokens["Signed email access tokens<br>30-day download links"]
 
     DOM <-->|fetch JSON + rerender| CartSession
+    CookieState --> DOM
     CartSession --> ProductTable
     ProductTable --> OrderTables
     OrderTables --> ProfileTable
     OrderTables <-->|session_id + webhook| Stripe
     RecentOrders --> OrderTables
+    EmailTokens --> OrderTables
     ContentTables --> DOM
 ```
 
@@ -71,21 +79,27 @@ flowchart TD
     G -- Yes --> I["GET /shop/checkout/"]
     I --> J{"Cart has products?"}
     J -- No --> K["Redirect to /music/ with message"]
-    J -- Yes --> L["Render local checkout review page"]
-    L --> M["User accepts terms and POSTs /shop/checkout/"]
-    M --> N["Create pending Order"]
-    N --> O["Create OrderItem snapshots from current products"]
-    O --> P["Create Stripe Checkout Session"]
-    P --> Q{"Stripe session created?"}
-    Q -- No --> R["Delete pending order and show checkout error"]
-    Q -- Yes --> S["Redirect to hosted Stripe Checkout"]
-    S --> T{"Payment outcome"}
-    T -- Canceled --> U["Return to /shop/checkout/?canceled=1 with cart intact"]
-    T -- Paid --> V["Return to /shop/success/&lt;order_id&gt;/?session_id=..."]
-    V --> W["Success view retrieves Stripe session and verifies payment"]
-    W --> X["Order marked confirmed and customer details synced"]
-    X --> Y["Session cart cleared and recent guest order remembered"]
-    Y --> Z["Success page shows protected download links"]
+    J -- Yes --> L{"Downloads available for every item?"}
+    L -- No --> M["Render checkout page with delivery error"]
+    L -- Yes --> N["Render local checkout review page"]
+    N --> O["User accepts terms and POSTs /shop/checkout/"]
+    O --> P["Re-check download availability"]
+    P --> Q{"Still available?"}
+    Q -- No --> R["Show checkout error and do not create an order"]
+    Q -- Yes --> S["Create pending Order"]
+    S --> T["Create OrderItem snapshots from current products"]
+    T --> U["Create Stripe Checkout Session"]
+    U --> V{"Stripe session created?"}
+    V -- No --> W["Delete pending order and show checkout error"]
+    V -- Yes --> X["Redirect to hosted Stripe Checkout"]
+    X --> Y{"Payment outcome"}
+    Y -- Canceled --> Z["Return to /shop/checkout/?canceled=1 with cart intact"]
+    Y -- Paid --> AA["Webhook and/or success page verify payment"]
+    AA --> AB["Order marked confirmed and customer details synced"]
+    AB --> AC["Send confirmation email with signed download links once"]
+    AC --> AD["Session cart cleared and recent guest order remembered"]
+    AD --> AE["Success page shows protected download links"]
+    AE --> AF["Download allowed by account, recent session, or signed email token"]
 ```
 
 ## Checkout Sequence
@@ -99,11 +113,14 @@ sequenceDiagram
     participant Cart as shop.cart helpers
     participant CheckoutGet as CheckoutView.get
     participant CheckoutPost as CheckoutView.post
+    participant Downloads as shop.downloads helpers
     participant Order as Order / OrderItem
     participant Stripe as Stripe Checkout
     participant Webhook as StripeWebhookView
     participant Success as OrderSuccessView
     participant Profile as CustomerProfile
+    participant Email as shop.emails helpers
+    participant DownloadView as OrderDownloadView
 
     User->>MusicPage: Click "Download"
     MusicPage->>CartJS: Read data-cart-add-url
@@ -116,10 +133,12 @@ sequenceDiagram
 
     User->>CheckoutGet: GET /shop/checkout/
     CheckoutGet->>Cart: get_cart_products()
-    CheckoutGet-->>User: Render review page with consent checkbox
+    CheckoutGet->>Downloads: download_asset_exists()
+    CheckoutGet-->>User: Render review page or delivery error
 
     User->>CheckoutPost: POST /shop/checkout/
     CheckoutPost->>Cart: get_cart_products()
+    CheckoutPost->>Downloads: download_asset_exists()
     CheckoutPost->>Order: create pending Order
     loop For each product in cart
         CheckoutPost->>Order: create OrderItem snapshot
@@ -132,6 +151,7 @@ sequenceDiagram
     par Optional background fulfillment
         Stripe-->>Webhook: checkout.session.completed
         Webhook->>Order: fulfill matching order if found
+        Webhook->>Email: send_order_confirmation_email()
     and Return to success page
         Stripe-->>Success: GET /shop/success/<order_id>/?session_id=...
         Success->>Order: load order + verify access rules
@@ -141,10 +161,19 @@ sequenceDiagram
         opt Logged-in order
             Success->>Profile: sync full_name and email
         end
+        Success->>Email: send_order_confirmation_email()
         Success->>Cart: clear_cart()
         Success->>Cart: remember order id in shop_recent_orders
         Success-->>User: Render download page
     end
+
+    User->>DownloadView: GET /shop/download/<item_id>/
+    DownloadView->>Order: verify paid order access
+    alt Signed email link
+        DownloadView->>Email: validate signed access token
+    end
+    DownloadView->>Downloads: build_download_response()
+    Downloads-->>User: File response or presigned redirect
 ```
 
 ## Core Shop Models
@@ -193,6 +222,7 @@ classDiagram
         +stripe_checkout_session_id
         +stripe_payment_intent_id
         +paid_at
+        +confirmation_email_sent_at
         +created_at
         +total_display
         +is_paid
@@ -223,8 +253,21 @@ classDiagram
         +clear_cart()
     }
 
+    class DownloadHelpers {
+        +download_asset_exists()
+        +build_download_response()
+        +presigned_private_asset_url()
+    }
+
+    class EmailHelpers {
+        +send_order_confirmation_email()
+        +build_download_access_token()
+        +has_valid_download_access_token()
+    }
+
     class CheckoutView
     class OrderSuccessView
+    class OrderDownloadView
     class StripeWebhookView
     class AccountView
     class cart_add
@@ -234,12 +277,18 @@ classDiagram
     Product "1" --> "*" OrderItem
     CustomerProfile --> "1" Order : via authenticated user
     CheckoutView ..> CartHelpers
+    CheckoutView ..> DownloadHelpers
     CheckoutView ..> Order
     CheckoutView ..> Stripe
     OrderSuccessView ..> Order
     OrderSuccessView ..> CustomerProfile
+    OrderSuccessView ..> EmailHelpers
     OrderSuccessView ..> Stripe
+    OrderDownloadView ..> Order
+    OrderDownloadView ..> DownloadHelpers
+    OrderDownloadView ..> EmailHelpers
     StripeWebhookView ..> Order
+    StripeWebhookView ..> EmailHelpers
     AccountView ..> Order
     cart_add ..> Product
     cart_add ..> CartHelpers

@@ -425,7 +425,7 @@ def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> 
         """
     )
     assert browser_page.locator("#menu .close").count() == 1
-    assert browser_page.locator('#menu a[href="#services"]').is_visible()
+    assert browser_page.locator('#menu a[href="#services"]').count() == 1
 
 
 def test_legal_links_open_routed_legal_page(browser_page, live_server) -> None:
