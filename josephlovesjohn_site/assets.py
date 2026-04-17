@@ -1,5 +1,7 @@
 """Helpers for resolving site assets from static files or a public CDN."""
 
+from collections.abc import Callable
+
 from django.conf import settings
 from django.templatetags.static import static as static_url
 
@@ -39,3 +41,34 @@ def public_asset_url(value):
         return static_url(normalized)
     except ValueError:
         return f"{settings.STATIC_URL}{normalized.lstrip('/')}"
+
+
+def resolve_public_asset_source(value, *, file_exists: Callable[[str], bool] | None = None):
+    """Resolve an asset path to a normalized public source payload.
+
+    The optional ``file_exists`` callback is used to confirm repo-backed static
+    files when no public asset base URL is configured.
+    """
+
+    normalized = normalize_asset_path(value)
+    if not normalized:
+        return None
+
+    if is_external_url(normalized):
+        return {
+            "path": normalized,
+            "url": normalized,
+            "is_static": False,
+        }
+
+    file_is_available = True if getattr(settings, "PUBLIC_ASSET_BASE_URL", "").strip() else bool(
+        file_exists and file_exists(normalized)
+    )
+    if not file_is_available:
+        return None
+
+    return {
+        "path": normalized,
+        "url": public_asset_url(normalized),
+        "is_static": True,
+    }

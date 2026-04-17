@@ -76,6 +76,20 @@ def test_settings_use_database_url_when_present(monkeypatch: pytest.MonkeyPatch)
         importlib.reload(settings)
 
 
+def test_blank_private_downloads_root_falls_back_to_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Blank private download roots should not collapse to the repo root."""
+    monkeypatch.setenv("PRIVATE_DOWNLOADS_ROOT", "")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.PRIVATE_DOWNLOADS_ROOT == reloaded.MEDIA_ROOT / "private_downloads"
+    finally:
+        monkeypatch.delenv("PRIVATE_DOWNLOADS_ROOT", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
 def test_settings_load_dotenv_values_when_present(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -122,4 +136,35 @@ def test_dotenv_does_not_override_real_environment_variables(
     finally:
         monkeypatch.delenv("DOTENV_PATH", raising=False)
         monkeypatch.delenv("SECRET_KEY", raising=False)
+        importlib.reload(settings)
+
+
+def test_settings_expose_plausible_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Analytics settings should read Plausible values from the environment."""
+    monkeypatch.setenv("PLAUSIBLE_DOMAIN", "josephlovesjohn.com")
+    monkeypatch.setenv("PLAUSIBLE_SCRIPT_SRC", "https://plausible.example/js/pa-example.js")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.PLAUSIBLE_DOMAIN == "josephlovesjohn.com"
+        assert reloaded.PLAUSIBLE_SCRIPT_SRC == "https://plausible.example/js/pa-example.js"
+    finally:
+        monkeypatch.delenv("PLAUSIBLE_DOMAIN", raising=False)
+        monkeypatch.delenv("PLAUSIBLE_SCRIPT_SRC", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_settings_expose_site_url_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Canonical site URLs should be configurable from the environment."""
+    monkeypatch.setenv("SITE_URL", "https://josephlovesjohn.com/")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SITE_URL == "https://josephlovesjohn.com"
+    finally:
+        monkeypatch.delenv("SITE_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
         importlib.reload(settings)

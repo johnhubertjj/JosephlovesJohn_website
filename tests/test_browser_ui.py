@@ -1,7 +1,18 @@
-"""Browser-level tests for the main site and mastering UI flows."""
+"""Browser-level tests for the main site, shop, and mastering UI flows."""
+
+from __future__ import annotations
+
+import random
+import re
+from types import SimpleNamespace
+from urllib.parse import urlsplit
 
 import pytest
+from django.core import mail
+from django.test import Client, override_settings
 from django.urls import reverse
+from shop import views as shop_views
+from shop.models import Product
 
 pytestmark = [pytest.mark.browser, pytest.mark.integration, pytest.mark.django_db(transaction=True)]
 
@@ -10,6 +21,38 @@ def _route_url(live_server, route_name: str, *args, **kwargs) -> str:
     """Build an absolute route URL for Playwright browser tests."""
     return f"{live_server.url}{reverse(route_name, args=args, kwargs=kwargs)}"
 
+
+@pytest.fixture(autouse=True)
+def ensure_browser_shop_download_assets(create_private_download_asset) -> None:
+    """Create temporary private audio files so browser checkout can reach the review page."""
+    for download_path in Product.objects.values_list("download_file_path", flat=True):
+        create_private_download_asset(download_path, content=b"browser audio")
+    wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
+    for download_path in wav_paths:
+        create_private_download_asset(download_path, content=b"browser wav audio")
+
+
+@pytest.fixture
+def mobile_browser_page(playwright_browser, browser_engine_name: str):
+    """Create a mobile-sized browser page and fail on uncaught page errors."""
+    context_options = {
+        "viewport": {"width": 390, "height": 844},
+    }
+    if browser_engine_name != "firefox":
+        context_options["is_mobile"] = True
+        context_options["has_touch"] = True
+
+    context = playwright_browser.new_context(**context_options)
+    page = context.new_page()
+    page.set_default_timeout(20_000)
+    page_errors: list[str] = []
+    page.on("pageerror", lambda exc: page_errors.append(str(exc)))
+
+    try:
+        yield page
+    finally:
+        context.close()
+        assert not page_errors, f"Unexpected browser page errors: {page_errors}"
 
 
 def test_intro_route_sets_hash_and_activates_intro_article(browser_page, live_server) -> None:
@@ -20,10 +63,9 @@ def test_intro_route_sets_hash_and_activates_intro_article(browser_page, live_se
     assert browser_page.evaluate("window.location.hash") == "#intro"
     assert browser_page.locator("article#intro.active").is_visible()
     assert browser_page.locator(".intro-signup-form").is_visible()
-    assert browser_page.locator('[data-cookie-banner]').is_visible()
-    assert browser_page.locator('[data-cookie-essential-only]').is_visible()
-    assert browser_page.locator('[data-cookie-accept-all]').is_visible()
-
+    assert browser_page.locator("[data-cookie-banner]").is_visible()
+    assert browser_page.locator("[data-cookie-essential-only]").is_visible()
+    assert browser_page.locator("[data-cookie-accept-all]").is_visible()
 
 
 def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_page, live_server) -> None:
@@ -63,6 +105,44 @@ def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_p
     )
 
 
+def test_music_route_auth_entry_only_shows_while_music_section_is_active(browser_page, live_server) -> None:
+    """Anonymous auth links should appear on the music section and hide when the hash leaves music."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    auth_entry = browser_page.locator("[data-music-auth-entry]")
+    assert auth_entry.is_visible()
+    assert auth_entry.get_by_role("link", name="Log in").is_visible()
+    assert auth_entry.get_by_role("link", name="Create account").is_visible()
+
+    browser_page.evaluate("window.location.hash = 'intro';")
+    browser_page.wait_for_function(
+        """
+        () => {
+            const entry = document.querySelector('[data-music-auth-entry]');
+            return !!entry && entry.classList.contains('is-hidden');
+        }
+        """
+    )
+
+
+def test_home_route_reveals_music_auth_entry_when_music_article_opens(browser_page, live_server) -> None:
+    """Opening the music article from the home shell should reveal the auth entry."""
+    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
+    auth_entry = browser_page.locator("[data-music-auth-entry]")
+
+    assert "is-hidden" in (auth_entry.get_attribute("class") or "")
+    browser_page.evaluate("window.location.hash = 'music';")
+    browser_page.wait_for_selector("article#music.active")
+    browser_page.wait_for_function(
+        """
+        () => {
+            const entry = document.querySelector('[data-music-auth-entry]');
+            return !!entry && !entry.classList.contains('is-hidden');
+        }
+        """
+    )
+
 
 def test_music_cart_modal_supports_add_remove_and_checkout(browser_page, live_server) -> None:
     """The cart UI should open from a track card, update counts, and link to checkout."""
@@ -88,6 +168,29 @@ def test_music_cart_modal_supports_add_remove_and_checkout(browser_page, live_se
     browser_page.wait_for_function("document.querySelectorAll('.music-cart-item').length === 0")
     browser_page.wait_for_function("document.getElementById('floating-cart-button').classList.contains('is-hidden')")
 
+
+def test_music_purchase_path_reaches_checkout_and_cart_persists(browser_page, live_server) -> None:
+    """Adding a track from the music page should reach checkout and keep the cart intact on return."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    first_title = browser_page.locator(".music-library-item h3").first.inner_text().strip()
+    browser_page.locator(".music-buy-trigger").first.click()
+    browser_page.locator("#music-cart-modal").wait_for()
+    browser_page.locator("[data-cart-checkout]").click()
+    browser_page.wait_for_url("**/shop/checkout/")
+
+    assert browser_page.locator("h1").inner_text().strip().lower() == "secure checkout"
+    assert first_title in browser_page.locator(".shop-order-item").first.inner_text()
+    assert browser_page.locator("[data-checkout-submit]").is_disabled()
+
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+    browser_page.locator("#floating-cart-button").click()
+    browser_page.locator("#music-cart-modal").wait_for()
+
+    assert browser_page.locator(".music-cart-item").count() == 1
+    assert first_title.lower() in browser_page.locator(".music-cart-item").first.inner_text().lower()
 
 
 def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_server) -> None:
@@ -118,6 +221,236 @@ def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_serv
     )
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+)
+def test_shop_register_and_login_flows(browser_page, live_server) -> None:
+    """Registration and returning-login flows should work in a real browser."""
+    browser_page.goto(_route_url(live_server, "shop:register"), wait_until="load")
+    browser_page.locator('input[name="username"]').fill("browserlistener")
+    browser_page.locator('input[name="email"]').fill("browserlistener@example.com")
+    browser_page.locator('input[name="full_name"]').fill("Browser Listener")
+    browser_page.locator('input[name="password1"]').fill("SuperSafePass123")
+    browser_page.locator('input[name="password2"]').fill("SuperSafePass123")
+    browser_page.locator('button[type="submit"]').click()
+    browser_page.wait_for_url("**/shop/account/")
+
+    assert browser_page.locator("h1").inner_text().strip().lower() == "your account"
+    assert "Browser Listener" in browser_page.content()
+
+    browser_page.locator('form[action="/shop/logout/"] button[type="submit"]').click()
+    browser_page.wait_for_url("**/music/**")
+
+    browser_page.goto(_route_url(live_server, "shop:login"), wait_until="load")
+    browser_page.locator('input[name="username"]').fill("browserlistener")
+    browser_page.locator('input[name="password"]').fill("wrong-password")
+    browser_page.locator('button[type="submit"]').click()
+    assert browser_page.locator(".shop-field-error").last.inner_text().strip() == "That password is incorrect."
+
+    browser_page.locator('input[name="password"]').fill("SuperSafePass123")
+    browser_page.locator('button[type="submit"]').click()
+    browser_page.wait_for_url("**/shop/account/")
+    assert "Browser Listener" in browser_page.content()
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+)
+def test_shop_password_reset_flow(browser_page, live_server, django_user_model) -> None:
+    """The forgot-password journey should email a reset link and accept the new password."""
+    mail.outbox.clear()
+    django_user_model.objects.create_user(
+        username="resetlistener",
+        email="resetlistener@example.com",
+        password="OldPass123",
+    )
+
+    browser_page.goto(_route_url(live_server, "shop:login"), wait_until="load")
+    browser_page.locator('a[href="/shop/password-reset/"]').click()
+    browser_page.wait_for_url("**/shop/password-reset/")
+    browser_page.locator('input[name="email"]').fill("resetlistener@example.com")
+    browser_page.locator('button[type="submit"]').click()
+    browser_page.wait_for_url("**/shop/password-reset/done/")
+
+    assert "Check your email" in browser_page.content()
+    assert len(mail.outbox) == 1
+
+    match = re.search(
+        r"(?P<url>https?://[^\s]+/shop/reset/[^/\s]+/[^/\s]+/)",
+        mail.outbox[0].body,
+    )
+    assert match is not None
+
+    reset_url = urlsplit(match.group("url"))
+    browser_page.goto(f"{live_server.url}{reset_url.path}", wait_until="load")
+    browser_page.locator('input[name="new_password1"]').fill("EvenSaferPass456")
+    browser_page.locator('input[name="new_password2"]').fill("EvenSaferPass456")
+    browser_page.locator('button[type="submit"]').click()
+    browser_page.wait_for_url("**/shop/reset/complete/")
+
+    assert "Password updated" in browser_page.content()
+
+    browser_page.get_by_role("link", name="Return to login").click()
+    browser_page.wait_for_url("**/shop/login/")
+    browser_page.locator('input[name="username"]').fill("resetlistener")
+    browser_page.locator('input[name="password"]').fill("EvenSaferPass456")
+    browser_page.locator('button[type="submit"]').click()
+    browser_page.wait_for_url("**/shop/account/")
+    assert "resetlistener@example.com" in browser_page.content()
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+)
+def test_paid_checkout_success_page_sends_email_and_allows_download_via_signed_link(
+    browser_page,
+    live_server,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A browser checkout should land on the success page, send the email, and honor the signed download link."""
+    mail.outbox.clear()
+    browser_page.set_default_timeout(10_000)
+
+    created_payloads: list[dict[str, object]] = []
+    sessions: dict[str, dict[str, object]] = {}
+
+    def create(**kwargs):
+        created_payloads.append(kwargs)
+        order_id = kwargs["metadata"]["order_id"]
+        session_id = f"cs_browser_{len(created_payloads)}"
+        session = {
+            "id": session_id,
+            "url": (
+                f"{live_server.url}"
+                f"{reverse('shop:success', kwargs={'order_id': order_id})}"
+                f"?session_id={session_id}"
+            ),
+            "status": "complete",
+            "payment_status": "paid",
+            "payment_intent": f"pi_browser_{len(created_payloads)}",
+            "metadata": kwargs.get("metadata", {}),
+            "customer_details": {
+                "name": "Browser Buyer",
+                "email": "browserbuyer@example.com",
+            },
+        }
+        sessions[session_id] = session
+        return SimpleNamespace(id=session_id, url=session["url"])
+
+    def retrieve(session_id, expand=None):  # noqa: ARG001 - mirrors Stripe's SDK signature
+        return SimpleNamespace(**sessions[session_id])
+
+    stripe_module = SimpleNamespace(
+        checkout=SimpleNamespace(
+            Session=SimpleNamespace(
+                create=create,
+                retrieve=retrieve,
+            )
+        )
+    )
+    monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
+
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    chosen_title = browser_page.locator(".music-library-item h3").first.inner_text().strip()
+    browser_page.locator(".music-buy-trigger").first.click()
+    browser_page.locator("#music-cart-modal").wait_for()
+    browser_page.locator("[data-cart-checkout]").click()
+    browser_page.wait_for_url("**/shop/checkout/")
+
+    browser_page.locator("#id_accept_terms").check()
+    browser_page.locator("[data-checkout-submit]").click()
+    browser_page.wait_for_function("window.location.pathname.includes('/shop/success/')")
+    browser_page.wait_for_load_state("load")
+
+    assert browser_page.locator("h1").inner_text().strip().lower() == "order confirmed"
+    assert browser_page.locator(".shop-inline-note").inner_text().strip() == (
+        "A download email has been sent to browserbuyer@example.com."
+    )
+    assert chosen_title.lower() in browser_page.locator(".shop-download-list").inner_text().lower()
+    assert browser_page.locator(".shop-download-list .button").first.is_visible()
+    assert "/shop/download/" in (
+        browser_page.locator(".shop-download-list .button").first.get_attribute("href") or ""
+    )
+    assert len(created_payloads) == 1
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["browserbuyer@example.com"]
+
+    match = re.search(
+        r"(?P<url>https?://[^\s]+/shop/download/\d+/\?access=[^\s]+)",
+        mail.outbox[0].body,
+    )
+    assert match is not None
+
+    download_url = urlsplit(match.group("url"))
+    signed_download_response = Client().get(f"{download_url.path}?{download_url.query}")
+    assert signed_download_response.status_code == 200
+    assert signed_download_response.get("Content-Disposition", "").startswith("attachment;")
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    CONTACT_RECIPIENT_EMAIL="josephlovesjohn@gmail.com",
+)
+def test_contact_form_browser_flow_covers_validation_and_success(browser_page, live_server) -> None:
+    """The contact page should show validation feedback and then submit successfully."""
+    mail.outbox.clear()
+
+    browser_page.goto(_route_url(live_server, "main_site:contact"), wait_until="load")
+    browser_page.wait_for_selector("article#contact.active")
+
+    browser_page.locator('input[name="name"]').fill("Browser Tester")
+    browser_page.locator('input[name="email"]').fill("not-an-email")
+    browser_page.locator('textarea[name="message"]').fill("Hello from the browser test.")
+    browser_page.locator("[data-analytics-contact-form]").evaluate("(form) => form.submit()")
+    browser_page.wait_for_url("**/contact/**")
+    browser_page.wait_for_selector("article#contact.active")
+
+    assert "Please correct the highlighted fields and try again." in browser_page.content()
+    assert "Enter a valid email address." in browser_page.content()
+    assert len(mail.outbox) == 0
+
+    browser_page.locator('input[name="email"]').fill("browser@example.com")
+    browser_page.locator("[data-analytics-contact-form]").evaluate("(form) => form.submit()")
+    browser_page.wait_for_url("**/contact/**")
+    browser_page.wait_for_selector("article#contact.active")
+
+    assert "Thanks, your message has been sent." in browser_page.content()
+    assert len(mail.outbox) == 1
+
+
+def test_mobile_viewport_supports_music_cart_art_lightbox_and_navigation(
+    mobile_browser_page,
+    live_server,
+) -> None:
+    """Key main-site interactions should still work at a mobile viewport."""
+    mobile_browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    mobile_browser_page.wait_for_selector("article#music.active")
+
+    mobile_browser_page.locator(".music-buy-trigger").first.click()
+    mobile_browser_page.locator("#music-cart-modal").wait_for()
+    assert mobile_browser_page.locator("#floating-cart-button").is_visible()
+    mobile_browser_page.locator(".music-cart-close").click()
+    mobile_browser_page.wait_for_function(
+        "document.getElementById('music-cart-modal').getAttribute('aria-hidden') === 'true'"
+    )
+
+    mobile_browser_page.goto(_route_url(live_server, "main_site:art"), wait_until="load")
+    mobile_browser_page.wait_for_selector("article#art.active")
+    mobile_browser_page.locator(".gig-photo-card").first.click()
+    mobile_browser_page.locator("#art-lightbox").wait_for()
+    assert mobile_browser_page.locator("#art-lightbox").get_attribute("aria-hidden") == "false"
+    mobile_browser_page.keyboard.press("Escape")
+    mobile_browser_page.wait_for_function(
+        "document.getElementById('art-lightbox').getAttribute('aria-hidden') === 'true'"
+    )
+
 
 def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> None:
     """The mastering route should still load and expose the menu UI."""
@@ -128,20 +461,72 @@ def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> 
 
     browser_page.locator("a.mastering-menu-trigger").click()
     browser_page.wait_for_function("document.body.classList.contains('is-menu-visible')")
-    assert browser_page.locator("#menu .close").is_visible()
-    assert browser_page.locator('#menu a[href="#services"]').is_visible()
+    browser_page.wait_for_function(
+        """
+        () => {
+            const closeControl = document.querySelector('#menu .close');
+            return !!closeControl;
+        }
+        """
+    )
+    assert browser_page.locator("#menu .close").count() == 1
+    assert browser_page.locator('#menu a[href="#services"]').count() == 1
 
 
 def test_legal_links_open_routed_legal_page(browser_page, live_server) -> None:
     """Policy links should navigate to the standalone legal route."""
-    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
-
-    browser_page.locator('#footer a[href="/privacy/"]').click()
-    browser_page.wait_for_url("**/privacy/")
+    browser_page.goto(_route_url(live_server, "main_site:privacy"), wait_until="load")
 
     assert browser_page.url.endswith("/privacy/")
     assert browser_page.locator(".legal-card").is_visible()
     assert browser_page.locator("#footer").is_visible()
 
     browser_page.locator(".legal-back-link").click()
-    browser_page.wait_for_url("**/")
+    browser_page.wait_for_load_state("load")
+    assert browser_page.url.rstrip("/") == live_server.url.rstrip("/")
+
+
+def test_seeded_random_clicks_do_not_break_the_site(browser_page, live_server) -> None:
+    """Deterministic random clicks across the active music pane should not break the app shell."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    article = browser_page.locator("article#music.active")
+    box = article.bounding_box()
+    assert box is not None
+
+    generator = random.Random(20260417)
+    performed_clicks = 0
+    for _ in range(24):
+        x = int(generator.uniform(box["x"] + 24, box["x"] + box["width"] - 24))
+        y = int(generator.uniform(box["y"] + 24, box["y"] + min(box["height"], 700) - 24))
+        target_state = browser_page.evaluate(
+            """
+            (point) => {
+                const target = document.elementFromPoint(point.x, point.y);
+                if (!target) {
+                    return { clickable: false };
+                }
+                const blockedAncestor = target.closest('a, button, input, textarea, select, label');
+                return {
+                    clickable: !blockedAncestor && target.tagName !== 'IFRAME'
+                };
+            }
+            """,
+            {"x": x, "y": y},
+        )
+        if not target_state["clickable"]:
+            continue
+
+        browser_page.mouse.click(x, y)
+        performed_clicks += 1
+        browser_page.wait_for_timeout(40)
+
+    assert performed_clicks >= 10
+    assert browser_page.url.startswith(live_server.url)
+
+    browser_page.keyboard.press("Escape")
+    browser_page.keyboard.press("Escape")
+
+    assert browser_page.locator("#wrapper").is_visible()
+    assert browser_page.locator("#footer").is_visible()

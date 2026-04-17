@@ -1,4 +1,51 @@
 (function () {
+    var authEntry = document.querySelector("[data-music-auth-entry]");
+    var body = document.body;
+    var main = document.getElementById("main");
+    var wrapper = document.getElementById("wrapper");
+    if (!authEntry) {
+        return;
+    }
+
+    var routeSection = (wrapper && wrapper.getAttribute("data-route-section")) || "main";
+
+    function getActiveArticle() {
+        return document.querySelector("#main article.active");
+    }
+
+    function syncMusicAuthEntry() {
+        var activeArticle = getActiveArticle();
+        var isMusicVisible = !!(activeArticle && activeArticle.id === "music");
+
+        if (
+            !isMusicVisible
+            && routeSection === "music"
+            && window.location.hash === "#music"
+            && !body.classList.contains("is-article-visible")
+        ) {
+            isMusicVisible = true;
+        }
+
+        authEntry.classList.toggle("is-hidden", !isMusicVisible);
+        authEntry.setAttribute("aria-hidden", isMusicVisible ? "false" : "true");
+    }
+
+    window.addEventListener("hashchange", syncMusicAuthEntry);
+    if (main) {
+        new MutationObserver(syncMusicAuthEntry).observe(main, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["class"],
+        });
+    }
+    new MutationObserver(syncMusicAuthEntry).observe(body, {
+        attributes: true,
+        attributeFilter: ["class"],
+    });
+    syncMusicAuthEntry();
+})();
+
+(function () {
     var signupRoot = document.querySelector("[data-signup-root]");
     if (!signupRoot) {
         return;
@@ -116,8 +163,57 @@
 })();
 
 (function () {
-    var frames = document.querySelectorAll(".music-player-frame");
-    var canUsePlayerjs = typeof Playerjs !== "undefined";
+    var musicArticle = document.getElementById("music");
+    if (!musicArticle) {
+        return;
+    }
+
+    var frames = musicArticle.querySelectorAll(".music-player-frame");
+    var shellWrapper = document.getElementById("wrapper");
+    var playerScriptPromise = null;
+    var playersInitialized = false;
+    var playerScriptPath = (shellWrapper && shellWrapper.getAttribute("data-playerjs-src")) || "";
+
+    function loadPlayerJs() {
+        if (typeof Playerjs !== "undefined") {
+            return Promise.resolve(true);
+        }
+
+        if (!playerScriptPath) {
+            return Promise.resolve(false);
+        }
+
+        if (playerScriptPromise) {
+            return playerScriptPromise;
+        }
+
+        playerScriptPromise = new Promise(function (resolve) {
+            var existingScript = document.querySelector('script[data-playerjs-script="true"]');
+            if (existingScript) {
+                existingScript.addEventListener("load", function () {
+                    resolve(typeof Playerjs !== "undefined");
+                });
+                existingScript.addEventListener("error", function () {
+                    resolve(false);
+                });
+                return;
+            }
+
+            var script = document.createElement("script");
+            script.src = playerScriptPath;
+            script.async = true;
+            script.setAttribute("data-playerjs-script", "true");
+            script.addEventListener("load", function () {
+                resolve(typeof Playerjs !== "undefined");
+            });
+            script.addEventListener("error", function () {
+                resolve(false);
+            });
+            document.body.appendChild(script);
+        });
+
+        return playerScriptPromise;
+    }
 
     function shouldPreferCompressedAudio() {
         var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -268,11 +364,17 @@
         }, 125);
     }
 
-    frames.forEach(function (frame) {
+    function renderFrame(frame, canUsePlayerjs) {
         var file = pickPreferredAudioFile(frame);
         if (!file) {
             return;
         }
+
+        if (frame.dataset.playerReady === "1") {
+            return;
+        }
+
+        frame.dataset.playerReady = "1";
 
         if (canUsePlayerjs) {
             try {
@@ -298,7 +400,42 @@
             '<source src="' + file + '" type="' + getAudioMimeType(file) + '">' +
             "</audio>";
         frame.classList.add("is-enhanced");
+    }
+
+    function initializePlayers() {
+        if (playersInitialized) {
+            return;
+        }
+
+        playersInitialized = true;
+
+        loadPlayerJs().then(function (canUsePlayerjs) {
+            frames.forEach(function (frame) {
+                renderFrame(frame, canUsePlayerjs);
+            });
+        });
+    }
+
+    function maybeInitializePlayers() {
+        if (!musicArticle.classList.contains("active")) {
+            return;
+        }
+
+        initializePlayers();
+    }
+
+    new MutationObserver(function () {
+        maybeInitializePlayers();
+    }).observe(musicArticle, {
+        attributes: true,
+        attributeFilter: ["class"]
     });
+
+    window.addEventListener("hashchange", function () {
+        window.setTimeout(maybeInitializePlayers, 0);
+    });
+
+    maybeInitializePlayers();
 })();
 
 (function () {
@@ -315,12 +452,28 @@
     var dialog = modal.querySelector(".music-share-dialog");
     var lastTrigger = null;
     var copyResetTimer = 0;
+    var focusableSelector = [
+        'a[href]:not([tabindex="-1"])',
+        'button:not([disabled]):not([tabindex="-1"])',
+        'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(", ");
     var platformLinks = {
         threads: modal.querySelector('[data-share-platform="threads"]'),
         facebook: modal.querySelector('[data-share-platform="facebook"]'),
         x: modal.querySelector('[data-share-platform="x"]'),
         email: modal.querySelector('[data-share-platform="email"]')
     };
+
+    function getFocusableElements() {
+        if (!dialog) {
+            return [];
+        }
+
+        return Array.prototype.filter.call(dialog.querySelectorAll(focusableSelector), function (element) {
+            return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+        });
+    }
 
     function buildAbsoluteUrl(path) {
         try {
@@ -414,6 +567,27 @@
         }
     }, true);
 
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Tab" || !modal.classList.contains("is-visible")) {
+            return;
+        }
+
+        var focusableElements = getFocusableElements();
+        if (!focusableElements.length) {
+            return;
+        }
+
+        var firstElement = focusableElements[0];
+        var lastElement = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    });
+
     if (copyButton && linkInput) {
         copyButton.addEventListener("click", function () {
             var linkValue = linkInput.value;
@@ -459,6 +633,21 @@
     var lightboxImage = lightbox.querySelector(".art-lightbox-image");
     var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
     var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
+    var lightboxCloseButton = lightbox.querySelector("[data-art-close]");
+    var lastTrigger = null;
+
+    function getLightboxFocusableElements() {
+        if (!lightboxInner && !lightboxCloseButton) {
+            return [];
+        }
+
+        return Array.prototype.filter.call(
+            lightbox.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+            function (element) {
+                return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+            }
+        );
+    }
 
     function closeLightbox() {
         lightbox.classList.remove("is-visible");
@@ -467,6 +656,9 @@
         lightboxImage.removeAttribute("src");
         lightboxImage.alt = "";
         lightboxCaption.textContent = "";
+        if (lastTrigger) {
+            lastTrigger.focus();
+        }
     }
 
     document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
@@ -478,6 +670,7 @@
                 return;
             }
 
+            lastTrigger = trigger;
             var image = trigger.querySelector("img");
             lightboxImage.src = targetUrl;
             lightboxImage.alt = image ? image.alt : "Artwork";
@@ -487,6 +680,11 @@
             lightbox.setAttribute("aria-hidden", "false");
             document.body.classList.add("is-lightbox-visible");
             lightbox.scrollTop = 0;
+            window.requestAnimationFrame(function () {
+                if (lightboxCloseButton) {
+                    lightboxCloseButton.focus();
+                }
+            });
         });
     });
 
@@ -512,6 +710,27 @@
             closeLightbox();
         }
     }, true);
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Tab" || !lightbox.classList.contains("is-visible")) {
+            return;
+        }
+
+        var focusableElements = getLightboxFocusableElements();
+        if (!focusableElements.length) {
+            return;
+        }
+
+        var firstElement = focusableElements[0];
+        var lastElement = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    });
 
     window.addEventListener("hashchange", function () {
         if (lightbox.classList.contains("is-visible")) {

@@ -21,6 +21,8 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
         "Future Subfolder Placeholder",
     ):
         assert text in body
+    assert '<meta name="description"' in body
+    assert 'href="http://127.0.0.1:8000/mastering-services/"' in body
 
 
 @pytest.mark.integration

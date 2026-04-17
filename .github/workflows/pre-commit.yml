@@ -190,6 +190,10 @@ jobs:
   browser-tests:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser-engine: [chromium, firefox, webkit]
 
     steps:
       - name: Checkout repository
@@ -206,13 +210,13 @@ jobs:
       - name: Sync dev dependencies
         run: uv sync --frozen --group dev
 
-      - name: Install Playwright Chromium
-        run: uv run playwright install --with-deps chromium
+      - name: Install Playwright browser
+        run: uv run playwright install --with-deps ${{ matrix.browser-engine }}
 
       - name: Run browser tests
         env:
           DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
-        run: uv run pytest -q --run-browser -m browser
+        run: uv run pytest -q --run-browser --browser-engine ${{ matrix.browser-engine }} -m browser
 
   dependency-audit:
     if: github.event_name == 'schedule'

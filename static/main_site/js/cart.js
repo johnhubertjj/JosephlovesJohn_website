@@ -1,6 +1,8 @@
 (function () {
     var modal = document.getElementById("music-cart-modal");
     var floatingButton = document.getElementById("floating-cart-button");
+    var siteUtils = window.siteUtils || {};
+    var getCookie = siteUtils.getCookie;
 
     if (!modal || !floatingButton) {
         return;
@@ -9,6 +11,7 @@
     var dialog = modal.querySelector(".music-cart-dialog");
     var closeButtons = modal.querySelectorAll("[data-cart-close]");
     var checkoutButton = modal.querySelector("[data-cart-checkout]");
+    var ownershipNote = modal.querySelector("[data-cart-ownership-note]");
     var subtotalValue = modal.querySelector("[data-cart-subtotal]");
     var itemList = modal.querySelector("[data-cart-items]");
     var emptyState = modal.querySelector("[data-cart-empty]");
@@ -16,14 +19,37 @@
     var buyButtons = document.querySelectorAll("[data-cart-add-url]");
     var musicUrl = modal.getAttribute("data-music-url") || "/music/";
     var lastTrigger = null;
+    var focusableSelector = [
+        'a[href]:not([tabindex="-1"])',
+        'button:not([disabled]):not([tabindex="-1"])',
+        'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+        'select:not([disabled]):not([tabindex="-1"])',
+        'textarea:not([disabled]):not([tabindex="-1"])',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(", ");
 
-    function getCookie(name) {
-        var value = "; " + document.cookie;
-        var parts = value.split("; " + name + "=");
-        if (parts.length === 2) {
-            return parts.pop().split(";").shift();
+    function getFocusableElements() {
+        if (!dialog) {
+            return [];
         }
-        return "";
+
+        return Array.prototype.filter.call(dialog.querySelectorAll(focusableSelector), function (element) {
+            return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+        });
+    }
+
+    function trackAddToCart(button) {
+        if (!button || !window.siteAnalytics || typeof window.siteAnalytics.track !== "function") {
+            return;
+        }
+
+        window.siteAnalytics.track("Add to Cart", {
+            props: {
+                slug: button.getAttribute("data-cart-item-slug") || "",
+                title: button.getAttribute("data-cart-item-title") || "",
+                price_gbp: button.getAttribute("data-cart-item-price") || ""
+            }
+        });
     }
 
     function getCsrfToken() {
@@ -86,8 +112,14 @@
 
         if (checkoutButton) {
             checkoutButton.setAttribute("href", summary.checkout_url || checkoutButton.getAttribute("href") || "#");
-            checkoutButton.classList.toggle("is-disabled", !!summary.is_empty);
-            checkoutButton.setAttribute("aria-disabled", summary.is_empty ? "true" : "false");
+            checkoutButton.classList.toggle("is-disabled", !!summary.is_empty || !!summary.has_owned_items);
+            checkoutButton.classList.toggle("is-hidden", !!summary.has_owned_items);
+            checkoutButton.setAttribute("aria-disabled", (summary.is_empty || summary.has_owned_items) ? "true" : "false");
+        }
+
+        if (ownershipNote) {
+            ownershipNote.textContent = summary.ownership_message || "";
+            ownershipNote.classList.toggle("is-hidden", !summary.has_owned_items);
         }
     }
 
@@ -96,6 +128,17 @@
         modal.classList.add("is-visible");
         modal.setAttribute("aria-hidden", "false");
         document.body.classList.add("is-cart-modal-visible");
+        window.requestAnimationFrame(function () {
+            var focusableElements = getFocusableElements();
+            if (focusableElements.length) {
+                focusableElements[0].focus();
+                if (document.activeElement !== focusableElements[0]) {
+                    window.setTimeout(function () {
+                        focusableElements[0].focus();
+                    }, 0);
+                }
+            }
+        });
     }
 
     function closeModal() {
@@ -127,10 +170,14 @@
             },
             credentials: "same-origin"
         }).then(function (response) {
-            if (!response.ok) {
-                throw new Error("Cart request failed");
-            }
-            return response.json();
+            return response.json().then(function (payload) {
+                if (!response.ok) {
+                    var error = new Error(payload.message || "Cart request failed");
+                    error.payload = payload;
+                    throw error;
+                }
+                return payload;
+            });
         });
     }
 
@@ -165,6 +212,26 @@
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && modal.classList.contains("is-visible")) {
             closeModal();
+            return;
+        }
+
+        if (event.key !== "Tab" || !modal.classList.contains("is-visible")) {
+            return;
+        }
+
+        var focusableElements = getFocusableElements();
+        if (!focusableElements.length) {
+            return;
+        }
+
+        var firstElement = focusableElements[0];
+        var lastElement = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
         }
     });
 
@@ -201,10 +268,14 @@
             postJson(url)
                 .then(function (summary) {
                     applySummary(summary);
+                    trackAddToCart(button);
                     openModal(button);
                 })
-                .catch(function () {
-                    window.alert("Something went wrong adding that song. Please try again.");
+                .catch(function (error) {
+                    if (error && error.payload) {
+                        applySummary(error.payload);
+                    }
+                    window.alert(error && error.message ? error.message : "Something went wrong adding that song. Please try again.");
                 })
                 .finally(function () {
                     button.disabled = false;

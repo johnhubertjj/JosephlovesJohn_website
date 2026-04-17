@@ -19,6 +19,9 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         'id="header"',
         'id="main"',
         'id="footer"',
+        'rel="icon"',
+        'meta name="description"',
+        'rel="canonical"',
         'data-cookie-banner',
         'data-cookie-essential-only',
         'data-cookie-accept-all',
@@ -41,6 +44,12 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
     for link in response.context["header_social_links"]:
         assert link["label"] in body
         assert f'href="{link["href"]}"' in body
+
+    assert '/static/images/jlovesj_symbol-my_version3.png' in body
+    assert 'content="JosephlovesJohn | Independent Music, Art, and Mastering in Bristol"' in body
+    assert 'href="http://127.0.0.1:8000/"' in body
+    assert 'application/ld+json' in body
+    assert '"@type":"Person"' in body
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
@@ -71,11 +80,42 @@ def test_music_page_smoke_renders_all_published_tracks_and_share_controls(client
     assert body.count("music-share-trigger") == len(expected_items)
     assert body.count("music-buy-trigger") == len(expected_items)
     assert body.count("music-player-frame") == len(expected_items)
+    assert 'data-music-auth-entry' in body
+    assert "Log in" in body
+    assert "Create account" in body
 
     for item in expected_items:
         assert item.title in body
         assert item.meta in body
 
+
+def test_non_music_routes_do_not_render_music_auth_entry(client) -> None:
+    """The top-left auth entry should stay hidden on non-music routes."""
+    home_response = client.get(reverse("main_site:main"))
+    intro_response = client.get(reverse("main_site:intro"))
+
+    assert 'data-music-auth-entry' in home_response.content.decode()
+    assert 'data-music-auth-entry' in intro_response.content.decode()
+    assert 'aria-hidden="true"' in home_response.content.decode()
+    assert 'aria-hidden="true"' in intro_response.content.decode()
+
+
+def test_music_page_shows_account_entry_for_signed_in_users(client, django_user_model) -> None:
+    """Signed-in listeners should see an account entry in the music-only top-left slot."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'data-music-auth-entry' in body
+    assert "Account" in body
+    assert "Create account" not in body
 
 def test_art_page_smoke_renders_split_gallery_and_lightbox_triggers(client) -> None:
     """The art route should render both gallery blocks and image lightbox triggers."""
@@ -105,6 +145,19 @@ def test_contact_page_smoke_renders_labeled_form_controls(client) -> None:
 
     for field_id in ("name", "email", "message"):
         assert f'id="{field_id}"' in body
+
+
+def test_music_page_smoke_renders_route_specific_metadata(client) -> None:
+    """The music route should expose its own SEO title, description, and canonical URL."""
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "<title>Music | JosephlovesJohn Downloads and Listening</title>" in body
+    assert 'Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 and WAV downloads' in body
+    assert 'href="http://127.0.0.1:8000/music/"' in body
+    assert '"@type":"ItemList"' in body
+    assert '"@type":"MusicRecording"' in body
 
 
 def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_static_asset) -> None:

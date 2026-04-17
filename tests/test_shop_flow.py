@@ -1,13 +1,19 @@
 """Integration tests for the reusable shop flow."""
 
 import json
+import re
 import sys
 from decimal import Decimal
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 
 import pytest
+import stripe as stripe_sdk
 from django.contrib.auth import get_user_model
+from django.core import mail
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+from django.test import Client, override_settings
 from django.urls import reverse
 from shop import views as shop_views
 from shop.models import CustomerProfile, Order, OrderItem, Product
@@ -66,6 +72,24 @@ def fake_stripe_checkout(monkeypatch: pytest.MonkeyPatch):
     return {"created_payloads": created_payloads, "sessions": sessions}
 
 
+@pytest.fixture(autouse=True)
+def ensure_seeded_download_assets(create_static_asset) -> None:
+    """Create temporary storefront audio files so checkout tests don't rely on local ignored media."""
+    for download_path in Product.objects.values_list("download_file_path", flat=True):
+        create_static_asset(download_path, content=b"shop audio")
+    wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
+    for download_path in wav_paths:
+        create_static_asset(download_path, content=b"shop wav audio")
+
+
+@pytest.fixture(autouse=True)
+def clear_public_rate_limits() -> None:
+    """Reset cache-backed rate limit state between shop-flow tests."""
+    cache.clear()
+    yield
+    cache.clear()
+
+
 def test_cart_add_and_remove_endpoints_return_updated_summary(client, seeded_product: Product) -> None:
     """Adding and removing a product should update the JSON cart summary."""
     add_response = client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
@@ -82,6 +106,43 @@ def test_cart_add_and_remove_endpoints_return_updated_summary(client, seeded_pro
     remove_payload = remove_response.json()
     assert remove_payload["item_count"] == 0
     assert remove_payload["is_empty"] is True
+
+
+def test_cart_add_blocks_already_owned_downloads(client, django_user_model, seeded_product: Product) -> None:
+    """Signed-in owners should not be able to add an already purchased track back to the cart."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.CONFIRMED,
+    )
+    OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+    payload = response.json()
+
+    assert response.status_code == 409
+    assert payload["item_count"] == 0
+    assert payload["message"] == f'You already bought "{seeded_product.title}". It is ready in your account.'
 
 
 def test_get_stripe_module_requires_installed_sdk(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -133,9 +194,51 @@ def test_stripe_value_returns_default_when_value_is_none() -> None:
     assert shop_views._stripe_value(None, "name", "fallback") == "fallback"
 
 
+def test_stripe_value_reads_stripe_sdk_objects_without_get_method() -> None:
+    """Stripe helper access should support Stripe SDK objects backed by _data."""
+    checkout_session = stripe_sdk.checkout.Session.construct_from(
+        {"metadata": {"order_id": "21"}},
+        "sk_test_123",
+    )
+
+    assert shop_views._stripe_value(checkout_session, "metadata", {}) == checkout_session.metadata
+
+
 def test_stripe_identifier_supports_expandable_objects() -> None:
     """Stripe identifier helpers should read IDs from expandable objects."""
     assert shop_views._stripe_identifier(SimpleNamespace(id="pi_test_123")) == "pi_test_123"
+
+
+@pytest.mark.django_db
+def test_apply_paid_checkout_session_supports_nested_stripe_sdk_objects() -> None:
+    """Paid session synchronization should handle Stripe SDK metadata/detail objects."""
+    order = Order.objects.create(
+        full_name="Guest Buyer",
+        email="guest@example.com",
+        subtotal=Decimal("2.00"),
+        total=Decimal("2.00"),
+        status=Order.Status.PENDING,
+    )
+    checkout_session = stripe_sdk.checkout.Session.construct_from(
+        {
+            "id": "cs_test_nested",
+            "status": "complete",
+            "payment_status": "paid",
+            "metadata": {"order_id": str(order.pk)},
+            "customer_details": {"name": "Updated Buyer", "email": "updated@example.com"},
+            "payment_intent": "pi_test_123",
+        },
+        "sk_test_123",
+    )
+
+    order_was_just_confirmed = shop_views._apply_paid_checkout_session_to_order(order, checkout_session)
+
+    order.refresh_from_db()
+    assert order_was_just_confirmed is True
+    assert order.full_name == "Updated Buyer"
+    assert order.email == "updated@example.com"
+    assert order.stripe_payment_intent_id == "pi_test_123"
+    assert order.is_paid is True
 
 
 def test_sync_customer_profile_from_order_updates_profile_and_email(django_user_model) -> None:
@@ -207,8 +310,82 @@ def test_login_view_redirects_to_next_parameter_after_success(client, django_use
     assert response.headers["Location"] == reverse("shop:checkout")
 
 
-def test_logout_redirects_back_to_music_page(client, django_user_model) -> None:
-    """Logging out should return listeners to the music section."""
+def test_login_page_links_to_password_reset(client) -> None:
+    """The shop login page should link to the password reset flow."""
+    response = client.get(reverse("shop:login"))
+
+    assert response.status_code == 200
+    assert reverse("shop:password_reset") in response.content.decode()
+
+
+def test_login_shows_username_error_when_account_is_unknown(client) -> None:
+    """Unknown usernames should show a field-level error below the username input."""
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "missing-user", "password": "secret123"},
+    )
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "That username or email is not recognised." in body
+    assert "That password is incorrect." not in body
+
+
+def test_login_shows_password_error_when_password_is_wrong(client, django_user_model) -> None:
+    """Known usernames with a bad password should show a field-level password error."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "listener", "password": "wrong-password"},
+    )
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "That password is incorrect." in body
+    assert "That username or email is not recognised." not in body
+
+
+def test_login_accepts_email_address(client, django_user_model) -> None:
+    """Returning listeners should be able to log in with their email address."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "listener@example.com", "password": "secret123"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == reverse("shop:account")
+
+
+def test_login_rate_limit_blocks_repeated_attempts(client, django_user_model) -> None:
+    """Repeated login attempts should be rate limited with a user-facing message."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    with override_settings(LOGIN_RATE_LIMIT_ATTEMPTS=1, LOGIN_RATE_LIMIT_WINDOW=300):
+        first_response = client.post(reverse("shop:login"), {"username": "listener", "password": "wrong-password"})
+        second_response = client.post(reverse("shop:login"), {"username": "listener", "password": "wrong-password"})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert "Too many login attempts" in second_response.content.decode()
+
+
+def test_logout_requires_post_and_redirects_back_to_music_page(client, django_user_model) -> None:
+    """Logging out should require POST and return listeners to the music section."""
     user = django_user_model.objects.create_user(
         username="listener",
         email="listener@example.com",
@@ -216,10 +393,112 @@ def test_logout_redirects_back_to_music_page(client, django_user_model) -> None:
     )
     client.force_login(user)
 
-    response = client.get(reverse("shop:logout"))
+    get_response = client.get(reverse("shop:logout"))
+    response = client.post(reverse("shop:logout"))
 
+    assert get_response.status_code == 405
     assert response.status_code == 302
     assert response.headers["Location"] == reverse("main_site:music")
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+)
+def test_password_reset_sends_email_for_known_account(client, django_user_model) -> None:
+    """Known customer emails should receive a reset message."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == reverse("shop:password_reset_done")
+    assert len(mail.outbox) == 1
+    sent_email = mail.outbox[0]
+    assert sent_email.to == ["listener@example.com"]
+    assert "Reset your JosephlovesJohn password" in sent_email.subject
+    assert "/shop/reset/" in sent_email.body
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    SITE_URL="https://josephlovesjohn.com",
+)
+def test_password_reset_uses_the_canonical_site_url(client, django_user_model) -> None:
+    """Password reset emails should use the configured public domain."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+
+    assert len(mail.outbox) == 1
+    assert "https://josephlovesjohn.com/shop/reset/" in mail.outbox[0].body
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+)
+def test_password_reset_rate_limit_blocks_repeated_attempts(client, django_user_model) -> None:
+    """Repeated password reset requests should be rate limited."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    with override_settings(PASSWORD_RESET_RATE_LIMIT_ATTEMPTS=1, PASSWORD_RESET_RATE_LIMIT_WINDOW=3600):
+        first_response = client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+        second_response = client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+
+    assert first_response.status_code == 302
+    assert second_response.status_code == 200
+    assert "Too many reset requests" in second_response.content.decode()
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+)
+def test_password_reset_confirm_updates_password(client, django_user_model) -> None:
+    """Customers should be able to set a new password from the emailed reset link."""
+    user = django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="old-password-123",
+    )
+    client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+
+    assert len(mail.outbox) == 1
+    body = mail.outbox[0].body
+    match = re.search(r"https?://[^/\s]+(?P<path>/shop/reset/[^/\s]+/[^/\s]+/)", body)
+    assert match is not None
+
+    confirm_path = match.group("path")
+    confirm_response = client.get(confirm_path)
+    set_password_path = confirm_response.headers["Location"]
+    complete_response = client.post(
+        set_password_path,
+        {
+            "new_password1": "new-SuperSafePass123",
+            "new_password2": "new-SuperSafePass123",
+        },
+    )
+    user.refresh_from_db()
+
+    assert confirm_response.status_code == 302
+    assert set_password_path.endswith("/set-password/")
+    assert complete_response.status_code == 302
+    assert complete_response.headers["Location"] == reverse("shop:password_reset_complete")
+    assert user.check_password("new-SuperSafePass123") is True
 
 
 def test_checkout_get_redirects_empty_cart_back_to_music(client) -> None:
@@ -305,6 +584,20 @@ def test_checkout_post_redirects_to_stripe_checkout(client, seeded_product: Prod
     assert "customer_email" not in checkout_payload
 
 
+def test_checkout_uses_the_canonical_site_url_for_stripe_redirects(
+    client, seeded_product: Product, fake_stripe_checkout
+) -> None:
+    """Stripe success and cancel URLs should use the configured public domain."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    with override_settings(SITE_URL="https://josephlovesjohn.com"):
+        client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+
+    checkout_payload = fake_stripe_checkout["created_payloads"][0]
+    assert checkout_payload["success_url"].startswith("https://josephlovesjohn.com/shop/success/")
+    assert checkout_payload["cancel_url"] == "https://josephlovesjohn.com/shop/checkout/?canceled=1"
+
+
 def test_checkout_post_requires_digital_download_acknowledgements(client, seeded_product: Product) -> None:
     """Checkout should not start until the required legal acknowledgements are confirmed."""
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
@@ -317,6 +610,79 @@ def test_checkout_post_requires_digital_download_acknowledgements(client, seeded
     assert Order.objects.count() == 0
 
 
+def test_checkout_post_blocks_payment_when_a_download_is_unavailable(client, seeded_product: Product) -> None:
+    """Checkout should fail closed before Stripe when the file is not available to deliver."""
+    seeded_product.download_file_wav_path = "audio/missing-before-payment.wav"
+    seeded_product.save(update_fields=["download_file_wav_path"])
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    response = client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "A download is unavailable" in body
+    assert "checkout has been paused" in body
+    assert Order.objects.count() == 0
+
+
+def test_checkout_blocks_signed_in_owners_from_rebuying_tracks(
+    client,
+    django_user_model,
+    seeded_product: Product,
+) -> None:
+    """Checkout should point signed-in owners back to their account instead of Stripe."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    owned_order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.CONFIRMED,
+    )
+    OrderItem.objects.create(
+        order=owned_order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
+    )
+    client.force_login(user)
+    session = client.session
+    session["shop_cart"] = [seeded_product.slug]
+    session.save()
+
+    review_response = client.get(reverse("shop:checkout"))
+    review_body = review_response.content.decode()
+    response = client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+    body = response.content.decode()
+
+    assert review_response.status_code == 200
+    assert "Already in your account" in review_body
+    assert "Go to your account" in review_body
+    assert "Continue to Stripe Checkout" not in review_body
+    assert response.status_code == 200
+    assert "Already in your account" in body
+    assert "Go to your account" in body
+    assert seeded_product.title in body
+    assert "Continue to Stripe Checkout" not in body
+    assert Order.objects.filter(status=Order.Status.PENDING).count() == 0
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+)
 def test_success_page_confirms_paid_stripe_session_and_clears_cart(
     client, seeded_product: Product, fake_stripe_checkout
 ) -> None:
@@ -346,9 +712,37 @@ def test_success_page_confirms_paid_stripe_session_and_clears_cart(
     assert order.status == Order.Status.CONFIRMED
     assert order.stripe_payment_intent_id == "pi_test_123"
     assert order.paid_at is not None
+    assert order.confirmation_email_sent_at is not None
     assert client.session.get("shop_cart") in (None, [])
     assert client.session["shop_recent_orders"][0] == order.pk
     assert seeded_product.title in response.content.decode()
+    assert len(mail.outbox) == 1
+    assert f"order #{order.pk}" in mail.outbox[0].subject.lower()
+    assert reverse("shop:download", args=[order.items.get().pk]) in mail.outbox[0].body
+    assert "format=wav" in mail.outbox[0].body
+
+
+def test_register_rejects_duplicate_email_addresses(client, django_user_model) -> None:
+    """Registration should not allow multiple accounts to share the same email address."""
+    django_user_model.objects.create_user(
+        username="existing-listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(
+        reverse("shop:register"),
+        {
+            "username": "new-listener",
+            "email": "listener@example.com",
+            "full_name": "New Listener",
+            "password1": "EvenSaferPass123",
+            "password2": "EvenSaferPass123",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "An account with that email address already exists." in response.content.decode()
 
 
 def test_success_page_syncs_authenticated_customer_profile_from_verified_stripe_session(
@@ -487,6 +881,7 @@ def test_guest_success_page_requires_recent_session_order(client, seeded_product
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
     )
 
     response = client.get(reverse("shop:success", args=[order.pk]))
@@ -523,6 +918,7 @@ def test_pending_guest_success_page_requires_verified_stripe_session(
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
     )
     fake_stripe_checkout["sessions"]["cs_test_pending"] = {
         "id": "cs_test_pending",
@@ -664,7 +1060,63 @@ def test_success_page_rejects_mismatched_stripe_session_id(client, seeded_produc
     assert response.status_code == 404
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+)
+def test_signed_email_download_link_allows_guest_access_without_recent_session(
+    client, seeded_product: Product, fake_stripe_checkout, create_private_download_asset
+) -> None:
+    """The emailed download link should work even without the original guest session."""
+    create_private_download_asset(seeded_product.download_file_path, content=b"paid file")
+    create_private_download_asset(seeded_product.download_file_wav_path, content=b"paid wav file")
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+    client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+    order = Order.objects.get()
+
+    fake_stripe_checkout["sessions"]["cs_test_1"].update(
+        {
+            "status": "complete",
+            "payment_status": "paid",
+            "payment_intent": "pi_test_123",
+            "customer_details": {
+                "name": "Portfolio Buyer",
+                "email": "buyer@example.com",
+            },
+        }
+    )
+
+    response = client.get(reverse("shop:success", args=[order.pk]), {"session_id": "cs_test_1"})
+
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+
+    download_line = next(line for line in mail.outbox[0].body.splitlines() if "/shop/download/" in line)
+    signed_download = urlsplit(download_line.strip())
+
+    fresh_client = Client()
+    signed_response = fresh_client.get(f"{signed_download.path}?{signed_download.query}")
+
+    assert signed_response.status_code == 200
+    assert signed_response.get("Content-Disposition", "").startswith("attachment;")
+
+    wav_download_line = next(
+        line for line in mail.outbox[0].body.splitlines() if "/shop/download/" in line and "format=wav" in line
+    )
+    wav_signed_download = urlsplit(wav_download_line.strip().split("WAV: ", 1)[-1])
+    wav_response = fresh_client.get(f"{wav_signed_download.path}?{wav_signed_download.query}")
+
+    assert wav_response.status_code == 200
+    assert 'filename="' in wav_response.get("Content-Disposition", "")
+
+
 @pytest.mark.parametrize("event_type", ["checkout.session.completed", "checkout.session.async_payment_succeeded"])
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+)
 def test_stripe_webhook_confirms_matching_order(
     client, seeded_product: Product, monkeypatch: pytest.MonkeyPatch, event_type: str
 ) -> None:
@@ -687,6 +1139,7 @@ def test_stripe_webhook_confirms_matching_order(
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
     )
 
     checkout_session = {
@@ -725,6 +1178,80 @@ def test_stripe_webhook_confirms_matching_order(
     assert order.full_name == "Webhook Buyer"
     assert order.email == "webhook@example.com"
     assert order.stripe_payment_intent_id == "pi_webhook_123"
+    assert order.confirmation_email_sent_at is not None
+    assert len(mail.outbox) == 1
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+)
+def test_webhook_and_success_page_do_not_send_duplicate_download_emails(
+    client, seeded_product: Product, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A webhook and the redirect page should cooperate without double-emailing the customer."""
+    order = Order.objects.create(
+        full_name="Guest Buyer",
+        email="guest@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.PENDING,
+        stripe_checkout_session_id="cs_test_webhook",
+    )
+    OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+
+    checkout_session = {
+        "id": "cs_test_webhook",
+        "status": "complete",
+        "payment_status": "paid",
+        "payment_intent": "pi_webhook_123",
+        "customer_details": {
+            "name": "Webhook Buyer",
+            "email": "webhook@example.com",
+        },
+        "metadata": {"order_id": str(order.pk)},
+    }
+
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(
+            construct_event=lambda payload, sig_header, secret: {  # noqa: ARG005
+                "type": "checkout.session.completed",
+                "data": {"object": checkout_session},
+            }
+        ),
+        checkout=SimpleNamespace(
+            Session=SimpleNamespace(
+                retrieve=lambda session_id, expand=None: SimpleNamespace(**checkout_session),  # noqa: ARG005
+            )
+        ),
+    )
+    monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
+    monkeypatch.setattr(shop_views.settings, "STRIPE_WEBHOOK_SECRET", "whsec_test")
+
+    webhook_response = client.post(
+        reverse("shop:stripe_webhook"),
+        data=json.dumps({"id": "evt_test"}).encode(),
+        content_type="application/json",
+        HTTP_STRIPE_SIGNATURE="t=1,v1=test",
+    )
+    success_response = client.get(reverse("shop:success", args=[order.pk]), {"session_id": "cs_test_webhook"})
+    order.refresh_from_db()
+
+    assert webhook_response.status_code == 200
+    assert success_response.status_code == 200
+    assert order.confirmation_email_sent_at is not None
+    assert len(mail.outbox) == 1
 
 
 def test_stripe_webhook_rejects_invalid_signature(
@@ -929,6 +1456,7 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
     )
     client.force_login(user)
 
@@ -936,9 +1464,11 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
     body = response.content.decode()
 
     assert response.status_code == 200
+    assert "collector" in body
     assert f"Order #{order.id}" in body
     assert seeded_product.title in body
     assert reverse("shop:download", args=[order.items.get().pk]) in body
+    assert "Download WAV" in body
 
 
 def test_guest_download_requires_recent_session_order(
@@ -981,6 +1511,41 @@ def test_account_owner_can_download_private_file(
 ) -> None:
     """Authenticated owners should be able to fetch their private downloads."""
     create_private_download_asset(seeded_product.download_file_path, content=b"private bytes")
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+    )
+    item = OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("shop:download", args=[item.pk]))
+
+    assert response.status_code == 200
+    assert response.get("Content-Disposition", "").startswith("attachment;")
+
+
+def test_account_owner_can_download_bundled_static_file_when_private_storage_is_unset(
+    client, django_user_model, seeded_product: Product
+) -> None:
+    """Authenticated owners should still receive repo-tracked audio files when no private store is configured."""
     user = django_user_model.objects.create_user(
         username="collector",
         email="collector@example.com",

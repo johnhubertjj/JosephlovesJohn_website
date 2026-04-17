@@ -88,6 +88,7 @@ DATABASE_CONN_MAX_AGE=600
 ```env
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,your-service.onrender.com
 CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com,https://your-service.onrender.com
+SITE_URL=https://yourdomain.com
 USE_X_FORWARDED_PROTO=true
 SECURE_SSL_REDIRECT=true
 SESSION_COOKIE_SECURE=true
@@ -108,6 +109,17 @@ STRIPE_API_VERSION=2026-02-25.clover
 STRIPE_CURRENCY=gbp
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
+
+### Optional analytics
+
+To enable Plausible analytics on the site shell and shop pages:
+
+```env
+PLAUSIBLE_DOMAIN=josephlovesjohn.com
+PLAUSIBLE_SCRIPT_SRC=https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js
+```
+
+With `PLAUSIBLE_DOMAIN` set, the site will track pageviews plus custom events for add-to-cart, checkout starts, order confirmations, signup opens, and successful contact-form submissions.
 
 ### Optional public asset CDN
 
@@ -163,12 +175,12 @@ PRIVATE_DOWNLOADS_ROOT=/opt/render/project/src/media/private_downloads
 
 ```env
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST=smtp.resend.com
 EMAIL_PORT=587
-EMAIL_HOST_USER=josephlovesjohn@gmail.com
-EMAIL_HOST_PASSWORD=your-gmail-app-password
+EMAIL_HOST_USER=resend
+EMAIL_HOST_PASSWORD=your-resend-api-key
 EMAIL_USE_TLS=true
-DEFAULT_FROM_EMAIL=josephlovesjohn@gmail.com
+DEFAULT_FROM_EMAIL=hello@your-sending-domain.example
 CONTACT_RECIPIENT_EMAIL=josephlovesjohn@gmail.com
 ```
 
@@ -191,6 +203,10 @@ SENTRY_TRACES_SAMPLE_RATE=0.0
 SENTRY_SEND_DEFAULT_PII=false
 SENTRY_DEBUG=false
 ```
+
+If `SENTRY_RELEASE` is left blank on Render, the app will automatically fall back
+to Render's built-in `RENDER_GIT_COMMIT` value so each deploy still gets a
+useful release identifier in Sentry.
 
 ## First Deploy Tutorial
 

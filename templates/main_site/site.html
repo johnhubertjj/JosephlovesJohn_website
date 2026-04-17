@@ -1,13 +1,42 @@
 {% extends 'main_site/base.html' %}
 {% load static %}
 
+{% block title %}{{ seo.title }}{% endblock %}
+
 {% block styles %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'main_site/css/site.css' %}" />
+    <link rel="stylesheet" href="{% static 'main_site/css/components/account-entry.css' %}" />
 {% endblock %}
 
 {% block content %}
-    <div id="wrapper">
+    <div
+        id="wrapper"
+        data-playerjs-src="{% static 'assets/js/playerjs_v4.js' %}"
+        data-route-section="{{ active_section|default:'main' }}"
+    >
+        <div
+            class="music-auth-entry{% if active_section != 'music' %} is-hidden{% endif %}"
+            data-music-auth-entry
+            aria-hidden="{% if active_section == 'music' %}false{% else %}true{% endif %}"
+        >
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'shop:account' %}" class="music-auth-entry-link">Account</a>
+            {% else %}
+                <a
+                    href="{% url 'shop:login' %}?next={{ request.get_full_path|urlencode }}"
+                    class="music-auth-entry-link"
+                >
+                    Log in
+                </a>
+                <a
+                    href="{% url 'shop:register' %}?next={{ request.get_full_path|urlencode }}"
+                    class="music-auth-entry-link"
+                >
+                    Create account
+                </a>
+            {% endif %}
+        </div>
         {% include 'main_site/includes/layout/header.html' %}
 
         <div id="main">
@@ -41,7 +70,6 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'assets/js/playerjs_v4.js' %}"></script>
 <script src="{% static 'main_site/js/site.js' %}"></script>
 <script src="{% static 'main_site/js/cart.js' %}"></script>
 {% endblock %}

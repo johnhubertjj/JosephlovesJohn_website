@@ -77,9 +77,14 @@ static/audio/
 
 # Keep full-size gig photos local, but allow optimized thumbnails in git.
 static/images/*
+static/images/album_art/*
 #!static/images/gig_photos/thumbs/
 #!static/images/gig_photos/thumbs/*.jpg
 
 # Docs irrelevant to code
 docs/django_prelaunch_checklist.pdf
 docs/cloudflare_r2.md
+docs/plausible_setup.local.md
+docs/search_console_checklist.md
+docs/seo_admin_notes.local.md
+docs/main_page_account_purchase_notes.local.md

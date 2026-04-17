@@ -71,3 +71,25 @@ def test_setup_sentry_from_env_falls_back_for_invalid_sample_rate(monkeypatch: p
     )
 
     assert called["traces_sample_rate"] == 0.0
+
+
+def test_setup_sentry_from_env_uses_render_commit_when_release_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Render's deploy commit should become the release when no explicit release is set."""
+    called: dict[str, object] = {}
+
+    def fake_init(**kwargs: object) -> None:
+        called.update(kwargs)
+
+    class FakeDjangoIntegration:
+        pass
+
+    monkeypatch.setattr(sentry, "_load_sentry_sdk", lambda: (fake_init, FakeDjangoIntegration))
+
+    sentry.setup_sentry_from_env(
+        {
+            "SENTRY_DSN": "https://examplePublicKey@o0.ingest.sentry.io/0",
+            "RENDER_GIT_COMMIT": "abc123def456",
+        }
+    )
+
+    assert called["release"] == "abc123def456"

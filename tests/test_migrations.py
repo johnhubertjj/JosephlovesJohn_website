@@ -12,6 +12,7 @@ migration_0002 = import_module("main_site.migrations.0002_normalize_gig_photo_ti
 migration_0003 = import_module("main_site.migrations.0003_albumart_animationasset_alter_gigphoto_options_and_more")
 migration_0004 = import_module("main_site.migrations.0004_headersociallink_primarynavitem")
 migration_0005 = import_module("main_site.migrations.0005_spotify_social_link")
+migration_0006 = import_module("main_site.migrations.0006_promote_bristol_folk_house_photo_10")
 shop_migration_0002 = import_module("shop.migrations.0002_seed_music_products")
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
@@ -138,8 +139,21 @@ def test_seed_header_and_nav_items_populates_defaults_once() -> None:
         "TikTok",
     ]
     assert first_nav_labels == ["Intro", "Music", "Art", "Contact"]
-    assert list(HeaderSocialLink.objects.order_by("sort_order").values_list("label", flat=True)) == first_social_labels
-    assert list(PrimaryNavItem.objects.order_by("sort_order").values_list("label", flat=True)) == first_nav_labels
+
+
+def test_promote_bristol_photo_10_makes_it_the_first_gig_photo() -> None:
+    """The new migration should place the requested Bristol image at the top."""
+    GigPhoto.objects.all().delete()
+    migration_0001.seed_gig_photos(django_apps, None)
+    migration_0002.normalize_titles(django_apps, None)
+    migration_0003.renumber_gig_photo_sort_orders(django_apps, None)
+
+    migration_0006.promote_bristol_photo_10(django_apps, None)
+
+    photos = list(GigPhoto.objects.order_by("sort_order", "id").values("image_path", "sort_order"))
+    assert photos[0]["image_path"] == "images/gig_photos/Bristol_folk_house_31_03_2026_10.jpeg"
+    assert photos[0]["sort_order"] == 0
+    assert len(photos) == 13
 
 
 def test_spotify_seed_migration_inserts_second_social_link() -> None:

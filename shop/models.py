@@ -32,6 +32,7 @@ class Product(models.Model):
     preview_file_wav = models.CharField(max_length=255, blank=True)
     preview_file_mp3 = models.CharField(max_length=255, blank=True)
     download_file_path = models.CharField(max_length=255)
+    download_file_wav_path = models.CharField(max_length=255, blank=True)
     product_kind = models.CharField(max_length=20, choices=ProductKind.choices, default=ProductKind.SINGLE)
     price = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("1.00"))
     sort_order = models.PositiveIntegerField(default=0)
@@ -109,6 +110,18 @@ class Product(models.Model):
         """Return the public download URL for the product."""
         return public_asset_url(self.download_file_path)
 
+    @property
+    def download_wav_url(self):
+        """Return the public WAV download URL for the product when available."""
+        if not self.download_file_wav_path:
+            return ""
+        return public_asset_url(self.download_file_wav_path)
+
+    @property
+    def download_asset_paths(self):
+        """Return every deliverable file path that should exist for this product."""
+        return [path for path in (self.download_file_path, self.download_file_wav_path) if path]
+
 
 class CustomerProfile(models.Model):
     """Persist optional saved customer details for logged-in shoppers."""
@@ -152,6 +165,7 @@ class Order(models.Model):
     stripe_checkout_session_id = models.CharField(max_length=255, blank=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
+    confirmation_email_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -203,6 +217,7 @@ class OrderItem(models.Model):
     art_path_snapshot = models.CharField(max_length=255)
     art_alt_snapshot = models.CharField(max_length=180, blank=True)
     download_file_path = models.CharField(max_length=255)
+    download_file_wav_path = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         """Return the admin label for the order line.
@@ -275,3 +290,26 @@ class OrderItem(models.Model):
     def download_url(self):
         """Return the protected application download URL for the purchased file."""
         return reverse("shop:download", kwargs={"item_id": self.pk})
+
+    @property
+    def download_wav_url(self):
+        """Return the protected application download URL for the purchased WAV file."""
+        if not self.download_file_wav_path:
+            return ""
+        return f'{reverse("shop:download", kwargs={"item_id": self.pk})}?format=wav'
+
+    @property
+    def download_links(self):
+        """Return the available protected download links for this purchased item."""
+        links = [{"label": "MP3", "url": self.download_url}]
+        if self.download_file_wav_path:
+            links.append({"label": "WAV", "url": self.download_wav_url})
+        return links
+
+    def download_file_for_format(self, format_name: str):
+        """Return the snapshot path for a requested download format."""
+        if format_name == "wav":
+            return self.download_file_wav_path
+        if format_name == "mp3":
+            return self.download_file_path
+        return ""

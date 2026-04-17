@@ -12,6 +12,10 @@
             </div>
             <dl class="shop-detail-list">
                 <div>
+                    <dt>Username</dt>
+                    <dd>{{ request.user.username }}</dd>
+                </div>
+                <div>
                     <dt>Email</dt>
                     <dd>{{ request.user.email|default:'No email saved yet' }}</dd>
                 </div>
@@ -42,7 +46,11 @@
                                 {% for item in order.items.all %}
                                     <li>
                                         <span>{{ item.title_snapshot }}</span>
-                                        <a href="{{ item.download_url }}" download>Download</a>
+                                        <span class="shop-button-row">
+                                            {% for link in item.download_links %}
+                                                <a href="{{ link.url }}" download>Download {{ link.label }}</a>
+                                            {% endfor %}
+                                        </span>
                                     </li>
                                 {% endfor %}
                             </ul>

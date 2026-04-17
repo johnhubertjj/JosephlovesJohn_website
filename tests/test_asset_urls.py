@@ -15,11 +15,52 @@ def test_public_asset_url_returns_external_urls_unchanged() -> None:
     assert assets.public_asset_url(url) == url
 
 
+def test_resolve_public_asset_source_returns_external_urls_unchanged() -> None:
+    """Absolute asset URLs should resolve without static-file checks."""
+    url = "https://cdn.example.com/audio/song.mp3"
+
+    assert assets.resolve_public_asset_source(url) == {
+        "path": url,
+        "url": url,
+        "is_static": False,
+    }
+
+
+def test_resolve_public_asset_source_uses_file_exists_callback() -> None:
+    """Repo-backed static assets should resolve through the shared helper."""
+    assert assets.resolve_public_asset_source(
+        "/static/images/cover.jpg",
+        file_exists=lambda path: path == "images/cover.jpg",
+    ) == {
+        "path": "images/cover.jpg",
+        "url": "/static/images/cover.jpg",
+        "is_static": True,
+    }
+
+
+def test_resolve_public_asset_source_returns_none_when_file_is_missing() -> None:
+    """Missing local assets should fail closed when no CDN base URL is configured."""
+    assert assets.resolve_public_asset_source(
+        "images/missing.jpg",
+        file_exists=lambda path: False,
+    ) is None
+
+
 @override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
 def test_public_asset_url_uses_public_asset_base_url_for_relative_paths() -> None:
     """Relative paths should resolve against the configured public asset base URL."""
     assert assets.public_asset_url("audio/song.mp3") == "https://assets.example.com/audio/song.mp3"
     assert assets.public_asset_url("/static/images/cover.jpg") == "https://assets.example.com/images/cover.jpg"
+
+
+@override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
+def test_resolve_public_asset_source_uses_public_asset_base_url_without_file_check() -> None:
+    """Configured CDN-backed assets should resolve even if the file is not in the repo."""
+    assert assets.resolve_public_asset_source("images/cover.jpg") == {
+        "path": "images/cover.jpg",
+        "url": "https://assets.example.com/images/cover.jpg",
+        "is_static": True,
+    }
 
 
 @override_settings(STATIC_URL="/static/")
@@ -40,12 +81,14 @@ def test_product_asset_properties_support_external_urls() -> None:
         preview_file_wav="https://cdn.example.com/audio/preview.wav",
         preview_file_mp3="https://cdn.example.com/audio/preview.mp3",
         download_file_path="https://cdn.example.com/audio/full.mp3",
+        download_file_wav_path="https://cdn.example.com/audio/full.wav",
     )
 
     assert product.art_url == "https://cdn.example.com/images/cover.jpg"
     assert product.preview_wav_url == "https://cdn.example.com/audio/preview.wav"
     assert product.preview_mp3_url == "https://cdn.example.com/audio/preview.mp3"
     assert product.download_url == "https://cdn.example.com/audio/full.mp3"
+    assert product.download_wav_url == "https://cdn.example.com/audio/full.wav"
 
 
 @pytest.mark.django_db
@@ -81,6 +124,7 @@ def test_order_item_urls_split_public_art_and_protected_download_route() -> None
         preview_file_wav="audio/track.wav",
         preview_file_mp3="audio/track.mp3",
         download_file_path="audio/track.mp3",
+        download_file_wav_path="audio/track.wav",
     )
     order = Order.objects.create(
         full_name="Listener",
@@ -98,7 +142,9 @@ def test_order_item_urls_split_public_art_and_protected_download_route() -> None
         art_path_snapshot="images/album_art/cover.jpg",
         art_alt_snapshot="Cover",
         download_file_path="audio/track.mp3",
+        download_file_wav_path="audio/track.wav",
     )
 
     assert item.art_url == "https://assets.example.com/images/album_art/cover.jpg"
     assert item.download_url == reverse("shop:download", kwargs={"item_id": item.pk})
+    assert item.download_wav_url == f'{reverse("shop:download", kwargs={"item_id": item.pk})}?format=wav'

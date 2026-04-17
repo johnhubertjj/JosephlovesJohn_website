@@ -2,10 +2,19 @@
 
 import pytest
 from django.core import mail
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 
 pytestmark = [pytest.mark.django_db, pytest.mark.integration]
+
+
+@pytest.fixture(autouse=True)
+def clear_contact_rate_limits() -> None:
+    """Reset cache-backed rate limit state between contact-form tests."""
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @override_settings(
@@ -58,6 +67,62 @@ def test_contact_form_shows_validation_errors(client) -> None:
     assert "This field is required." in body
     assert "Enter a valid email address." in body
     assert len(mail.outbox) == 0
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="josephlovesjohn@gmail.com",
+    CONTACT_RECIPIENT_EMAIL="josephlovesjohn@gmail.com",
+)
+def test_contact_form_honeypot_discards_spam_without_sending_email(client) -> None:
+    """Filled honeypot fields should pretend success without emailing the inbox."""
+    response = client.post(
+        reverse("main_site:contact"),
+        {
+            "name": "Bot Doe",
+            "email": "bot@example.com",
+            "message": "Spam message.",
+            "website": "https://spam.example",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "Thanks, your message has been sent." in response.content.decode()
+    assert len(mail.outbox) == 0
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="josephlovesjohn@gmail.com",
+    CONTACT_RECIPIENT_EMAIL="josephlovesjohn@gmail.com",
+    CONTACT_RATE_LIMIT_ATTEMPTS=1,
+    CONTACT_RATE_LIMIT_WINDOW=3600,
+)
+def test_contact_form_rate_limit_blocks_repeated_messages(client) -> None:
+    """Repeated valid contact submissions should be rate limited."""
+    first_response = client.post(
+        reverse("main_site:contact"),
+        {
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "message": "First message.",
+        },
+        follow=True,
+    )
+    second_response = client.post(
+        reverse("main_site:contact"),
+        {
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "message": "Second message.",
+        },
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert "Too many messages have been sent" in second_response.content.decode()
+    assert len(mail.outbox) == 1
 
 
 def test_contact_page_renders_only_instagram_and_tiktok_icons(client) -> None:

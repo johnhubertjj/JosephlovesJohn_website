@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.urls import reverse
 
 from .models import Product
+from .ownership import get_owned_product_slugs
 
 CART_SESSION_KEY = "shop_cart"
 
@@ -119,6 +120,7 @@ def build_cart_summary(request):
     :rtype: dict[str, object]
     """
     products = get_cart_products(request)
+    owned_slugs = get_owned_product_slugs(request.user, slugs=[product.slug for product in products])
     subtotal = sum((product.price for product in products), Decimal("0.00"))
     items = []
 
@@ -138,12 +140,23 @@ def build_cart_summary(request):
             }
         )
 
+    owned_titles = [item["title"] for item in items if item["slug"] in owned_slugs]
+    if len(owned_titles) == 1:
+        ownership_message = f'You already bought "{owned_titles[0]}". It is ready in your account.'
+    elif owned_titles:
+        ownership_message = "Some tracks in this cart are already in your account. Remove them before checking out."
+    else:
+        ownership_message = ""
+
     return {
         "items": items,
         "item_count": len(items),
         "subtotal": str(subtotal),
         "subtotal_display": f"£{subtotal:.2f}",
         "is_empty": len(items) == 0,
+        "owned_item_slugs": sorted(owned_slugs),
+        "has_owned_items": bool(owned_titles),
+        "ownership_message": ownership_message,
         "checkout_url": reverse("shop:checkout"),
         "account_url": reverse("shop:account"),
     }

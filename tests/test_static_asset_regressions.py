@@ -6,11 +6,12 @@ import re
 from pathlib import Path
 
 import pytest
-from django.conf import settings
 from django.templatetags.static import static as static_url
 from django.urls import reverse
 
 pytestmark = pytest.mark.smoke
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
 
 _CSS_URL_PATTERN = re.compile(r"url\((?P<quote>['\"]?)(?P<path>[^)\"']+)(?P=quote)\)")
 _CSS_IMPORT_PATTERN = re.compile(r"@import url\((?P<quote>['\"]?)(?P<path>[^)\"']+)(?P=quote)\)")
@@ -38,7 +39,7 @@ def _normalize_asset_path(path: str) -> str:
 
 def test_refactored_vendor_css_assets_resolve_to_real_files() -> None:
     """Moved vendor CSS files should keep valid relative links to their assets."""
-    dimension_css = Path(settings.BASE_DIR) / "static" / "assets" / "css" / "vendor" / "dimension.css"
+    dimension_css = _REPO_ROOT / "static" / "assets" / "css" / "vendor" / "dimension.css"
     dimension_assets = _iter_css_asset_paths(dimension_css)
     assert dimension_assets, f"No asset paths found in {dimension_css}"
 
@@ -46,7 +47,7 @@ def test_refactored_vendor_css_assets_resolve_to_real_files() -> None:
         resolved = (dimension_css.parent / _normalize_asset_path(relative_asset)).resolve()
         assert resolved.exists(), f"{dimension_css} points to missing asset {relative_asset}"
 
-    fontawesome_css = Path(settings.BASE_DIR) / "static" / "assets" / "css" / "vendor" / "fontawesome-all.min.css"
+    fontawesome_css = _REPO_ROOT / "static" / "assets" / "css" / "vendor" / "fontawesome-all.min.css"
     fontawesome_content = fontawesome_css.read_text()
     expected_font_paths = (
         "../../webfonts/fa-brands-400.woff2",

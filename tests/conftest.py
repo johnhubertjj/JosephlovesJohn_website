@@ -96,6 +96,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Run Playwright-backed browser tests.",
     )
+    parser.addoption(
+        "--browser-engine",
+        action="store",
+        default=os.environ.get("PLAYWRIGHT_BROWSER_ENGINE", "chromium"),
+        choices=("chromium", "firefox", "webkit"),
+        help="Browser engine for Playwright-backed tests.",
+    )
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
@@ -155,6 +162,7 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
             "preview_file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
             "preview_file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
             "download_file_path": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
+            "download_file_wav_path": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
             "price": Decimal("1.00"),
             "sort_order": 1,
             "is_reversed": False,
@@ -170,6 +178,7 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
             "preview_file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
             "preview_file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
             "download_file_path": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
+            "download_file_wav_path": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
             "price": Decimal("1.00"),
             "sort_order": 2,
             "is_reversed": True,
@@ -180,12 +189,59 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
         Product.objects.update_or_create(slug=payload["slug"], defaults=payload)
 
 
-def _browser_executable_candidates() -> tuple[str, ...]:
-    """Return likely Chromium-family browser executables for local runs.
+@pytest.fixture(autouse=True)
+def ensure_browser_gallery_assets(request: pytest.FixtureRequest, create_static_asset) -> None:
+    """Keep at least one art-gallery lightbox item available for browser tests."""
+    if not request.node.get_closest_marker("browser"):
+        return
+
+    request.getfixturevalue("db")
+    from main_site.models import AlbumArt, GigPhoto
+
+    gig_image = create_static_asset("images/gig_photos/browser-gig-photo.jpg")
+    gig_thumbnail = create_static_asset("images/gig_photos/thumbs/browser-gig-thumb.jpg")
+    album_image = create_static_asset("images/album_art/browser-album-art.jpg")
+
+    GigPhoto.objects.update_or_create(
+        title="Browser Gig Photo",
+        defaults={
+            "image_path": gig_image,
+            "thumbnail_path": gig_thumbnail,
+            "alt_text": "Browser gig photo",
+            "sort_order": 0,
+            "is_active": True,
+        },
+    )
+    AlbumArt.objects.update_or_create(
+        title="Browser Album Art",
+        defaults={
+            "image_path": album_image,
+            "alt_text": "Browser album artwork",
+            "featured": True,
+            "sort_order": 0,
+            "is_active": True,
+        },
+    )
+
+
+def _browser_executable_candidates(browser_engine_name: str) -> tuple[str, ...]:
+    """Return likely browser executables for local runs.
 
     :returns: Candidate executable paths to try before bundled Playwright browsers.
     :rtype: tuple[str, ...]
     """
+    if browser_engine_name == "firefox":
+        candidates = [
+            os.environ.get("PLAYWRIGHT_FIREFOX_EXECUTABLE"),
+        ]
+        return tuple(candidate for candidate in candidates if candidate)
+
+    if browser_engine_name == "webkit":
+        candidates = [
+            os.environ.get("PLAYWRIGHT_WEBKIT_EXECUTABLE"),
+        ]
+        return tuple(candidate for candidate in candidates if candidate)
+
     candidates = [
         os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"),
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -199,18 +255,23 @@ def _browser_executable_candidates() -> tuple[str, ...]:
 
 
 @pytest.fixture(scope="session")
-def browser_launch_options() -> dict[str, object]:
+def browser_engine_name(request: pytest.FixtureRequest) -> str:
+    """Return the configured Playwright browser engine name."""
+    return str(request.config.getoption("--browser-engine"))
+
+
+@pytest.fixture(scope="session")
+def browser_launch_options(browser_engine_name: str) -> dict[str, object]:
     """Build launch options for Playwright browser sessions.
 
     :returns: Chromium launch keyword arguments tuned for local and CI usage.
     :rtype: dict[str, object]
     """
-    launch_options: dict[str, object] = {
-        "headless": False,
-        "args": ["--disable-dev-shm-usage", "--no-sandbox"],
-    }
+    launch_options: dict[str, object] = {"headless": True}
+    if browser_engine_name == "chromium":
+        launch_options["args"] = ["--disable-dev-shm-usage", "--no-sandbox"]
 
-    for candidate in _browser_executable_candidates():
+    for candidate in _browser_executable_candidates(browser_engine_name):
         if Path(candidate).exists():
             launch_options["executable_path"] = candidate
             break
@@ -219,7 +280,7 @@ def browser_launch_options() -> dict[str, object]:
 
 
 @pytest.fixture(scope="session")
-def playwright_browser(browser_launch_options: dict[str, object]):
+def playwright_browser(browser_engine_name: str, browser_launch_options: dict[str, object]):
     """Launch a reusable Chromium session for browser-marked tests.
 
     :param browser_launch_options: Browser launch keyword arguments.
@@ -230,9 +291,10 @@ def playwright_browser(browser_launch_options: dict[str, object]):
 
     with sync_api.sync_playwright() as playwright:
         try:
-            browser = playwright.chromium.launch(**browser_launch_options)
+            browser_type = getattr(playwright, browser_engine_name)
+            browser = browser_type.launch(**browser_launch_options)
         except Exception as exc:  # pragma: no cover - exercised only when browser launch fails.
-            pytest.skip(f"Browser tests require a runnable Chromium/Chrome browser: {exc}")
+            pytest.skip(f"Browser tests require a runnable {browser_engine_name} browser: {exc}")
 
         try:
             yield browser
@@ -247,9 +309,12 @@ def browser_page(playwright_browser):
     :param playwright_browser: Session-scoped browser instance.
     :yields: A fresh Playwright page for the current test.
     """
-    context = playwright_browser.new_context(viewport={"width": 1440, "height": 960})
+    context = playwright_browser.new_context(
+        viewport={"width": 1440, "height": 960},
+        accept_downloads=True,
+    )
     page = context.new_page()
-    page.set_default_timeout(10000000)
+    page.set_default_timeout(20_000)
     page_errors: list[str] = []
     page.on("pageerror", lambda exc: page_errors.append(str(exc)))
 

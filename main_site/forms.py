@@ -33,3 +33,13 @@ class ContactForm(forms.Form):
             }
         ),
     )
+    website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "tabindex": "-1",
+                "aria-hidden": "true",
+            }
+        ),
+    )

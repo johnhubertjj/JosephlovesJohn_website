@@ -1,7 +1,17 @@
 {% load asset_urls %}
 <section class="music-library-item{% if item.is_reversed %} is-reversed{% endif %}">
     <figure class="music-library-art">
-        <img src="{{ item.art_url|default:item.art_path|asset_url }}" alt="{{ item.art_alt }}" />
+            <img
+            src="{{ item.art_url|default:item.art_path|asset_url }}"
+            alt="{{ item.art_alt|default:item.title }}"
+            decoding="async"
+            {% if active_section == 'music' and is_priority_image %}
+                fetchpriority="high"
+            {% else %}
+                loading="lazy"
+                fetchpriority="low"
+            {% endif %}
+        />
     </figure>
     <div class="music-library-player-panel">
         <div class="music-library-player-head">
@@ -21,15 +31,25 @@
                     <span class="fas fa-share-alt" aria-hidden="true"></span>
                     <span>Share</span>
                 </button>
-                <button
-                    type="button"
-                    class="music-buy-trigger"
-                    data-cart-add-url="{{ item.buy_path }}"
-                >
-                    <span class="fas fa-cart-plus" aria-hidden="true"></span>
-                    <span>Download</span>
-                    <strong>{{ item.price_display }}</strong>
-                </button>
+                {% if item.slug in owned_music_slugs %}
+                    <a href="{% url 'shop:account' %}" class="music-owned-note">
+                        <span class="fas fa-check" aria-hidden="true"></span>
+                        <span>Already in your account</span>
+                    </a>
+                {% else %}
+                    <button
+                        type="button"
+                        class="music-buy-trigger"
+                        data-cart-add-url="{{ item.buy_path }}"
+                        data-cart-item-slug="{{ item.slug }}"
+                        data-cart-item-title="{{ item.title }}"
+                        data-cart-item-price="{{ item.price }}"
+                    >
+                        <span class="fas fa-cart-plus" aria-hidden="true"></span>
+                        <span>Download</span>
+                        <strong>{{ item.price_display }}</strong>
+                    </button>
+                {% endif %}
             </div>
         </div>
         <div

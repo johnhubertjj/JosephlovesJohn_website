@@ -2,6 +2,8 @@
 {% load static %}
 
 {% block title %}{% block shop_title %}Music Shop | JosephlovesJohn{% endblock %}{% endblock %}
+{% block meta_description %}Official JosephlovesJohn checkout and customer account pages for direct music downloads.{% endblock %}
+{% block meta_robots %}noindex,follow{% endblock %}
 {% block body_class %}shop-page{% endblock %}
 
 {% block styles %}
@@ -26,8 +28,10 @@
                 </div>
                 <nav class="shop-account-links" aria-label="Shop account">
                     {% if request.user.is_authenticated %}
-                        <a href="{% url 'shop:account' %}">Account</a>
-                        <a href="{% url 'shop:logout' %}">Log out</a>
+                        <form method="post" action="{% url 'shop:logout' %}" class="shop-inline-form">
+                            {% csrf_token %}
+                            <button type="submit" class="shop-link-button">Log out</button>
+                        </form>
                     {% else %}
                         <a href="{% url 'shop:login' %}">Log in</a>
                         <a href="{% url 'shop:register' %}">Create account</a>

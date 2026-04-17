@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.core.exceptions import ImproperlyConfigured
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -19,11 +19,15 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
+from josephlovesjohn_site.rate_limits import is_rate_limited
+from josephlovesjohn_site.site_urls import absolute_site_url, site_context
 
 from .cart import add_product, build_cart_summary, clear_cart, get_cart_products, remove_product
-from .downloads import build_download_response
+from .downloads import build_download_response, download_asset_exists
+from .emails import has_valid_download_access_token, send_order_confirmation_email
 from .forms import CheckoutConsentForm, RegisterForm, ShopAuthenticationForm
 from .models import CustomerProfile, Order, OrderItem, Product
+from .ownership import get_owned_product_slugs
 
 stripe: Any | None = None
 
@@ -55,15 +59,34 @@ def _stripe_value(value, key, default=None):
         return default
     if isinstance(value, dict):
         return value.get(key, default)
+    data = getattr(value, "_data", None)
+    if isinstance(data, dict):
+        return data.get(key, default)
 
-    getter = getattr(value, "get", None)
-    if callable(getter):
-        try:
-            return getter(key, default)
-        except TypeError:
-            pass
+    try:
+        return value[key]
+    except (KeyError, TypeError, IndexError):
+        pass
 
-    return getattr(value, key, default)
+    try:
+        return getattr(value, key)
+    except AttributeError:
+        return default
+
+
+def _stripe_mapping(value):
+    """Normalize Stripe metadata/details objects to plain dictionaries."""
+
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+
+    data = getattr(value, "_data", None)
+    if isinstance(data, dict):
+        return data
+
+    return {}
 
 
 def _stripe_identifier(value):
@@ -103,6 +126,23 @@ def _ensure_guest_session_can_access(request, order):
         raise Http404("Order not found")
 
 
+def _has_download_email_access(request, item):
+    """Return whether a signed email-download link authorizes this request."""
+    return has_valid_download_access_token(item, request.GET.get("access", ""))
+
+
+def _ensure_download_access(request, item):
+    """Allow downloads for paid orders via account, recent session, or signed email link."""
+    order = item.order
+    if not order.is_paid:
+        raise Http404("Order not found")
+    if _has_download_email_access(request, item):
+        return
+
+    _ensure_user_can_access(request, order)
+    _ensure_guest_session_can_access(request, order)
+
+
 def _sync_customer_profile_from_order(order):
     """Save confirmed Stripe customer details back to the logged-in profile."""
     if not order.user_id:
@@ -120,7 +160,7 @@ def _sync_customer_profile_from_order(order):
 
 def _apply_paid_checkout_session_to_order(order, checkout_session):
     """Mark an order as paid when Stripe confirms a matching Checkout session."""
-    metadata = _stripe_value(checkout_session, "metadata", {}) or {}
+    metadata = _stripe_mapping(_stripe_value(checkout_session, "metadata", {}))
     if (
         _stripe_value(checkout_session, "status") != "complete"
         or _stripe_value(checkout_session, "payment_status") != "paid"
@@ -128,7 +168,7 @@ def _apply_paid_checkout_session_to_order(order, checkout_session):
     ):
         raise Http404("Order not found")
 
-    customer_details = _stripe_value(checkout_session, "customer_details", {}) or {}
+    customer_details = _stripe_mapping(_stripe_value(checkout_session, "customer_details", {}))
     customer_name = customer_details.get("name") or order.full_name
     customer_email = (
         customer_details.get("email")
@@ -157,7 +197,7 @@ def _apply_paid_checkout_session_to_order(order, checkout_session):
 
 def _fulfill_checkout_session(checkout_session):
     """Confirm an order from a Stripe Checkout session payload."""
-    metadata = _stripe_value(checkout_session, "metadata", {}) or {}
+    metadata = _stripe_mapping(_stripe_value(checkout_session, "metadata", {}))
     order_id = metadata.get("order_id")
     session_id = _stripe_value(checkout_session, "id", "")
     if not order_id or not session_id:
@@ -175,11 +215,49 @@ def _fulfill_checkout_session(checkout_session):
     return order
 
 
+def _already_owned_products(request, products):
+    """Return products in the current selection that the signed-in user already owns."""
+    owned_slugs = get_owned_product_slugs(request.user, slugs=[product.slug for product in products])
+    return [product for product in products if product.slug in owned_slugs]
+
+
+def _already_owned_error_for_products(products):
+    """Return a user-facing message when one or more selected products were already purchased."""
+    owned_titles = [product.title for product in products]
+    if len(owned_titles) == 1:
+        return (
+            "Already in your account",
+            f'You already bought "{owned_titles[0]}". It is ready in your account, so checkout has been paused.',
+        )
+
+    return (
+        "Some tracks are already yours",
+        "One or more tracks in your cart are already in your account, so checkout has been paused. "
+        "Remove them from the cart and try again.",
+    )
+
+
 class ShopLoginView(LoginView):
     """Render the login page for returning listeners."""
 
     template_name = "shop/login.html"
     authentication_form = ShopAuthenticationForm
+
+    def post(self, request, *args, **kwargs):
+        """Apply a basic cache-backed rate limit before authenticating."""
+        username = (request.POST.get("username") or "").strip().lower()
+        if is_rate_limited(
+            request,
+            scope="shop-login",
+            limit=settings.LOGIN_RATE_LIMIT_ATTEMPTS,
+            window_seconds=settings.LOGIN_RATE_LIMIT_WINDOW,
+            extra_identifier=username,
+        ):
+            form = self.get_form()
+            messages.error(request, "Too many login attempts. Please wait a few minutes and try again.")
+            return self.form_invalid(form)
+
+        return super().post(request, *args, **kwargs)
 
     def get_success_url(self):
         """Return the next page after login.
@@ -193,8 +271,10 @@ class ShopLoginView(LoginView):
 class ShopLogoutView(View):
     """Log the user out and return them to the main music page."""
 
-    def get(self, request):
-        """Log out the current user via a simple GET request.
+    http_method_names = ["post"]
+
+    def post(self, request):
+        """Log out the current user via a simple POST request.
 
         :param request: Current HTTP request.
         :type request: django.http.HttpRequest
@@ -204,6 +284,41 @@ class ShopLogoutView(View):
         logout(request)
         messages.info(request, "You have been logged out.")
         return redirect("main_site:music")
+
+
+class ShopPasswordResetView(PasswordResetView):
+    """Send password reset emails using the canonical public site URL."""
+
+    def post(self, request, *args, **kwargs):
+        """Apply a basic rate limit before issuing reset emails."""
+        email = (request.POST.get("email") or "").strip().lower()
+        if is_rate_limited(
+            request,
+            scope="shop-password-reset",
+            limit=settings.PASSWORD_RESET_RATE_LIMIT_ATTEMPTS,
+            window_seconds=settings.PASSWORD_RESET_RATE_LIMIT_WINDOW,
+            extra_identifier=email,
+        ):
+            form = self.get_form()
+            messages.error(request, "Too many reset requests. Please wait a while before trying again.")
+            return self.form_invalid(form)
+
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        """Inject the canonical domain/protocol into reset emails when configured."""
+        extra_email_context = {**(self.extra_email_context or {}), **site_context(self.request)}
+        form.save(
+            use_https=extra_email_context["protocol"] == "https",
+            token_generator=self.token_generator,
+            from_email=self.from_email,
+            email_template_name=self.email_template_name,
+            subject_template_name=self.subject_template_name,
+            request=self.request,
+            html_email_template_name=self.html_email_template_name,
+            extra_email_context=extra_email_context,
+        )
+        return redirect(self.get_success_url())
 
 
 class RegisterView(FormView):
@@ -275,6 +390,74 @@ class CheckoutView(View):
 
     template_name = "shop/checkout.html"
 
+    def _get_checkout_products(self, request):
+        """Return the current cart products for checkout processing."""
+
+        return get_cart_products(request)
+
+    def _redirect_empty_cart(self, request):
+        """Return the standard empty-cart redirect response."""
+
+        messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
+        return redirect("main_site:music")
+
+    def _render_checkout(
+        self,
+        request,
+        products,
+        *,
+        form=None,
+        checkout_error="",
+        checkout_error_title="Stripe checkout is unavailable",
+        checkout_canceled=False,
+        owned_products=None,
+    ):
+        """Render the checkout template with a normalized context."""
+
+        return render(
+            request,
+            self.template_name,
+            self._context(
+                products,
+                form=form or CheckoutConsentForm(),
+                checkout_error=checkout_error,
+                checkout_error_title=checkout_error_title,
+                checkout_canceled=checkout_canceled,
+                owned_products=owned_products or [],
+            ),
+        )
+
+    def _download_availability_error(self, products):
+        """Return a user-facing error when one or more paid downloads are unavailable."""
+        missing_titles = [
+            product.title
+            for product in products
+            if any(not download_asset_exists(path) for path in product.download_asset_paths)
+        ]
+        if not missing_titles:
+            return None
+
+        if len(missing_titles) == 1:
+            return (
+                "A download is unavailable",
+                f'"{missing_titles[0]}" is not available for delivery right now, so checkout has been paused. '
+                "Please try again shortly or get in touch.",
+            )
+
+        return (
+            "Some downloads are unavailable",
+            "One or more tracks in your cart are not available for delivery right now, so checkout has been paused. "
+            "Please try again shortly or get in touch.",
+        )
+
+    def _already_owned_error(self, request, products):
+        """Return a user-facing error when the signed-in shopper already owns cart items."""
+        owned_products = _already_owned_products(request, products)
+        if not owned_products:
+            return None
+        error_title, error_message = _already_owned_error_for_products(owned_products)
+        return error_title, error_message, owned_products
+
     def get(self, request):
         """Start Stripe Checkout or render a fallback page if needed.
 
@@ -283,20 +466,36 @@ class CheckoutView(View):
         :returns: Checkout page response.
         :rtype: django.http.HttpResponse
         """
-        products = get_cart_products(request)
+        products = self._get_checkout_products(request)
         if not products:
-            messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
-            return redirect("main_site:music")
+            return self._redirect_empty_cart(request)
+
+        ownership_error = self._already_owned_error(request, products)
+        if ownership_error:
+            error_title, error_message, owned_products = ownership_error
+            return self._render_checkout(
+                request,
+                products,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+                owned_products=owned_products,
+            )
+
+        availability_error = self._download_availability_error(products)
+        if availability_error:
+            error_title, error_message = availability_error
+            return self._render_checkout(
+                request,
+                products,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+            )
 
         if request.GET.get("canceled"):
             messages.info(request, "Checkout was canceled, so your cart is still waiting for you.")
-            return render(
-                request,
-                self.template_name,
-                self._context(products, form=CheckoutConsentForm(), checkout_canceled=True),
-            )
+            return self._render_checkout(request, products, checkout_canceled=True)
 
-        return render(request, self.template_name, self._context(products, form=CheckoutConsentForm()))
+        return self._render_checkout(request, products)
 
     def post(self, request):
         """Start Stripe Checkout from a form POST as a compatibility fallback.
@@ -306,14 +505,36 @@ class CheckoutView(View):
         :returns: Redirect or rendered error response.
         :rtype: django.http.HttpResponse
         """
-        products = get_cart_products(request)
+        products = self._get_checkout_products(request)
         if not products:
-            messages.info(request, "Your cart is empty. Add a track from the music page to continue.")
-            return redirect("main_site:music")
+            return self._redirect_empty_cart(request)
 
         form = CheckoutConsentForm(request.POST)
         if not form.is_valid():
-            return render(request, self.template_name, self._context(products, form=form))
+            return self._render_checkout(request, products, form=form)
+
+        ownership_error = self._already_owned_error(request, products)
+        if ownership_error:
+            error_title, error_message, owned_products = ownership_error
+            return self._render_checkout(
+                request,
+                products,
+                form=form,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+                owned_products=owned_products,
+            )
+
+        availability_error = self._download_availability_error(products)
+        if availability_error:
+            error_title, error_message = availability_error
+            return self._render_checkout(
+                request,
+                products,
+                form=form,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+            )
 
         return self._start_checkout(request, products, form=form)
 
@@ -326,21 +547,14 @@ class CheckoutView(View):
             checkout_session = self._create_checkout_session(request, order)
         except ImproperlyConfigured as exc:
             order.delete()
-            return render(
-                request,
-                self.template_name,
-                self._context(products, form=form or CheckoutConsentForm(), checkout_error=str(exc)),
-            )
+            return self._render_checkout(request, products, form=form, checkout_error=str(exc))
         except Exception:
             order.delete()
-            return render(
+            return self._render_checkout(
                 request,
-                self.template_name,
-                self._context(
-                    products,
-                    form=form or CheckoutConsentForm(),
-                    checkout_error="Stripe checkout could not be started right now. Please try again in a moment.",
-                ),
+                products,
+                form=form,
+                checkout_error="Stripe checkout could not be started right now. Please try again in a moment.",
             )
 
         order.stripe_checkout_session_id = _stripe_value(checkout_session, "id", "")
@@ -374,6 +588,7 @@ class CheckoutView(View):
                 art_path_snapshot=product.art_path,
                 art_alt_snapshot=product.art_alt,
                 download_file_path=product.download_file_path,
+                download_file_wav_path=product.download_file_wav_path,
             )
 
         return order
@@ -393,8 +608,8 @@ class CheckoutView(View):
         """Create the hosted Stripe Checkout session for the pending order."""
 
         stripe_module = _get_stripe_module()
-        success_url = request.build_absolute_uri(reverse("shop:success", kwargs={"order_id": order.pk}))
-        cancel_url = request.build_absolute_uri(reverse("shop:checkout"))
+        success_url = absolute_site_url(reverse("shop:success", kwargs={"order_id": order.pk}), request)
+        cancel_url = absolute_site_url(reverse("shop:checkout"), request)
         currency = settings.STRIPE_CURRENCY
 
         line_items = []
@@ -427,7 +642,16 @@ class CheckoutView(View):
 
         return stripe_module.checkout.Session.create(**session_kwargs)
 
-    def _context(self, products, *, form, checkout_error="", checkout_canceled=False):
+    def _context(
+        self,
+        products,
+        *,
+        form,
+        checkout_error="",
+        checkout_error_title,
+        checkout_canceled=False,
+        owned_products=None,
+    ):
         """Build the checkout rendering context.
 
         :param products: Products in the cart.
@@ -438,10 +662,17 @@ class CheckoutView(View):
         subtotal = sum((product.price for product in products), Decimal("0.00"))
         return {
             "checkout_items": products,
+            "checkout_analytics": {
+                "item_count": len(products),
+                "total_amount": f"{subtotal:.2f}",
+            },
             "checkout_subtotal_display": f"£{subtotal:.2f}",
             "form": form,
             "checkout_error": checkout_error,
+            "checkout_error_title": checkout_error_title,
             "checkout_canceled": checkout_canceled,
+            "checkout_owned_products": owned_products or [],
+            "checkout_account_url": reverse("shop:account"),
         }
 
 
@@ -468,6 +699,12 @@ class OrderSuccessView(TemplateView):
             raise Http404("Order not found")
         _ensure_guest_session_can_access(self.request, order)
         context["order"] = order
+        context["purchase_analytics"] = {
+            "order_id": str(order.pk),
+            "item_count": order.items.count(),
+            "total_amount": f"{order.total:.2f}",
+            "product_titles": ", ".join(item.title_snapshot for item in order.items.all()),
+        }
         return context
 
     def _synchronize_checkout_session(self, order):
@@ -485,8 +722,20 @@ class OrderSuccessView(TemplateView):
         order_was_just_confirmed = _apply_paid_checkout_session_to_order(order, checkout_session)
         clear_cart(self.request)
         _remember_recent_order(self.request, order.pk)
+        email_was_sent = False
+        try:
+            email_was_sent = send_order_confirmation_email(self.request, order)
+        except Exception:  # pragma: no cover - exercised in production mail failures.
+            messages.warning(
+                self.request,
+                "Payment is confirmed and your downloads are ready below, "
+                "but the download email could not be sent just yet.",
+            )
         if order_was_just_confirmed:
-            messages.success(self.request, "Payment confirmed. Your music is ready below.")
+            success_message = "Payment confirmed. Your music is ready below."
+            if email_was_sent:
+                success_message = "Payment confirmed. Your music is ready below, and a download email has been sent."
+            messages.success(self.request, success_message)
 
 
 class OrderDownloadView(View):
@@ -495,11 +744,15 @@ class OrderDownloadView(View):
     def get(self, request, item_id):
         """Redirect to a signed download URL or stream a local private file."""
         item = get_object_or_404(OrderItem.objects.select_related("order"), pk=item_id)
+        _ensure_download_access(request, item)
         order = item.order
-        _ensure_user_can_access(request, order)
-        _ensure_guest_session_can_access(request, order)
-        download_name = item.download_file_path.rsplit("/", 1)[-1] or f"order-{order.pk}-download"
-        response = build_download_response(item.download_file_path, download_name=download_name)
+        requested_format = request.GET.get("format", "mp3").strip().lower() or "mp3"
+        relative_path = item.download_file_for_format(requested_format)
+        if not relative_path:
+            raise Http404("Download not found")
+
+        download_name = relative_path.rsplit("/", 1)[-1] or f"order-{order.pk}-download"
+        response = build_download_response(relative_path, download_name=download_name)
         if isinstance(response, FileResponse):
             return response
         return response
@@ -533,7 +786,9 @@ class StripeWebhookView(View):
 
         if event_type in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
             try:
-                _fulfill_checkout_session(checkout_session)
+                order = _fulfill_checkout_session(checkout_session)
+                if order is not None:
+                    send_order_confirmation_email(request, order)
             except Http404:
                 pass
 
@@ -552,6 +807,15 @@ def cart_add(request, slug):
     :rtype: django.http.JsonResponse
     """
     product = get_object_or_404(Product, slug=slug, is_published=True)
+    if product.slug in get_owned_product_slugs(request.user, slugs=[product.slug]):
+        summary = build_cart_summary(request)
+        return JsonResponse(
+            {
+                **summary,
+                "message": f'You already bought "{product.title}". It is ready in your account.',
+            },
+            status=409,
+        )
     add_product(request, product)
     return JsonResponse(build_cart_summary(request))
 

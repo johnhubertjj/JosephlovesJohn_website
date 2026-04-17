@@ -34,6 +34,76 @@ def _r2_client(*, endpoint_url: str, access_key_id: str, secret_access_key: str,
     )
 
 
+def _local_private_download_path(relative_path: str) -> Path:
+    """Return a safe private-download file path within the configured root."""
+    normalized = normalize_asset_path(relative_path)
+    if not normalized or is_external_url(normalized):
+        raise Http404("Download not found")
+
+    root = Path(settings.PRIVATE_DOWNLOADS_ROOT).resolve()
+    candidate = (root / normalized).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise Http404("Download not found") from exc
+
+    return candidate
+
+
+def _bundled_static_download_path(relative_path: str) -> Path:
+    """Return a safe bundled static-file path within the repo."""
+    normalized = normalize_asset_path(relative_path)
+    if not normalized or is_external_url(normalized):
+        raise Http404("Download not found")
+
+    root = (Path(settings.BASE_DIR) / "static").resolve()
+    candidate = (root / normalized).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise Http404("Download not found") from exc
+
+    return candidate
+
+
+def download_asset_exists(relative_path: str) -> bool:
+    """Return whether the paid download is currently reachable for delivery."""
+    if is_external_url(relative_path):
+        return True
+
+    try:
+        normalized = normalize_asset_path(relative_path)
+    except Http404:
+        return False
+
+    if not normalized:
+        return False
+
+    if settings.PRIVATE_DOWNLOADS_BUCKET_NAME:
+        try:
+            client = _r2_client(
+                endpoint_url=settings.PRIVATE_DOWNLOADS_ENDPOINT_URL,
+                access_key_id=settings.PRIVATE_DOWNLOADS_ACCESS_KEY_ID,
+                secret_access_key=settings.PRIVATE_DOWNLOADS_SECRET_ACCESS_KEY,
+                region=settings.PRIVATE_DOWNLOADS_REGION,
+            )
+            client.head_object(
+                Bucket=settings.PRIVATE_DOWNLOADS_BUCKET_NAME,
+                Key=_private_object_key(relative_path, key_prefix=settings.PRIVATE_DOWNLOADS_KEY_PREFIX),
+            )
+        except Exception:
+            return False
+        return True
+
+    try:
+        return (
+            _local_private_download_path(relative_path).is_file()
+            or _bundled_static_download_path(relative_path).is_file()
+        )
+    except Http404:
+        return False
+
+
 def presigned_private_asset_url(
     relative_path: str,
     *,
@@ -72,17 +142,22 @@ def presigned_private_asset_url(
 
 def _local_download_response(relative_path: str, *, download_name: str) -> FileResponse:
     """Stream a private local file from the configured download root."""
-    normalized = normalize_asset_path(relative_path)
-    if not normalized or is_external_url(normalized):
+    candidate = _local_private_download_path(relative_path)
+    if not candidate.is_file():
         raise Http404("Download not found")
 
-    root = Path(settings.PRIVATE_DOWNLOADS_ROOT).resolve()
-    candidate = (root / normalized).resolve()
-    try:
-        candidate.relative_to(root)
-    except ValueError as exc:
-        raise Http404("Download not found") from exc
+    content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+    return FileResponse(
+        candidate.open("rb"),
+        as_attachment=True,
+        filename=download_name,
+        content_type=content_type,
+    )
 
+
+def _bundled_static_download_response(relative_path: str, *, download_name: str) -> FileResponse:
+    """Stream a repo-tracked static file for local/simple storefront downloads."""
+    candidate = _bundled_static_download_path(relative_path)
     if not candidate.is_file():
         raise Http404("Download not found")
 
@@ -115,7 +190,10 @@ def build_download_response(relative_path: str, *, download_name: str):
             )
         )
 
-    return _local_download_response(relative_path, download_name=download_name)
+    try:
+        return _local_download_response(relative_path, download_name=download_name)
+    except Http404:
+        return _bundled_static_download_response(relative_path, download_name=download_name)
 
 
 def preview_asset_url(relative_path: str) -> str:

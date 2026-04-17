@@ -1,10 +1,28 @@
-{% load static %}
+{% load static asset_urls %}
 <!DOCTYPE HTML>
 <html>
 <head>
     <title>{% block title %}JosephlovesJohn{% endblock %}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="description" content="{% block meta_description %}{{ seo.description|default:'Independent music, artwork, and mastering services from JosephlovesJohn.' }}{% endblock %}" />
+    <meta name="robots" content="{% block meta_robots %}{{ seo.robots|default:'index,follow' }}{% endblock %}" />
+    {% if seo.canonical_url %}<link rel="canonical" href="{% block canonical_url %}{{ seo.canonical_url }}{% endblock %}" />{% endif %}
+    <meta property="og:title" content="{% block og_title %}{{ seo.title|default:'JosephlovesJohn' }}{% endblock %}" />
+    <meta property="og:description" content="{% block og_description %}{{ seo.description|default:'Independent music, artwork, and mastering services from JosephlovesJohn.' }}{% endblock %}" />
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+    <meta property="og:url" content="{% block og_url %}{{ seo.canonical_url|default:'' }}{% endblock %}" />
+    <meta property="og:image" content="{% block og_image %}{{ seo.image_url|default:'' }}{% endblock %}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{% block twitter_title %}{{ seo.title|default:'JosephlovesJohn' }}{% endblock %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}{{ seo.description|default:'Independent music, artwork, and mastering services from JosephlovesJohn.' }}{% endblock %}" />
+    <meta name="twitter:image" content="{% block twitter_image %}{{ seo.image_url|default:'' }}{% endblock %}" />
+    {% if seo.structured_data %}
+        {% for payload in seo.structured_data %}
+    <script type="application/ld+json">{{ payload|safe }}</script>
+        {% endfor %}
+    {% endif %}
+    <link rel="icon" type="image/png" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" />
     {% block styles %}
     <link rel="stylesheet" href="{% static 'assets/css/vendor/dimension.css' %}" />
     <link rel="stylesheet" href="{% static 'assets/css/layout/top-nav.css' %}" />
@@ -13,9 +31,24 @@
     <link rel="stylesheet" href="{% static 'assets/css/layout/footer.css' %}" />
     <noscript><link rel="stylesheet" href="{% static 'assets/css/vendor/noscript.css' %}" /></noscript>
     {% endblock %}
+    {% if analytics.plausible_enabled %}
+    <script>
+        window.plausible = window.plausible || function () {
+            (window.plausible.q = window.plausible.q || []).push(arguments);
+        };
+        window.plausible.init = window.plausible.init || function (options) {
+            window.plausible.o = options || {};
+        };
+        window.plausible.init();
+    </script>
+    <script async src="{{ analytics.plausible_script_src }}"></script>
+    {% endif %}
     {% block head %}{% endblock %}
 </head>
-<body class="{% block body_class %}is-preload{% endblock %}">
+<body
+    class="{% block body_class %}is-preload{% endblock %}"
+    data-analytics-enabled="{% if analytics.plausible_enabled %}true{% else %}false{% endif %}"
+>
 {% block content %}{% endblock %}
 
 <aside class="cookie-banner" data-cookie-banner hidden aria-live="polite">
@@ -44,7 +77,9 @@
 <script src="{% static 'assets/js/breakpoints.min.js' %}"></script>
 <script src="{% static 'assets/js/util.js' %}"></script>
 <script src="{% static 'assets/js/main.js' %}"></script>
+<script src="{% static 'main_site/js/dom_utils.js' %}"></script>
 <script src="{% static 'main_site/js/cookies.js' %}"></script>
+<script src="{% static 'main_site/js/analytics.js' %}"></script>
 {% endblock %}
 </body>
 </html>

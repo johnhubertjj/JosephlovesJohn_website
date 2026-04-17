@@ -77,10 +77,11 @@ def setup_sentry(
 def setup_sentry_from_env(environ: Mapping[str, str] | None = None) -> bool:
     """Initialize Sentry from ``SENTRY_*`` environment variables."""
     env = os.environ if environ is None else environ
+    release = _clean_env(env.get("SENTRY_RELEASE")) or _clean_env(env.get("RENDER_GIT_COMMIT"))
     return setup_sentry(
         dsn=_clean_env(env.get("SENTRY_DSN")),
         environment=_clean_env(env.get("SENTRY_ENVIRONMENT")),
-        release=_clean_env(env.get("SENTRY_RELEASE")),
+        release=release,
         traces_sample_rate=_env_float(env.get("SENTRY_TRACES_SAMPLE_RATE"), default=0.0),
         send_default_pii=_env_bool(env.get("SENTRY_SEND_DEFAULT_PII"), default=False),
         debug=_env_bool(env.get("SENTRY_DEBUG"), default=False),

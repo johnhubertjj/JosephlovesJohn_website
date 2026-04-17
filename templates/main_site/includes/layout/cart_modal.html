@@ -23,7 +23,7 @@
         <ul class="music-cart-items" data-cart-items>
             {% for item in cart_summary.items %}
                 <li class="music-cart-item" data-cart-slug="{{ item.slug }}">
-                    <img src="{{ item.art_url }}" alt="{{ item.art_alt }}" />
+                    <img src="{{ item.art_url }}" alt="{{ item.art_alt|default:item.title }}" />
                     <div class="music-cart-item-copy">
                         <strong>{{ item.title }}</strong>
                         <span>{{ item.meta|default:item.artist_name }}</span>
@@ -41,7 +41,10 @@
             </div>
             <div class="music-cart-actions">
                 <a href="{{ cart_summary.account_url }}" class="music-cart-text-link">Account</a>
-                <a href="{{ cart_summary.checkout_url }}" class="button primary music-cart-checkout music-accent-button{% if cart_summary.is_empty %} is-disabled{% endif %}" data-cart-checkout>Checkout</a>
+                <p class="music-cart-ownership-note{% if not cart_summary.has_owned_items %} is-hidden{% endif %}" data-cart-ownership-note>
+                    {{ cart_summary.ownership_message }}
+                </p>
+                <a href="{{ cart_summary.checkout_url }}" class="button primary music-cart-checkout music-accent-button{% if cart_summary.is_empty or cart_summary.has_owned_items %} is-disabled{% endif %}{% if cart_summary.has_owned_items %} is-hidden{% endif %}" data-cart-checkout>Checkout</a>
             </div>
         </footer>
     </section>

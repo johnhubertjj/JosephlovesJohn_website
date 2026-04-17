@@ -1,7 +1,7 @@
 {% extends 'main_site/base.html' %}
 {% load static %}
 
-{% block title %}{{ page.title }} | JosephlovesJohn{% endblock %}
+{% block title %}{{ seo.title }}{% endblock %}
 {% block body_class %}legal-page{% endblock %}
 
 {% block styles %}
@@ -60,5 +60,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'main_site/js/cookies.js' %}"></script>
+    {{ block.super }}
 {% endblock %}

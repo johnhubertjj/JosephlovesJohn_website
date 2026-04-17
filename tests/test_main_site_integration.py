@@ -2,6 +2,7 @@
 
 import pytest
 from django.template.loader import render_to_string
+from django.test import override_settings
 from django.urls import reverse
 from main_site import views
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto
@@ -98,6 +99,26 @@ def test_music_route_renders_component_empty_state_when_tracks_are_missing(clien
 
 @pytest.mark.django_db
 @pytest.mark.integration
+def test_music_route_replaces_buy_button_for_signed_in_owners(client, django_user_model, monkeypatch) -> None:
+    """Signed-in listeners should see an account reminder for tracks they already own."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    client.force_login(user)
+    monkeypatch.setattr(views, "get_owned_product_slugs", lambda user, *, slugs=None: {slugs[0]})
+
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Already in your account" in body
+    assert reverse("shop:account") in body
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
 def test_art_route_renders_component_empty_states_when_galleries_are_empty(client, monkeypatch) -> None:
     """The art section should surface both empty states when no gallery items exist."""
     monkeypatch.setattr(views, "_get_gig_photo_items", lambda: [])
@@ -147,9 +168,28 @@ def test_intro_signup_component_renders_click_to_load_gate() -> None:
     assert 'data-signup-root' in html
     assert 'data-kit-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in html
     assert 'data-signup-gate' in html
+    assert 'data-analytics-signup-open' in html
+    assert 'data-analytics-signup-fallback' in html
     assert "Open signup form" in html
     assert "provided by Kit and may use cookies" in html
     assert 'data-signup-embed' in html
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
+@override_settings(
+    PLAUSIBLE_DOMAIN="josephlovesjohn.com",
+    PLAUSIBLE_SCRIPT_SRC="https://plausible.io/js/pa-example.js",
+)
+def test_main_site_renders_plausible_snippet_when_enabled(client) -> None:
+    """The site shell should render Plausible only when the domain is configured."""
+    response = client.get(reverse("main_site:main"))
+    body = response.content.decode()
+
+    assert 'data-analytics-enabled="true"' in body
+    assert 'src="https://plausible.io/js/pa-example.js"' in body
+    assert "window.plausible.init();" in body
+    assert '/static/main_site/js/analytics.js' in body
 
 
 @pytest.mark.integration
@@ -185,6 +225,26 @@ def test_gig_photo_grid_component_renders_direct_urls() -> None:
 
 
 @pytest.mark.integration
+def test_gig_photo_grid_component_falls_back_to_title_for_missing_alt_text() -> None:
+    """Gig photo cards should use the title when no explicit alt text is supplied."""
+    html = render_to_string(
+        "main_site/includes/components/art/gig_photo_grid.html",
+        {
+            "gig_photo_items": [
+                {
+                    "title": "Fallback Gig Photo",
+                    "image_url": "/media/gig_photos/uploads/reusable.jpg",
+                    "thumbnail_url": "/media/gig_photos/thumbs/uploads/reusable-thumb.jpg",
+                    "alt_text": "",
+                }
+            ]
+        },
+    )
+
+    assert 'alt="Fallback Gig Photo"' in html
+
+
+@pytest.mark.integration
 def test_album_art_grid_component_renders_featured_and_contain_variants() -> None:
     """The album-art grid partial should render featured cards and contain-fit artwork."""
     html = render_to_string(
@@ -206,6 +266,28 @@ def test_album_art_grid_component_renders_featured_and_contain_variants() -> Non
     assert 'class="album-art-card is-featured"' in html
     assert 'class="is-contain"' in html
     assert "Buddlea Animation" in html
+
+
+@pytest.mark.integration
+def test_album_art_grid_component_falls_back_to_caption_for_missing_alt_text() -> None:
+    """Album-art images should use the caption when no explicit alt text is supplied."""
+    html = render_to_string(
+        "main_site/includes/components/art/album_art_grid.html",
+        {
+            "album_art_items": [
+                {
+                    "kind": "image",
+                    "url": "/static/images/album_art/buddlea_animation.gif",
+                    "caption": "Fallback Album Art",
+                    "alt": "",
+                    "featured": False,
+                    "fit_contain": False,
+                }
+            ]
+        },
+    )
+
+    assert 'alt="Fallback Album Art"' in html
 
 
 @pytest.mark.integration

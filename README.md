@@ -15,6 +15,7 @@ It includes:
 - Django 5
 - JavaScript for the site shell, media players, cart UI, cookie controls, and interactive embeds
 - Stripe Checkout for payments
+- Plausible for lightweight privacy-friendly web analytics
 - Kit (ConvertKit) for mailing-list signup embeds
 - WhiteNoise for static file serving
 - Gunicorn as the production application server
@@ -91,6 +92,7 @@ The site will then be available at [http://127.0.0.1:8000](http://127.0.0.1:8000
 
 - Render should use `DATABASE_URL` for Postgres.
 - Large media files should live in Cloudflare R2 rather than Git.
+- Plausible can be enabled by setting `PLAUSIBLE_DOMAIN` in the environment.
 - [`.env-render-only`](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/.env-render-only) is a private reference file for Render settings.
 
 ## Media and Asset Storage
@@ -170,6 +172,9 @@ Useful docs:
 - The main site is a single-page shell with route-aware section activation.
 - Legal pages are standalone routed pages.
 - The mailing-list signup form now loads only after user interaction unless optional cookies have already been allowed.
+- The standard browser suite runs against Chromium, Firefox, and WebKit in CI without talking to live payment providers.
+- The real hosted Stripe Checkout browser test is separate and opt-in via the `real-stripe-browser` GitHub Actions workflow.
+- To use that workflow, add a repository secret named `STRIPE_TEST_SECRET_KEY` containing a Stripe `sk_test_...` key, then run the workflow manually from the Actions tab.
 
 ## Status
 
