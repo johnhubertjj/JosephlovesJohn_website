@@ -205,6 +205,26 @@ def test_gig_photo_grid_component_renders_direct_urls() -> None:
 
 
 @pytest.mark.integration
+def test_gig_photo_grid_component_falls_back_to_title_for_missing_alt_text() -> None:
+    """Gig photo cards should use the title when no explicit alt text is supplied."""
+    html = render_to_string(
+        "main_site/includes/components/art/gig_photo_grid.html",
+        {
+            "gig_photo_items": [
+                {
+                    "title": "Fallback Gig Photo",
+                    "image_url": "/media/gig_photos/uploads/reusable.jpg",
+                    "thumbnail_url": "/media/gig_photos/thumbs/uploads/reusable-thumb.jpg",
+                    "alt_text": "",
+                }
+            ]
+        },
+    )
+
+    assert 'alt="Fallback Gig Photo"' in html
+
+
+@pytest.mark.integration
 def test_album_art_grid_component_renders_featured_and_contain_variants() -> None:
     """The album-art grid partial should render featured cards and contain-fit artwork."""
     html = render_to_string(
@@ -226,6 +246,28 @@ def test_album_art_grid_component_renders_featured_and_contain_variants() -> Non
     assert 'class="album-art-card is-featured"' in html
     assert 'class="is-contain"' in html
     assert "Buddlea Animation" in html
+
+
+@pytest.mark.integration
+def test_album_art_grid_component_falls_back_to_caption_for_missing_alt_text() -> None:
+    """Album-art images should use the caption when no explicit alt text is supplied."""
+    html = render_to_string(
+        "main_site/includes/components/art/album_art_grid.html",
+        {
+            "album_art_items": [
+                {
+                    "kind": "image",
+                    "url": "/static/images/album_art/buddlea_animation.gif",
+                    "caption": "Fallback Album Art",
+                    "alt": "",
+                    "featured": False,
+                    "fit_contain": False,
+                }
+            ]
+        },
+    )
+
+    assert 'alt="Fallback Album Art"' in html
 
 
 @pytest.mark.integration

@@ -20,6 +20,8 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         'id="main"',
         'id="footer"',
         'rel="icon"',
+        'meta name="description"',
+        'rel="canonical"',
         'data-cookie-banner',
         'data-cookie-essential-only',
         'data-cookie-accept-all',
@@ -44,6 +46,10 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         assert f'href="{link["href"]}"' in body
 
     assert '/static/images/jlovesj_symbol-my_version3.png' in body
+    assert 'content="JosephlovesJohn | Independent Music, Art, and Mastering in Bristol"' in body
+    assert 'href="http://127.0.0.1:8000/"' in body
+    assert 'application/ld+json' in body
+    assert '"@type":"Person"' in body
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
@@ -108,6 +114,19 @@ def test_contact_page_smoke_renders_labeled_form_controls(client) -> None:
 
     for field_id in ("name", "email", "message"):
         assert f'id="{field_id}"' in body
+
+
+def test_music_page_smoke_renders_route_specific_metadata(client) -> None:
+    """The music route should expose its own SEO title, description, and canonical URL."""
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "<title>Music | JosephlovesJohn Downloads and Listening</title>" in body
+    assert 'Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 and WAV downloads' in body
+    assert 'href="http://127.0.0.1:8000/music/"' in body
+    assert '"@type":"ItemList"' in body
+    assert '"@type":"MusicRecording"' in body
 
 
 def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_static_asset) -> None:
