@@ -48,8 +48,9 @@ def _site_context(active_section, *, contact_form=None, request=None):
     section_key = active_section or "main"
     header_social_links = _get_header_social_links()
     music_items = _get_music_library_items()
+    owned_slug_candidates = [item.get("slug") for item in music_items if item.get("slug")]
     owned_music_slugs = sorted(
-        get_owned_product_slugs(getattr(request, "user", None), slugs=[item["slug"] for item in music_items])
+        get_owned_product_slugs(getattr(request, "user", None), slugs=owned_slug_candidates)
     )
     canonical_routes = {
         "main": "main_site:main",

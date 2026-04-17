@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 import re
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 
 import pytest
 from django.core import mail
@@ -277,12 +278,13 @@ def test_shop_password_reset_flow(browser_page, live_server, django_user_model) 
     assert len(mail.outbox) == 1
 
     match = re.search(
-        rf"{re.escape(live_server.url)}(?P<path>/shop/reset/[^/\s]+/[^/\s]+/)",
+        r"(?P<url>https?://[^\s]+/shop/reset/[^/\s]+/[^/\s]+/)",
         mail.outbox[0].body,
     )
     assert match is not None
 
-    browser_page.goto(f"{live_server.url}{match.group('path')}", wait_until="load")
+    reset_url = urlsplit(match.group("url"))
+    browser_page.goto(f"{live_server.url}{reset_url.path}", wait_until="load")
     browser_page.locator('input[name="new_password1"]').fill("EvenSaferPass456")
     browser_page.locator('input[name="new_password2"]').fill("EvenSaferPass456")
     browser_page.locator('button[type="submit"]').click()
@@ -380,12 +382,13 @@ def test_paid_checkout_success_page_sends_email_and_allows_download_via_signed_l
     assert mail.outbox[0].to == ["browserbuyer@example.com"]
 
     match = re.search(
-        rf"{re.escape(live_server.url)}(?P<path>/shop/download/\d+/\?access=[^\s]+)",
+        r"(?P<url>https?://[^\s]+/shop/download/\d+/\?access=[^\s]+)",
         mail.outbox[0].body,
     )
     assert match is not None
 
-    signed_download_response = Client().get(match.group("path"))
+    download_url = urlsplit(match.group("url"))
+    signed_download_response = Client().get(f"{download_url.path}?{download_url.query}")
     assert signed_download_response.status_code == 200
     assert signed_download_response.get("Content-Disposition", "").startswith("attachment;")
 
