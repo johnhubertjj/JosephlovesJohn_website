@@ -61,7 +61,8 @@
     flex-wrap: wrap;
 }
 
-.shop-account-links a {
+.shop-account-links a,
+.shop-link-button {
     color: #ffffff;
     text-decoration: none;
     border: 1px solid rgba(255, 255, 255, 0.18);
@@ -70,6 +71,17 @@
     font-size: 0.72rem;
     letter-spacing: 0.1rem;
     text-transform: uppercase;
+}
+
+.shop-inline-form {
+    margin: 0;
+}
+
+.shop-link-button {
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1;
 }
 
 .shop-card {

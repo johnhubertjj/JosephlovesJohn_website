@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "django.contrib.sitemaps",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "main_site",
@@ -155,6 +156,9 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+SITE_URL = os.environ.get("SITE_URL", "").strip().rstrip("/")
+if not SITE_URL and DEBUG:
+    SITE_URL = "http://127.0.0.1:8000"
 PUBLIC_ASSET_BASE_URL = os.environ.get("PUBLIC_ASSET_BASE_URL", "").strip().rstrip("/")
 PRIVATE_DOWNLOADS_ROOT = Path(
     os.environ.get("PRIVATE_DOWNLOADS_ROOT", "").strip() or str(MEDIA_ROOT / "private_downloads")
@@ -237,6 +241,13 @@ LEGAL_BUSINESS_NAME = os.environ.get("LEGAL_BUSINESS_NAME", "JosephlovesJohn")
 BUSINESS_CONTACT_EMAIL = os.environ.get("BUSINESS_CONTACT_EMAIL", CONTACT_RECIPIENT_EMAIL)
 BUSINESS_POSTAL_ADDRESS = os.environ.get("BUSINESS_POSTAL_ADDRESS", "")
 VAT_NUMBER = os.environ.get("VAT_NUMBER", "")
+
+LOGIN_RATE_LIMIT_ATTEMPTS = _env_int("LOGIN_RATE_LIMIT_ATTEMPTS", default=5)
+LOGIN_RATE_LIMIT_WINDOW = _env_int("LOGIN_RATE_LIMIT_WINDOW", default=300)
+PASSWORD_RESET_RATE_LIMIT_ATTEMPTS = _env_int("PASSWORD_RESET_RATE_LIMIT_ATTEMPTS", default=5)
+PASSWORD_RESET_RATE_LIMIT_WINDOW = _env_int("PASSWORD_RESET_RATE_LIMIT_WINDOW", default=3600)
+CONTACT_RATE_LIMIT_ATTEMPTS = _env_int("CONTACT_RATE_LIMIT_ATTEMPTS", default=5)
+CONTACT_RATE_LIMIT_WINDOW = _env_int("CONTACT_RATE_LIMIT_WINDOW", default=3600)
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").strip().upper() or "INFO"
 DJANGO_LOG_LEVEL = os.environ.get("DJANGO_LOG_LEVEL", "INFO" if DEBUG else LOG_LEVEL).strip().upper() or "INFO"

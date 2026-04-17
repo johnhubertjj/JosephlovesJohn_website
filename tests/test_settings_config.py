@@ -154,3 +154,17 @@ def test_settings_expose_plausible_configuration(monkeypatch: pytest.MonkeyPatch
         monkeypatch.delenv("PLAUSIBLE_SCRIPT_SRC", raising=False)
         monkeypatch.delenv("DOTENV_PATH", raising=False)
         importlib.reload(settings)
+
+
+def test_settings_expose_site_url_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Canonical site URLs should be configurable from the environment."""
+    monkeypatch.setenv("SITE_URL", "https://josephlovesjohn.com/")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SITE_URL == "https://josephlovesjohn.com"
+    finally:
+        monkeypatch.delenv("SITE_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)

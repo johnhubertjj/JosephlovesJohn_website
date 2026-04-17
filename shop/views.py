@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.core.exceptions import ImproperlyConfigured
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -19,6 +19,8 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
+from josephlovesjohn_site.rate_limits import is_rate_limited
+from josephlovesjohn_site.site_urls import absolute_site_url, site_context
 
 from .cart import add_product, build_cart_summary, clear_cart, get_cart_products, remove_product
 from .downloads import build_download_response, download_asset_exists
@@ -218,6 +220,22 @@ class ShopLoginView(LoginView):
     template_name = "shop/login.html"
     authentication_form = ShopAuthenticationForm
 
+    def post(self, request, *args, **kwargs):
+        """Apply a basic cache-backed rate limit before authenticating."""
+        username = (request.POST.get("username") or "").strip().lower()
+        if is_rate_limited(
+            request,
+            scope="shop-login",
+            limit=settings.LOGIN_RATE_LIMIT_ATTEMPTS,
+            window_seconds=settings.LOGIN_RATE_LIMIT_WINDOW,
+            extra_identifier=username,
+        ):
+            form = self.get_form()
+            messages.error(request, "Too many login attempts. Please wait a few minutes and try again.")
+            return self.form_invalid(form)
+
+        return super().post(request, *args, **kwargs)
+
     def get_success_url(self):
         """Return the next page after login.
 
@@ -230,8 +248,10 @@ class ShopLoginView(LoginView):
 class ShopLogoutView(View):
     """Log the user out and return them to the main music page."""
 
-    def get(self, request):
-        """Log out the current user via a simple GET request.
+    http_method_names = ["post"]
+
+    def post(self, request):
+        """Log out the current user via a simple POST request.
 
         :param request: Current HTTP request.
         :type request: django.http.HttpRequest
@@ -241,6 +261,41 @@ class ShopLogoutView(View):
         logout(request)
         messages.info(request, "You have been logged out.")
         return redirect("main_site:music")
+
+
+class ShopPasswordResetView(PasswordResetView):
+    """Send password reset emails using the canonical public site URL."""
+
+    def post(self, request, *args, **kwargs):
+        """Apply a basic rate limit before issuing reset emails."""
+        email = (request.POST.get("email") or "").strip().lower()
+        if is_rate_limited(
+            request,
+            scope="shop-password-reset",
+            limit=settings.PASSWORD_RESET_RATE_LIMIT_ATTEMPTS,
+            window_seconds=settings.PASSWORD_RESET_RATE_LIMIT_WINDOW,
+            extra_identifier=email,
+        ):
+            form = self.get_form()
+            messages.error(request, "Too many reset requests. Please wait a while before trying again.")
+            return self.form_invalid(form)
+
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        """Inject the canonical domain/protocol into reset emails when configured."""
+        extra_email_context = {**(self.extra_email_context or {}), **site_context(self.request)}
+        form.save(
+            use_https=extra_email_context["protocol"] == "https",
+            token_generator=self.token_generator,
+            from_email=self.from_email,
+            email_template_name=self.email_template_name,
+            subject_template_name=self.subject_template_name,
+            request=self.request,
+            html_email_template_name=self.html_email_template_name,
+            extra_email_context=extra_email_context,
+        )
+        return redirect(self.get_success_url())
 
 
 class RegisterView(FormView):
@@ -497,8 +552,8 @@ class CheckoutView(View):
         """Create the hosted Stripe Checkout session for the pending order."""
 
         stripe_module = _get_stripe_module()
-        success_url = request.build_absolute_uri(reverse("shop:success", kwargs={"order_id": order.pk}))
-        cancel_url = request.build_absolute_uri(reverse("shop:checkout"))
+        success_url = absolute_site_url(reverse("shop:success", kwargs={"order_id": order.pk}), request)
+        cancel_url = absolute_site_url(reverse("shop:checkout"), request)
         currency = settings.STRIPE_CURRENCY
 
         line_items = []

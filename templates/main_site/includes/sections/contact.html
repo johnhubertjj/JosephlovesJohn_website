@@ -12,6 +12,10 @@
     {% endif %}
     <form method="post" action="{% url 'main_site:contact' %}" data-analytics-contact-form>
         {% csrf_token %}
+        <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+            <label for="{{ contact_form.website.id_for_label }}">Website</label>
+            {{ contact_form.website }}
+        </div>
         <div class="fields">
             <div class="field half">
                 <label for="name">Name</label>

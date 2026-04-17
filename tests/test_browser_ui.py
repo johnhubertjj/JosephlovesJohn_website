@@ -199,7 +199,7 @@ def test_shop_register_and_login_flows(browser_page, live_server) -> None:
     assert browser_page.locator("h1").inner_text().strip().lower() == "your account"
     assert "Browser Listener" in browser_page.content()
 
-    browser_page.locator('a[href="/shop/logout/"]').click()
+    browser_page.locator('form[action="/shop/logout/"] button[type="submit"]').click()
     browser_page.wait_for_url("**/music/**")
 
     browser_page.goto(_route_url(live_server, "shop:login"), wait_until="load")

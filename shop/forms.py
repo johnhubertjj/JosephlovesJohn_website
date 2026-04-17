@@ -59,3 +59,10 @@ class RegisterForm(UserCreationForm):
 
         model = User
         fields = ("username", "email", "full_name")
+
+    def clean_email(self):
+        """Reject duplicate storefront email addresses to simplify recovery flows."""
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account with that email address already exists.")
+        return email

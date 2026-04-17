@@ -8,6 +8,7 @@
     <section class="shop-card shop-auth-card">
         <form method="post" class="shop-form" novalidate>
             {% csrf_token %}
+            {% for error in form.non_field_errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
             {% for field in form %}
                 <div class="shop-form-field{% if field.errors %} has-errors{% endif %}">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>

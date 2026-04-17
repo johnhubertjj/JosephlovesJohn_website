@@ -8,9 +8,12 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.mail import EmailMessage
 from django.db import OperationalError, ProgrammingError
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from josephlovesjohn_site.assets import resolve_public_asset_source
+from josephlovesjohn_site.rate_limits import is_rate_limited
+from josephlovesjohn_site.site_urls import absolute_site_url
 from shop.models import Product
 
 from .forms import ContactForm
@@ -566,6 +569,21 @@ def contact(request):
         form = ContactForm(request.POST)
         if form.is_valid():
             cleaned = form.cleaned_data
+            if cleaned.get("website"):
+                messages.success(request, "Thanks, your message has been sent.")
+                return redirect("main_site:contact")
+            if is_rate_limited(
+                request,
+                scope="contact-form",
+                limit=settings.CONTACT_RATE_LIMIT_ATTEMPTS,
+                window_seconds=settings.CONTACT_RATE_LIMIT_WINDOW,
+                extra_identifier=cleaned["email"],
+            ):
+                messages.error(
+                    request,
+                    "Too many messages have been sent from this connection. Please try again later.",
+                )
+                return _render_site_section(request, "contact", contact_form=form)
             message_body = (
                 f"New website contact form submission\n\n"
                 f"Name: {cleaned['name']}\n"
@@ -619,3 +637,16 @@ def refunds(request):
     """Render the refunds and digital downloads page."""
 
     return _render_legal_page(request, "refunds")
+
+
+def robots_txt(request):
+    """Return a simple robots policy and sitemap hint for search crawlers."""
+    content = "\n".join(
+        [
+            "User-agent: *",
+            "Allow: /",
+            f"Sitemap: {absolute_site_url(reverse('sitemap'), request)}",
+            "",
+        ]
+    )
+    return HttpResponse(content, content_type="text/plain; charset=utf-8")

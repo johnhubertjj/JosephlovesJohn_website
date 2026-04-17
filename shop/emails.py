@@ -10,6 +10,7 @@ from django.core.signing import BadSignature, SignatureExpired, dumps, loads
 from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
+from josephlovesjohn_site.site_urls import absolute_site_url
 
 from .models import Order, OrderItem
 
@@ -49,7 +50,7 @@ def _download_link(request, item: OrderItem) -> str:
     """Build the absolute emailed download URL for a purchased item."""
     query = urlencode({"access": build_download_access_token(item)})
     path = reverse("shop:download", kwargs={"item_id": item.pk})
-    return request.build_absolute_uri(f"{path}?{query}")
+    return absolute_site_url(f"{path}?{query}", request)
 
 
 def _download_links(request, item: OrderItem) -> list[tuple[str, str]]:
@@ -58,7 +59,7 @@ def _download_links(request, item: OrderItem) -> list[tuple[str, str]]:
     if item.download_file_wav_path:
         query = urlencode({"access": build_download_access_token(item), "format": "wav"})
         path = reverse("shop:download", kwargs={"item_id": item.pk})
-        links.append(("WAV", request.build_absolute_uri(f"{path}?{query}")))
+        links.append(("WAV", absolute_site_url(f"{path}?{query}", request)))
     return links
 
 

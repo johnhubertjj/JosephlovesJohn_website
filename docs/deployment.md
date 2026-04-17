@@ -88,6 +88,7 @@ DATABASE_CONN_MAX_AGE=600
 ```env
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,your-service.onrender.com
 CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com,https://your-service.onrender.com
+SITE_URL=https://yourdomain.com
 USE_X_FORWARDED_PROTO=true
 SECURE_SSL_REDIRECT=true
 SESSION_COOKIE_SECURE=true
@@ -174,12 +175,12 @@ PRIVATE_DOWNLOADS_ROOT=/opt/render/project/src/media/private_downloads
 
 ```env
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST=smtp.resend.com
 EMAIL_PORT=587
-EMAIL_HOST_USER=josephlovesjohn@gmail.com
-EMAIL_HOST_PASSWORD=your-gmail-app-password
+EMAIL_HOST_USER=resend
+EMAIL_HOST_PASSWORD=your-resend-api-key
 EMAIL_USE_TLS=true
-DEFAULT_FROM_EMAIL=josephlovesjohn@gmail.com
+DEFAULT_FROM_EMAIL=hello@your-sending-domain.example
 CONTACT_RECIPIENT_EMAIL=josephlovesjohn@gmail.com
 ```
 

@@ -11,6 +11,7 @@ import pytest
 import stripe as stripe_sdk
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.test import Client, override_settings
 from django.urls import reverse
@@ -79,6 +80,14 @@ def ensure_seeded_download_assets(create_static_asset) -> None:
     wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
     for download_path in wav_paths:
         create_static_asset(download_path, content=b"shop wav audio")
+
+
+@pytest.fixture(autouse=True)
+def clear_public_rate_limits() -> None:
+    """Reset cache-backed rate limit state between shop-flow tests."""
+    cache.clear()
+    yield
+    cache.clear()
 
 
 def test_cart_add_and_remove_endpoints_return_updated_summary(client, seeded_product: Product) -> None:
@@ -304,8 +313,25 @@ def test_login_shows_password_error_when_password_is_wrong(client, django_user_m
     assert "That username is not recognised." not in body
 
 
-def test_logout_redirects_back_to_music_page(client, django_user_model) -> None:
-    """Logging out should return listeners to the music section."""
+def test_login_rate_limit_blocks_repeated_attempts(client, django_user_model) -> None:
+    """Repeated login attempts should be rate limited with a user-facing message."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    with override_settings(LOGIN_RATE_LIMIT_ATTEMPTS=1, LOGIN_RATE_LIMIT_WINDOW=300):
+        first_response = client.post(reverse("shop:login"), {"username": "listener", "password": "wrong-password"})
+        second_response = client.post(reverse("shop:login"), {"username": "listener", "password": "wrong-password"})
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert "Too many login attempts" in second_response.content.decode()
+
+
+def test_logout_requires_post_and_redirects_back_to_music_page(client, django_user_model) -> None:
+    """Logging out should require POST and return listeners to the music section."""
     user = django_user_model.objects.create_user(
         username="listener",
         email="listener@example.com",
@@ -313,8 +339,10 @@ def test_logout_redirects_back_to_music_page(client, django_user_model) -> None:
     )
     client.force_login(user)
 
-    response = client.get(reverse("shop:logout"))
+    get_response = client.get(reverse("shop:logout"))
+    response = client.post(reverse("shop:logout"))
 
+    assert get_response.status_code == 405
     assert response.status_code == 302
     assert response.headers["Location"] == reverse("main_site:music")
 
@@ -345,6 +373,46 @@ def test_password_reset_sends_email_for_known_account(client, django_user_model)
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    SITE_URL="https://josephlovesjohn.com",
+)
+def test_password_reset_uses_the_canonical_site_url(client, django_user_model) -> None:
+    """Password reset emails should use the configured public domain."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+
+    assert len(mail.outbox) == 1
+    assert "https://josephlovesjohn.com/shop/reset/" in mail.outbox[0].body
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+)
+def test_password_reset_rate_limit_blocks_repeated_attempts(client, django_user_model) -> None:
+    """Repeated password reset requests should be rate limited."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    with override_settings(PASSWORD_RESET_RATE_LIMIT_ATTEMPTS=1, PASSWORD_RESET_RATE_LIMIT_WINDOW=3600):
+        first_response = client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+        second_response = client.post(reverse("shop:password_reset"), {"email": "listener@example.com"})
+
+    assert first_response.status_code == 302
+    assert second_response.status_code == 200
+    assert "Too many reset requests" in second_response.content.decode()
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
 )
 def test_password_reset_confirm_updates_password(client, django_user_model) -> None:
     """Customers should be able to set a new password from the emailed reset link."""
@@ -357,7 +425,7 @@ def test_password_reset_confirm_updates_password(client, django_user_model) -> N
 
     assert len(mail.outbox) == 1
     body = mail.outbox[0].body
-    match = re.search(r"http://testserver(?P<path>/shop/reset/[^/\s]+/[^/\s]+/)", body)
+    match = re.search(r"https?://[^/\s]+(?P<path>/shop/reset/[^/\s]+/[^/\s]+/)", body)
     assert match is not None
 
     confirm_path = match.group("path")
@@ -462,6 +530,20 @@ def test_checkout_post_redirects_to_stripe_checkout(client, seeded_product: Prod
     assert "customer_email" not in checkout_payload
 
 
+def test_checkout_uses_the_canonical_site_url_for_stripe_redirects(
+    client, seeded_product: Product, fake_stripe_checkout
+) -> None:
+    """Stripe success and cancel URLs should use the configured public domain."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    with override_settings(SITE_URL="https://josephlovesjohn.com"):
+        client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+
+    checkout_payload = fake_stripe_checkout["created_payloads"][0]
+    assert checkout_payload["success_url"].startswith("https://josephlovesjohn.com/shop/success/")
+    assert checkout_payload["cancel_url"] == "https://josephlovesjohn.com/shop/checkout/?canceled=1"
+
+
 def test_checkout_post_requires_digital_download_acknowledgements(client, seeded_product: Product) -> None:
     """Checkout should not start until the required legal acknowledgements are confirmed."""
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
@@ -531,6 +613,29 @@ def test_success_page_confirms_paid_stripe_session_and_clears_cart(
     assert f"order #{order.pk}" in mail.outbox[0].subject.lower()
     assert reverse("shop:download", args=[order.items.get().pk]) in mail.outbox[0].body
     assert "format=wav" in mail.outbox[0].body
+
+
+def test_register_rejects_duplicate_email_addresses(client, django_user_model) -> None:
+    """Registration should not allow multiple accounts to share the same email address."""
+    django_user_model.objects.create_user(
+        username="existing-listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(
+        reverse("shop:register"),
+        {
+            "username": "new-listener",
+            "email": "listener@example.com",
+            "full_name": "New Listener",
+            "password1": "EvenSaferPass123",
+            "password2": "EvenSaferPass123",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "An account with that email address already exists." in response.content.decode()
 
 
 def test_success_page_syncs_authenticated_customer_profile_from_verified_stripe_session(
