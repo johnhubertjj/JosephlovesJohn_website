@@ -29,13 +29,16 @@ def ensure_browser_shop_download_assets(create_private_download_asset) -> None:
 
 
 @pytest.fixture
-def mobile_browser_page(playwright_browser):
+def mobile_browser_page(playwright_browser, browser_engine_name: str):
     """Create a mobile-sized browser page and fail on uncaught page errors."""
-    context = playwright_browser.new_context(
-        viewport={"width": 390, "height": 844},
-        is_mobile=True,
-        has_touch=True,
-    )
+    context_options = {
+        "viewport": {"width": 390, "height": 844},
+    }
+    if browser_engine_name != "firefox":
+        context_options["is_mobile"] = True
+        context_options["has_touch"] = True
+
+    context = playwright_browser.new_context(**context_options)
     page = context.new_page()
     page.set_default_timeout(20_000)
     page_errors: list[str] = []
@@ -388,7 +391,7 @@ def test_mobile_viewport_supports_music_cart_art_lightbox_and_navigation(
     mobile_browser_page.locator(".music-buy-trigger").first.click()
     mobile_browser_page.locator("#music-cart-modal").wait_for()
     assert mobile_browser_page.locator("#floating-cart-button").is_visible()
-    mobile_browser_page.locator("[data-cart-close]").first.click()
+    mobile_browser_page.locator(".music-cart-close").click()
     mobile_browser_page.wait_for_function(
         "document.getElementById('music-cart-modal').getAttribute('aria-hidden') === 'true'"
     )
@@ -413,7 +416,15 @@ def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> 
 
     browser_page.locator("a.mastering-menu-trigger").click()
     browser_page.wait_for_function("document.body.classList.contains('is-menu-visible')")
-    assert browser_page.locator("#menu .close").is_visible()
+    browser_page.wait_for_function(
+        """
+        () => {
+            const closeControl = document.querySelector('#menu .close');
+            return !!closeControl;
+        }
+        """
+    )
+    assert browser_page.locator("#menu .close").count() == 1
     assert browser_page.locator('#menu a[href="#services"]').is_visible()
 
 

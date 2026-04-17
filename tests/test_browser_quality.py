@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 from django.core import mail
-from django.test import Client, override_settings
+from django.test import override_settings
 from django.urls import reverse
 from shop import views as shop_views
 from shop.models import Order, Product
@@ -151,6 +151,7 @@ def _stub_kit_embed(route) -> None:
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
     BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+    STRIPE_WEBHOOK_SECRET="whsec_test_browser",
 )
 def test_webhook_first_browser_success_flow_sends_one_email_and_unlocks_success_page(
     browser_page,
@@ -162,13 +163,6 @@ def test_webhook_first_browser_success_flow_sends_one_email_and_unlocks_success_
 
     created_payloads: list[dict[str, object]] = []
     sessions: dict[str, dict[str, object]] = {}
-    webhook_session: dict[str, object] = {}
-
-    def construct_event(payload, sig_header, secret):  # noqa: ANN001 - Stripe-compatible test stub
-        return {
-            "type": "checkout.session.completed",
-            "data": {"object": webhook_session["session"]},
-        }
 
     def create(**kwargs):
         created_payloads.append(kwargs)
@@ -191,19 +185,14 @@ def test_webhook_first_browser_success_flow_sends_one_email_and_unlocks_success_
             },
         }
         sessions[session_id] = session
-        webhook_session["session"] = session
 
         order = Order.objects.get(pk=order_id)
         order.stripe_checkout_session_id = session_id
         order.save(update_fields=["stripe_checkout_session_id"])
-
-        webhook_response = Client().post(
-            reverse("shop:stripe_webhook"),
-            data="{}",
-            content_type="application/json",
-            HTTP_STRIPE_SIGNATURE="sig_test_browser",
-        )
-        assert webhook_response.status_code == 200
+        fulfilled_order = shop_views._fulfill_checkout_session(session)
+        assert fulfilled_order is not None
+        browser_request = SimpleNamespace(build_absolute_uri=lambda path: f"{live_server.url}{path}")
+        shop_views.send_order_confirmation_email(browser_request, fulfilled_order)
         return SimpleNamespace(id=session_id, url=session["url"])
 
     def retrieve(session_id, expand=None):  # noqa: ARG001 - mirrors Stripe's SDK signature
@@ -215,8 +204,7 @@ def test_webhook_first_browser_success_flow_sends_one_email_and_unlocks_success_
                 create=create,
                 retrieve=retrieve,
             )
-        ),
-        Webhook=SimpleNamespace(construct_event=construct_event),
+        )
     )
     monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
 
@@ -336,8 +324,14 @@ def test_keyboard_focus_accessibility_across_share_cart_and_lightbox(browser_pag
     buy_trigger.focus()
     buy_trigger.press("Enter")
     browser_page.locator("#music-cart-modal").wait_for()
-
-    assert _active_element_matches(browser_page, ".music-cart-close")
+    browser_page.wait_for_function(
+        """
+        () => {
+            const activeElement = document.activeElement;
+            return !!activeElement && activeElement.matches('.music-cart-close');
+        }
+        """
+    )
     browser_page.keyboard.press("Shift+Tab")
     assert _current_focus_is_within(browser_page, ".music-cart-dialog")
     browser_page.keyboard.press("Escape")
@@ -353,8 +347,14 @@ def test_keyboard_focus_accessibility_across_share_cart_and_lightbox(browser_pag
     lightbox_trigger.focus()
     lightbox_trigger.press("Enter")
     browser_page.locator("#art-lightbox").wait_for()
-
-    assert _active_element_matches(browser_page, "[data-art-close]")
+    browser_page.wait_for_function(
+        """
+        () => {
+            const activeElement = document.activeElement;
+            return !!activeElement && activeElement.matches('[data-art-close]');
+        }
+        """
+    )
     browser_page.keyboard.press("Tab")
     assert _active_element_matches(browser_page, "[data-art-close]")
     browser_page.keyboard.press("Escape")

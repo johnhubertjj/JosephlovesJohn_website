@@ -125,6 +125,11 @@
             var focusableElements = getFocusableElements();
             if (focusableElements.length) {
                 focusableElements[0].focus();
+                if (document.activeElement !== focusableElements[0]) {
+                    window.setTimeout(function () {
+                        focusableElements[0].focus();
+                    }, 0);
+                }
             }
         });
     }
