@@ -247,7 +247,10 @@ def browser_page(playwright_browser):
     :param playwright_browser: Session-scoped browser instance.
     :yields: A fresh Playwright page for the current test.
     """
-    context = playwright_browser.new_context(viewport={"width": 1440, "height": 960})
+    context = playwright_browser.new_context(
+        viewport={"width": 1440, "height": 960},
+        accept_downloads=True,
+    )
     page = context.new_page()
     page.set_default_timeout(10000000)
     page_errors: list[str] = []

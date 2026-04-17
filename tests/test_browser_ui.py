@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import random
 import re
+from types import SimpleNamespace
 
 import pytest
 from django.core import mail
-from django.test import override_settings
+from django.test import Client, override_settings
 from django.urls import reverse
+from shop import views as shop_views
 from shop.models import Product
 
 pytestmark = [pytest.mark.browser, pytest.mark.integration, pytest.mark.django_db(transaction=True)]
@@ -205,7 +207,6 @@ def test_shop_register_and_login_flows(browser_page, live_server) -> None:
     browser_page.wait_for_url("**/shop/account/")
     assert "Browser Listener" in browser_page.content()
 
- 
 
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
@@ -251,6 +252,97 @@ def test_shop_password_reset_flow(browser_page, live_server, django_user_model) 
     browser_page.locator('button[type="submit"]').click()
     browser_page.wait_for_url("**/shop/account/")
     assert "resetlistener@example.com" in browser_page.content()
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="sales@josephlovesjohn.com",
+    BUSINESS_CONTACT_EMAIL="josephlovesjohn@gmail.com",
+)
+def test_paid_checkout_success_page_sends_email_and_allows_download_via_signed_link(
+    browser_page,
+    live_server,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A browser checkout should land on the success page, send the email, and honor the signed download link."""
+    mail.outbox.clear()
+    browser_page.set_default_timeout(10_000)
+
+    created_payloads: list[dict[str, object]] = []
+    sessions: dict[str, dict[str, object]] = {}
+
+    def create(**kwargs):
+        created_payloads.append(kwargs)
+        order_id = kwargs["metadata"]["order_id"]
+        session_id = f"cs_browser_{len(created_payloads)}"
+        session = {
+            "id": session_id,
+            "url": (
+                f"{live_server.url}"
+                f"{reverse('shop:success', kwargs={'order_id': order_id})}"
+                f"?session_id={session_id}"
+            ),
+            "status": "complete",
+            "payment_status": "paid",
+            "payment_intent": f"pi_browser_{len(created_payloads)}",
+            "metadata": kwargs.get("metadata", {}),
+            "customer_details": {
+                "name": "Browser Buyer",
+                "email": "browserbuyer@example.com",
+            },
+        }
+        sessions[session_id] = session
+        return SimpleNamespace(id=session_id, url=session["url"])
+
+    def retrieve(session_id, expand=None):  # noqa: ARG001 - mirrors Stripe's SDK signature
+        return SimpleNamespace(**sessions[session_id])
+
+    stripe_module = SimpleNamespace(
+        checkout=SimpleNamespace(
+            Session=SimpleNamespace(
+                create=create,
+                retrieve=retrieve,
+            )
+        )
+    )
+    monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
+
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    chosen_title = browser_page.locator(".music-library-item h3").first.inner_text().strip()
+    browser_page.locator(".music-buy-trigger").first.click()
+    browser_page.locator("#music-cart-modal").wait_for()
+    browser_page.locator("[data-cart-checkout]").click()
+    browser_page.wait_for_url("**/shop/checkout/")
+
+    browser_page.locator("#id_accept_terms").check()
+    browser_page.locator("[data-checkout-submit]").click()
+    browser_page.wait_for_function("window.location.pathname.includes('/shop/success/')")
+    browser_page.wait_for_load_state("load")
+
+    assert browser_page.locator("h1").inner_text().strip().lower() == "order confirmed"
+    assert browser_page.locator(".shop-inline-note").inner_text().strip() == (
+        "A download email has been sent to browserbuyer@example.com."
+    )
+    assert chosen_title.lower() in browser_page.locator(".shop-download-list").inner_text().lower()
+    assert browser_page.locator(".shop-download-list .button").first.is_visible()
+    assert "/shop/download/" in (
+        browser_page.locator(".shop-download-list .button").first.get_attribute("href") or ""
+    )
+    assert len(created_payloads) == 1
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == ["browserbuyer@example.com"]
+
+    match = re.search(
+        rf"{re.escape(live_server.url)}(?P<path>/shop/download/\d+/\?access=[^\s]+)",
+        mail.outbox[0].body,
+    )
+    assert match is not None
+
+    signed_download_response = Client().get(match.group("path"))
+    assert signed_download_response.status_code == 200
+    assert signed_download_response.get("Content-Disposition", "").startswith("attachment;")
 
 
 @override_settings(
