@@ -96,7 +96,10 @@ def download_asset_exists(relative_path: str) -> bool:
         return True
 
     try:
-        return _local_private_download_path(relative_path).is_file() or _bundled_static_download_path(relative_path).is_file()
+        return (
+            _local_private_download_path(relative_path).is_file()
+            or _bundled_static_download_path(relative_path).is_file()
+        )
     except Http404:
         return False
 

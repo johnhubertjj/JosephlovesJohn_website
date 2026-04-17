@@ -349,7 +349,11 @@ class CheckoutView(View):
 
     def _download_availability_error(self, products):
         """Return a user-facing error when one or more paid downloads are unavailable."""
-        missing_titles = [product.title for product in products if not download_asset_exists(product.download_file_path)]
+        missing_titles = [
+            product.title
+            for product in products
+            if not download_asset_exists(product.download_file_path)
+        ]
         if not missing_titles:
             return None
 
@@ -601,7 +605,8 @@ class OrderSuccessView(TemplateView):
         except Exception:  # pragma: no cover - exercised in production mail failures.
             messages.warning(
                 self.request,
-                "Payment is confirmed and your downloads are ready below, but the download email could not be sent just yet.",
+                "Payment is confirmed and your downloads are ready below, "
+                "but the download email could not be sent just yet.",
             )
         if order_was_just_confirmed:
             success_message = "Payment confirmed. Your music is ready below."

@@ -71,6 +71,13 @@ def fake_stripe_checkout(monkeypatch: pytest.MonkeyPatch):
     return {"created_payloads": created_payloads, "sessions": sessions}
 
 
+@pytest.fixture(autouse=True)
+def ensure_seeded_download_assets(create_static_asset) -> None:
+    """Create temporary storefront audio files so checkout tests don't rely on local ignored media."""
+    for download_path in Product.objects.values_list("download_file_path", flat=True):
+        create_static_asset(download_path, content=b"shop audio")
+
+
 def test_cart_add_and_remove_endpoints_return_updated_summary(client, seeded_product: Product) -> None:
     """Adding and removing a product should update the JSON cart summary."""
     add_response = client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
@@ -260,6 +267,38 @@ def test_login_page_links_to_password_reset(client) -> None:
 
     assert response.status_code == 200
     assert reverse("shop:password_reset") in response.content.decode()
+
+
+def test_login_shows_username_error_when_account_is_unknown(client) -> None:
+    """Unknown usernames should show a field-level error below the username input."""
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "missing-user", "password": "secret123"},
+    )
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "That username is not recognised." in body
+    assert "That password is incorrect." not in body
+
+
+def test_login_shows_password_error_when_password_is_wrong(client, django_user_model) -> None:
+    """Known usernames with a bad password should show a field-level password error."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "listener", "password": "wrong-password"},
+    )
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "That password is incorrect." in body
+    assert "That username is not recognised." not in body
 
 
 def test_logout_redirects_back_to_music_page(client, django_user_model) -> None:

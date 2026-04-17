@@ -1,8 +1,7 @@
 """URL patterns for the reusable shop flow."""
 
 from django.contrib.auth import views as auth_views
-from django.urls import path
-from django.urls import reverse_lazy
+from django.urls import path, reverse_lazy
 
 from .views import (
     AccountView,

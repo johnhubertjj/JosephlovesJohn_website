@@ -1,8 +1,8 @@
 """Integration tests for reusable main-site components and rendered flows."""
 
 import pytest
-from django.test import override_settings
 from django.template.loader import render_to_string
+from django.test import override_settings
 from django.urls import reverse
 from main_site import views
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto
