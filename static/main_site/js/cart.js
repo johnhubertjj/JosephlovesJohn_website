@@ -18,6 +18,24 @@
     var buyButtons = document.querySelectorAll("[data-cart-add-url]");
     var musicUrl = modal.getAttribute("data-music-url") || "/music/";
     var lastTrigger = null;
+    var focusableSelector = [
+        'a[href]:not([tabindex="-1"])',
+        'button:not([disabled]):not([tabindex="-1"])',
+        'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+        'select:not([disabled]):not([tabindex="-1"])',
+        'textarea:not([disabled]):not([tabindex="-1"])',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(", ");
+
+    function getFocusableElements() {
+        if (!dialog) {
+            return [];
+        }
+
+        return Array.prototype.filter.call(dialog.querySelectorAll(focusableSelector), function (element) {
+            return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+        });
+    }
 
     function trackAddToCart(button) {
         if (!button || !window.siteAnalytics || typeof window.siteAnalytics.track !== "function") {
@@ -103,6 +121,12 @@
         modal.classList.add("is-visible");
         modal.setAttribute("aria-hidden", "false");
         document.body.classList.add("is-cart-modal-visible");
+        window.requestAnimationFrame(function () {
+            var focusableElements = getFocusableElements();
+            if (focusableElements.length) {
+                focusableElements[0].focus();
+            }
+        });
     }
 
     function closeModal() {
@@ -172,6 +196,26 @@
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && modal.classList.contains("is-visible")) {
             closeModal();
+            return;
+        }
+
+        if (event.key !== "Tab" || !modal.classList.contains("is-visible")) {
+            return;
+        }
+
+        var focusableElements = getFocusableElements();
+        if (!focusableElements.length) {
+            return;
+        }
+
+        var firstElement = focusableElements[0];
+        var lastElement = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
         }
     });
 

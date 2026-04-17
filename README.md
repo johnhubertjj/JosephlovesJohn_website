@@ -172,6 +172,9 @@ Useful docs:
 - The main site is a single-page shell with route-aware section activation.
 - Legal pages are standalone routed pages.
 - The mailing-list signup form now loads only after user interaction unless optional cookies have already been allowed.
+- The standard browser suite runs against Chromium, Firefox, and WebKit in CI without talking to live payment providers.
+- The real hosted Stripe Checkout browser test is separate and opt-in via the `real-stripe-browser` GitHub Actions workflow.
+- To use that workflow, add a repository secret named `STRIPE_TEST_SECRET_KEY` containing a Stripe `sk_test_...` key, then run the workflow manually from the Actions tab.
 
 ## Status
 

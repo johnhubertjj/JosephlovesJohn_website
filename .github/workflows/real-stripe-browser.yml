@@ -1,0 +1,51 @@
+name: real-stripe-browser
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-stripe-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Ensure Stripe test key is configured
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+        run: |
+          if [ -z "$STRIPE_SECRET_KEY" ]; then
+            echo "Missing repository secret STRIPE_TEST_SECRET_KEY."
+            exit 1
+          fi
+
+      - name: Sync dev dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Install Playwright Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run real Stripe-hosted browser test
+        env:
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+          RUN_REAL_STRIPE_BROWSER: "1"
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+        run: >
+          uv run pytest -q
+          tests/test_browser_quality.py
+          -k "real_hosted_stripe_page_round_trip_in_browser"
+          --run-browser
+          --browser-engine chromium

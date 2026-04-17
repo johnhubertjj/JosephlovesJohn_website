@@ -37,7 +37,7 @@ def mobile_browser_page(playwright_browser):
         has_touch=True,
     )
     page = context.new_page()
-    page.set_default_timeout(10000000)
+    page.set_default_timeout(20_000)
     page_errors: list[str] = []
     page.on("pageerror", lambda exc: page_errors.append(str(exc)))
 

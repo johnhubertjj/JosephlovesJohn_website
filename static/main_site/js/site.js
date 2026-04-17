@@ -405,12 +405,28 @@
     var dialog = modal.querySelector(".music-share-dialog");
     var lastTrigger = null;
     var copyResetTimer = 0;
+    var focusableSelector = [
+        'a[href]:not([tabindex="-1"])',
+        'button:not([disabled]):not([tabindex="-1"])',
+        'input:not([disabled]):not([type="hidden"]):not([tabindex="-1"])',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(", ");
     var platformLinks = {
         threads: modal.querySelector('[data-share-platform="threads"]'),
         facebook: modal.querySelector('[data-share-platform="facebook"]'),
         x: modal.querySelector('[data-share-platform="x"]'),
         email: modal.querySelector('[data-share-platform="email"]')
     };
+
+    function getFocusableElements() {
+        if (!dialog) {
+            return [];
+        }
+
+        return Array.prototype.filter.call(dialog.querySelectorAll(focusableSelector), function (element) {
+            return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+        });
+    }
 
     function buildAbsoluteUrl(path) {
         try {
@@ -504,6 +520,27 @@
         }
     }, true);
 
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Tab" || !modal.classList.contains("is-visible")) {
+            return;
+        }
+
+        var focusableElements = getFocusableElements();
+        if (!focusableElements.length) {
+            return;
+        }
+
+        var firstElement = focusableElements[0];
+        var lastElement = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    });
+
     if (copyButton && linkInput) {
         copyButton.addEventListener("click", function () {
             var linkValue = linkInput.value;
@@ -549,6 +586,21 @@
     var lightboxImage = lightbox.querySelector(".art-lightbox-image");
     var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
     var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
+    var lightboxCloseButton = lightbox.querySelector("[data-art-close]");
+    var lastTrigger = null;
+
+    function getLightboxFocusableElements() {
+        if (!lightboxInner && !lightboxCloseButton) {
+            return [];
+        }
+
+        return Array.prototype.filter.call(
+            lightbox.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+            function (element) {
+                return !element.hidden && element.getAttribute("aria-hidden") !== "true";
+            }
+        );
+    }
 
     function closeLightbox() {
         lightbox.classList.remove("is-visible");
@@ -557,6 +609,9 @@
         lightboxImage.removeAttribute("src");
         lightboxImage.alt = "";
         lightboxCaption.textContent = "";
+        if (lastTrigger) {
+            lastTrigger.focus();
+        }
     }
 
     document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
@@ -568,6 +623,7 @@
                 return;
             }
 
+            lastTrigger = trigger;
             var image = trigger.querySelector("img");
             lightboxImage.src = targetUrl;
             lightboxImage.alt = image ? image.alt : "Artwork";
@@ -577,6 +633,11 @@
             lightbox.setAttribute("aria-hidden", "false");
             document.body.classList.add("is-lightbox-visible");
             lightbox.scrollTop = 0;
+            window.requestAnimationFrame(function () {
+                if (lightboxCloseButton) {
+                    lightboxCloseButton.focus();
+                }
+            });
         });
     });
 
@@ -602,6 +663,27 @@
             closeLightbox();
         }
     }, true);
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Tab" || !lightbox.classList.contains("is-visible")) {
+            return;
+        }
+
+        var focusableElements = getLightboxFocusableElements();
+        if (!focusableElements.length) {
+            return;
+        }
+
+        var firstElement = focusableElements[0];
+        var lastElement = focusableElements[focusableElements.length - 1];
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    });
 
     window.addEventListener("hashchange", function () {
         if (lightbox.classList.contains("is-visible")) {
