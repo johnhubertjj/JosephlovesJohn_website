@@ -203,6 +203,10 @@ SENTRY_SEND_DEFAULT_PII=false
 SENTRY_DEBUG=false
 ```
 
+If `SENTRY_RELEASE` is left blank on Render, the app will automatically fall back
+to Render's built-in `RENDER_GIT_COMMIT` value so each deploy still gets a
+useful release identifier in Sentry.
+
 ## First Deploy Tutorial
 
 ### 1. Create the Postgres database
