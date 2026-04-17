@@ -206,7 +206,7 @@ def browser_launch_options() -> dict[str, object]:
     :rtype: dict[str, object]
     """
     launch_options: dict[str, object] = {
-        "headless": False,
+        "headless": True,
         "args": ["--disable-dev-shm-usage", "--no-sandbox"],
     }
 
