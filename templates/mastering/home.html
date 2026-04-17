@@ -1,10 +1,11 @@
-{% load static %}
+{% load static asset_urls %}
 <!DOCTYPE HTML>
 <html>
 <head>
     <title>Mastering Services</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="icon" type="image/png" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" />
     <link rel="stylesheet" href="{% static 'mastering/assets/css/main.css' %}" />
     <noscript><link rel="stylesheet" href="{% static 'mastering/assets/css/noscript.css' %}" /></noscript>
     <style>

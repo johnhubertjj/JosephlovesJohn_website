@@ -42,7 +42,11 @@
                                 {% for item in order.items.all %}
                                     <li>
                                         <span>{{ item.title_snapshot }}</span>
-                                        <a href="{{ item.download_url }}" download>Download</a>
+                                        <span class="shop-button-row">
+                                            {% for link in item.download_links %}
+                                                <a href="{{ link.url }}" download>Download {{ link.label }}</a>
+                                            {% endfor %}
+                                        </span>
                                     </li>
                                 {% endfor %}
                             </ul>

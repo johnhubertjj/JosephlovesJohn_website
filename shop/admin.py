@@ -22,7 +22,14 @@ class OrderItemInline(admin.TabularInline):
 
     model = OrderItem
     extra = 0
-    readonly_fields = ("product", "title_snapshot", "artist_snapshot", "price_snapshot", "download_file_path")
+    readonly_fields = (
+        "product",
+        "title_snapshot",
+        "artist_snapshot",
+        "price_snapshot",
+        "download_file_path",
+        "download_file_wav_path",
+    )
 
 
 @admin.register(Order)

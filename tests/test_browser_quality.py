@@ -27,6 +27,9 @@ def ensure_browser_quality_shop_download_assets(create_private_download_asset) -
     """Create private audio files so payment/browser paths can exercise real delivery code."""
     for download_path in Product.objects.values_list("download_file_path", flat=True):
         create_private_download_asset(download_path, content=b"browser quality audio")
+    wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
+    for download_path in wav_paths:
+        create_private_download_asset(download_path, content=b"browser quality wav audio")
 
 
 def _active_element_matches(page, selector: str) -> bool:

@@ -81,12 +81,14 @@ def test_product_asset_properties_support_external_urls() -> None:
         preview_file_wav="https://cdn.example.com/audio/preview.wav",
         preview_file_mp3="https://cdn.example.com/audio/preview.mp3",
         download_file_path="https://cdn.example.com/audio/full.mp3",
+        download_file_wav_path="https://cdn.example.com/audio/full.wav",
     )
 
     assert product.art_url == "https://cdn.example.com/images/cover.jpg"
     assert product.preview_wav_url == "https://cdn.example.com/audio/preview.wav"
     assert product.preview_mp3_url == "https://cdn.example.com/audio/preview.mp3"
     assert product.download_url == "https://cdn.example.com/audio/full.mp3"
+    assert product.download_wav_url == "https://cdn.example.com/audio/full.wav"
 
 
 @pytest.mark.django_db
@@ -122,6 +124,7 @@ def test_order_item_urls_split_public_art_and_protected_download_route() -> None
         preview_file_wav="audio/track.wav",
         preview_file_mp3="audio/track.mp3",
         download_file_path="audio/track.mp3",
+        download_file_wav_path="audio/track.wav",
     )
     order = Order.objects.create(
         full_name="Listener",
@@ -139,7 +142,9 @@ def test_order_item_urls_split_public_art_and_protected_download_route() -> None
         art_path_snapshot="images/album_art/cover.jpg",
         art_alt_snapshot="Cover",
         download_file_path="audio/track.mp3",
+        download_file_wav_path="audio/track.wav",
     )
 
     assert item.art_url == "https://assets.example.com/images/album_art/cover.jpg"
     assert item.download_url == reverse("shop:download", kwargs={"item_id": item.pk})
+    assert item.download_wav_url == f'{reverse("shop:download", kwargs={"item_id": item.pk})}?format=wav'

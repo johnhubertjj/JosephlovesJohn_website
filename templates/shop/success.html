@@ -29,7 +29,11 @@
                             <strong>{{ item.title_snapshot }}</strong>
                             <p>{{ item.artist_snapshot }}</p>
                         </div>
-                        <a class="button" href="{{ item.download_url }}" download>Download</a>
+                        <div class="shop-button-row">
+                            {% for link in item.download_links %}
+                                <a class="button" href="{{ link.url }}" download>Download {{ link.label }}</a>
+                            {% endfor %}
+                        </div>
                     </li>
                 {% endfor %}
             </ul>

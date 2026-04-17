@@ -329,6 +329,13 @@
     color: #ffffff;
 }
 
+.shop-button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    align-items: center;
+}
+
 .shop-download-list li {
     grid-template-columns: 1fr auto;
 }

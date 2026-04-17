@@ -52,6 +52,16 @@ def _download_link(request, item: OrderItem) -> str:
     return request.build_absolute_uri(f"{path}?{query}")
 
 
+def _download_links(request, item: OrderItem) -> list[tuple[str, str]]:
+    """Return all absolute emailed download URLs for a purchased item."""
+    links = [("MP3", _download_link(request, item))]
+    if item.download_file_wav_path:
+        query = urlencode({"access": build_download_access_token(item), "format": "wav"})
+        path = reverse("shop:download", kwargs={"item_id": item.pk})
+        links.append(("WAV", request.build_absolute_uri(f"{path}?{query}")))
+    return links
+
+
 def send_order_confirmation_email(request, order: Order) -> bool:
     """Send the post-payment download email once for a confirmed order."""
     if not order.email:
@@ -71,12 +81,9 @@ def send_order_confirmation_email(request, order: Order) -> bool:
             "",
         ]
         for item in locked_order.items.all():
-            lines.extend(
-                [
-                    f"- {item.title_snapshot}",
-                    f"  {_download_link(request, item)}",
-                ]
-            )
+            lines.append(f"- {item.title_snapshot}")
+            for label, link in _download_links(request, item):
+                lines.append(f"  {label}: {link}")
 
         lines.extend(
             [

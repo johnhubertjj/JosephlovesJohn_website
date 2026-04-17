@@ -352,7 +352,7 @@ class CheckoutView(View):
         missing_titles = [
             product.title
             for product in products
-            if not download_asset_exists(product.download_file_path)
+            if any(not download_asset_exists(path) for path in product.download_asset_paths)
         ]
         if not missing_titles:
             return None
@@ -477,6 +477,7 @@ class CheckoutView(View):
                 art_path_snapshot=product.art_path,
                 art_alt_snapshot=product.art_alt,
                 download_file_path=product.download_file_path,
+                download_file_wav_path=product.download_file_wav_path,
             )
 
         return order
@@ -623,8 +624,13 @@ class OrderDownloadView(View):
         item = get_object_or_404(OrderItem.objects.select_related("order"), pk=item_id)
         _ensure_download_access(request, item)
         order = item.order
-        download_name = item.download_file_path.rsplit("/", 1)[-1] or f"order-{order.pk}-download"
-        response = build_download_response(item.download_file_path, download_name=download_name)
+        requested_format = request.GET.get("format", "mp3").strip().lower() or "mp3"
+        relative_path = item.download_file_for_format(requested_format)
+        if not relative_path:
+            raise Http404("Download not found")
+
+        download_name = relative_path.rsplit("/", 1)[-1] or f"order-{order.pk}-download"
+        response = build_download_response(relative_path, download_name=download_name)
         if isinstance(response, FileResponse):
             return response
         return response

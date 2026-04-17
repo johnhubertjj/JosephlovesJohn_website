@@ -26,6 +26,9 @@ def ensure_browser_shop_download_assets(create_private_download_asset) -> None:
     """Create temporary private audio files so browser checkout can reach the review page."""
     for download_path in Product.objects.values_list("download_file_path", flat=True):
         create_private_download_asset(download_path, content=b"browser audio")
+    wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
+    for download_path in wav_paths:
+        create_private_download_asset(download_path, content=b"browser wav audio")
 
 
 @pytest.fixture

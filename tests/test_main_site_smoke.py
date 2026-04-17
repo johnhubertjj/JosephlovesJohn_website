@@ -19,6 +19,7 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         'id="header"',
         'id="main"',
         'id="footer"',
+        'rel="icon"',
         'data-cookie-banner',
         'data-cookie-essential-only',
         'data-cookie-accept-all',
@@ -41,6 +42,8 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
     for link in response.context["header_social_links"]:
         assert link["label"] in body
         assert f'href="{link["href"]}"' in body
+
+    assert '/static/images/jlovesj_symbol-my_version3.png' in body
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
