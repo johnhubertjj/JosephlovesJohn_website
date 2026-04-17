@@ -99,6 +99,26 @@ def test_music_route_renders_component_empty_state_when_tracks_are_missing(clien
 
 @pytest.mark.django_db
 @pytest.mark.integration
+def test_music_route_replaces_buy_button_for_signed_in_owners(client, django_user_model, monkeypatch) -> None:
+    """Signed-in listeners should see an account reminder for tracks they already own."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    client.force_login(user)
+    monkeypatch.setattr(views, "get_owned_product_slugs", lambda user, *, slugs=None: {slugs[0]})
+
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Already in your account" in body
+    assert reverse("shop:account") in body
+
+
+@pytest.mark.django_db
+@pytest.mark.integration
 def test_art_route_renders_component_empty_states_when_galleries_are_empty(client, monkeypatch) -> None:
     """The art section should surface both empty states when no gallery items exist."""
     monkeypatch.setattr(views, "_get_gig_photo_items", lambda: [])

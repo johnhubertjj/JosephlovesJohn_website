@@ -108,6 +108,43 @@ def test_cart_add_and_remove_endpoints_return_updated_summary(client, seeded_pro
     assert remove_payload["is_empty"] is True
 
 
+def test_cart_add_blocks_already_owned_downloads(client, django_user_model, seeded_product: Product) -> None:
+    """Signed-in owners should not be able to add an already purchased track back to the cart."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.CONFIRMED,
+    )
+    OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
+    )
+    client.force_login(user)
+
+    response = client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+    payload = response.json()
+
+    assert response.status_code == 409
+    assert payload["item_count"] == 0
+    assert payload["message"] == f'You already bought "{seeded_product.title}". It is ready in your account.'
+
+
 def test_get_stripe_module_requires_installed_sdk(monkeypatch: pytest.MonkeyPatch) -> None:
     """Checkout setup should fail clearly when Stripe is unavailable."""
     monkeypatch.setattr(shop_views, "stripe", None)
@@ -290,7 +327,7 @@ def test_login_shows_username_error_when_account_is_unknown(client) -> None:
     body = response.content.decode()
 
     assert response.status_code == 200
-    assert "That username is not recognised." in body
+    assert "That username or email is not recognised." in body
     assert "That password is incorrect." not in body
 
 
@@ -310,7 +347,24 @@ def test_login_shows_password_error_when_password_is_wrong(client, django_user_m
 
     assert response.status_code == 200
     assert "That password is incorrect." in body
-    assert "That username is not recognised." not in body
+    assert "That username or email is not recognised." not in body
+
+
+def test_login_accepts_email_address(client, django_user_model) -> None:
+    """Returning listeners should be able to log in with their email address."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "listener@example.com", "password": "secret123"},
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == reverse("shop:account")
 
 
 def test_login_rate_limit_blocks_repeated_attempts(client, django_user_model) -> None:
@@ -569,6 +623,59 @@ def test_checkout_post_blocks_payment_when_a_download_is_unavailable(client, see
     assert "A download is unavailable" in body
     assert "checkout has been paused" in body
     assert Order.objects.count() == 0
+
+
+def test_checkout_blocks_signed_in_owners_from_rebuying_tracks(
+    client,
+    django_user_model,
+    seeded_product: Product,
+) -> None:
+    """Checkout should point signed-in owners back to their account instead of Stripe."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    owned_order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.CONFIRMED,
+    )
+    OrderItem.objects.create(
+        order=owned_order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
+    )
+    client.force_login(user)
+    session = client.session
+    session["shop_cart"] = [seeded_product.slug]
+    session.save()
+
+    review_response = client.get(reverse("shop:checkout"))
+    review_body = review_response.content.decode()
+    response = client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+    body = response.content.decode()
+
+    assert review_response.status_code == 200
+    assert "Already in your account" in review_body
+    assert "Go to your account" in review_body
+    assert "Continue to Stripe Checkout" not in review_body
+    assert response.status_code == 200
+    assert "Already in your account" in body
+    assert "Go to your account" in body
+    assert seeded_product.title in body
+    assert "Continue to Stripe Checkout" not in body
+    assert Order.objects.filter(status=Order.Status.PENDING).count() == 0
 
 
 @override_settings(
@@ -1357,6 +1464,7 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
     body = response.content.decode()
 
     assert response.status_code == 200
+    assert "collector" in body
     assert f"Order #{order.id}" in body
     assert seeded_product.title in body
     assert reverse("shop:download", args=[order.items.get().pk]) in body

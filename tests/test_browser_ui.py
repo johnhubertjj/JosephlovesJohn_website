@@ -104,6 +104,45 @@ def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_p
     )
 
 
+def test_music_route_auth_entry_only_shows_while_music_section_is_active(browser_page, live_server) -> None:
+    """Anonymous auth links should appear on the music section and hide when the hash leaves music."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    auth_entry = browser_page.locator("[data-music-auth-entry]")
+    assert auth_entry.is_visible()
+    assert auth_entry.get_by_role("link", name="Log in").is_visible()
+    assert auth_entry.get_by_role("link", name="Create account").is_visible()
+
+    browser_page.evaluate("window.location.hash = 'intro';")
+    browser_page.wait_for_function(
+        """
+        () => {
+            const entry = document.querySelector('[data-music-auth-entry]');
+            return !!entry && entry.classList.contains('is-hidden');
+        }
+        """
+    )
+
+
+def test_home_route_reveals_music_auth_entry_when_music_article_opens(browser_page, live_server) -> None:
+    """Opening the music article from the home shell should reveal the auth entry."""
+    browser_page.goto(_route_url(live_server, "main_site:main"), wait_until="load")
+    auth_entry = browser_page.locator("[data-music-auth-entry]")
+
+    assert "is-hidden" in (auth_entry.get_attribute("class") or "")
+    browser_page.evaluate("window.location.hash = 'music';")
+    browser_page.wait_for_selector("article#music.active")
+    browser_page.wait_for_function(
+        """
+        () => {
+            const entry = document.querySelector('[data-music-auth-entry]');
+            return !!entry && !entry.classList.contains('is-hidden');
+        }
+        """
+    )
+
+
 def test_music_cart_modal_supports_add_remove_and_checkout(browser_page, live_server) -> None:
     """The cart UI should open from a track card, update counts, and link to checkout."""
     browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")

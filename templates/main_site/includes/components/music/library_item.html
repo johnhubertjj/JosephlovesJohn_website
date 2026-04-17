@@ -31,18 +31,25 @@
                     <span class="fas fa-share-alt" aria-hidden="true"></span>
                     <span>Share</span>
                 </button>
-                <button
-                    type="button"
-                    class="music-buy-trigger"
-                    data-cart-add-url="{{ item.buy_path }}"
-                    data-cart-item-slug="{{ item.slug }}"
-                    data-cart-item-title="{{ item.title }}"
-                    data-cart-item-price="{{ item.price }}"
-                >
-                    <span class="fas fa-cart-plus" aria-hidden="true"></span>
-                    <span>Download</span>
-                    <strong>{{ item.price_display }}</strong>
-                </button>
+                {% if item.slug in owned_music_slugs %}
+                    <a href="{% url 'shop:account' %}" class="music-owned-note">
+                        <span class="fas fa-check" aria-hidden="true"></span>
+                        <span>Already in your account</span>
+                    </a>
+                {% else %}
+                    <button
+                        type="button"
+                        class="music-buy-trigger"
+                        data-cart-add-url="{{ item.buy_path }}"
+                        data-cart-item-slug="{{ item.slug }}"
+                        data-cart-item-title="{{ item.title }}"
+                        data-cart-item-price="{{ item.price }}"
+                    >
+                        <span class="fas fa-cart-plus" aria-hidden="true"></span>
+                        <span>Download</span>
+                        <strong>{{ item.price_display }}</strong>
+                    </button>
+                {% endif %}
             </div>
         </div>
         <div

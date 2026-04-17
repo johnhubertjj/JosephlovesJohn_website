@@ -19,10 +19,26 @@ class ShopAuthenticationForm(AuthenticationForm):
 
     error_messages = {
         **AuthenticationForm.error_messages,
-        "unknown_username": "That username is not recognised.",
+        "unknown_username": "That username or email is not recognised.",
         "incorrect_password": "That password is incorrect.",
     }
-    username = forms.CharField(widget=forms.TextInput(attrs={"autofocus": True}))
+    username = forms.CharField(label="Username or email", widget=forms.TextInput(attrs={"autofocus": True}))
+
+    def _resolve_login_user(self, identifier):
+        """Return the matching user for a username-or-email login identifier."""
+
+        user_model = get_user_model()
+        normalized_identifier = (identifier or "").strip()
+        if not normalized_identifier:
+            return None
+
+        if "@" in normalized_identifier:
+            return user_model._default_manager.filter(email__iexact=normalized_identifier).order_by("id").first()
+
+        try:
+            return user_model._default_manager.get_by_natural_key(normalized_identifier)
+        except user_model.DoesNotExist:
+            return None
 
     def clean(self):
         """Attach login errors to the relevant field instead of the form."""
@@ -32,14 +48,17 @@ class ShopAuthenticationForm(AuthenticationForm):
         if not username or not password:
             return self.cleaned_data
 
-        user_model = get_user_model()
-        try:
-            user_model._default_manager.get_by_natural_key(username)
-        except user_model.DoesNotExist:
+        user = self._resolve_login_user(username)
+        if user is None:
             self.add_error("username", self.error_messages["unknown_username"])
             return self.cleaned_data
 
-        self.user_cache = authenticate(self.request, username=username, password=password)
+        user_model = get_user_model()
+        credentials = {
+            user_model.USERNAME_FIELD: getattr(user, user_model.USERNAME_FIELD),
+            "password": password,
+        }
+        self.user_cache = authenticate(self.request, **credentials)
         if self.user_cache is None:
             self.add_error("password", self.error_messages["incorrect_password"])
             return self.cleaned_data

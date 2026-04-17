@@ -12,6 +12,10 @@
             </div>
             <dl class="shop-detail-list">
                 <div>
+                    <dt>Username</dt>
+                    <dd>{{ request.user.username }}</dd>
+                </div>
+                <div>
                     <dt>Email</dt>
                     <dd>{{ request.user.email|default:'No email saved yet' }}</dd>
                 </div>

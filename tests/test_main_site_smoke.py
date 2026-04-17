@@ -80,11 +80,42 @@ def test_music_page_smoke_renders_all_published_tracks_and_share_controls(client
     assert body.count("music-share-trigger") == len(expected_items)
     assert body.count("music-buy-trigger") == len(expected_items)
     assert body.count("music-player-frame") == len(expected_items)
+    assert 'data-music-auth-entry' in body
+    assert "Log in" in body
+    assert "Create account" in body
 
     for item in expected_items:
         assert item.title in body
         assert item.meta in body
 
+
+def test_non_music_routes_do_not_render_music_auth_entry(client) -> None:
+    """The top-left auth entry should stay hidden on non-music routes."""
+    home_response = client.get(reverse("main_site:main"))
+    intro_response = client.get(reverse("main_site:intro"))
+
+    assert 'data-music-auth-entry' in home_response.content.decode()
+    assert 'data-music-auth-entry' in intro_response.content.decode()
+    assert 'aria-hidden="true"' in home_response.content.decode()
+    assert 'aria-hidden="true"' in intro_response.content.decode()
+
+
+def test_music_page_shows_account_entry_for_signed_in_users(client, django_user_model) -> None:
+    """Signed-in listeners should see an account entry in the music-only top-left slot."""
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'data-music-auth-entry' in body
+    assert "Account" in body
+    assert "Create account" not in body
 
 def test_art_page_smoke_renders_split_gallery_and_lightbox_triggers(client) -> None:
     """The art route should render both gallery blocks and image lightbox triggers."""

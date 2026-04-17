@@ -38,26 +38,40 @@
                 <p><strong>Currency:</strong> Prices are shown in GBP.</p>
             </div>
 
-            <form method="post" class="shop-form" novalidate>
-                {% csrf_token %}
-                {% for field in form %}
-                    <div class="shop-form-field shop-form-field--checkbox{% if field.errors %} has-errors{% endif %}">
-                        <label for="{{ field.id_for_label }}" class="shop-checkbox-label">
-                            {{ field }}
-                            <span>{{ field.label }}</span>
-                        </label>
-                        {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
-                    </div>
-                {% endfor %}
-                <button
-                    type="submit"
-                    class="button primary shop-primary-button"
-                    data-checkout-submit
-                    {% if not form.accept_terms.value %}disabled{% endif %}
-                >
-                    Continue to Stripe Checkout
-                </button>
-            </form>
+            {% if checkout_owned_products %}
+                <div class="shop-inline-note">
+                    <p>These tracks are already available in your account:</p>
+                    <ul>
+                        {% for product in checkout_owned_products %}
+                            <li>{{ product.title }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <p>
+                    <a href="{{ checkout_account_url }}" class="button primary shop-primary-button">Go to your account</a>
+                </p>
+            {% else %}
+                <form method="post" class="shop-form" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="shop-form-field shop-form-field--checkbox{% if field.errors %} has-errors{% endif %}">
+                            <label for="{{ field.id_for_label }}" class="shop-checkbox-label">
+                                {{ field }}
+                                <span>{{ field.label }}</span>
+                            </label>
+                            {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button
+                        type="submit"
+                        class="button primary shop-primary-button"
+                        data-checkout-submit
+                        {% if not form.accept_terms.value %}disabled{% endif %}
+                    >
+                        Continue to Stripe Checkout
+                    </button>
+                </form>
+            {% endif %}
         </section>
 
         {% include 'shop/includes/order_summary.html' with items=checkout_items total_display=checkout_subtotal_display summary_title='This order' only %}

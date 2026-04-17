@@ -1,6 +1,6 @@
 <div class="music-library">
     {% for item in music_items %}
-        {% include 'main_site/includes/components/music/library_item.html' with item=item is_priority_image=forloop.first active_section=active_section only %}
+        {% include 'main_site/includes/components/music/library_item.html' with item=item is_priority_image=forloop.first active_section=active_section owned_music_slugs=owned_music_slugs only %}
     {% empty %}
         <p class="art-empty-note">Music is being refreshed. Check back soon.</p>
     {% endfor %}

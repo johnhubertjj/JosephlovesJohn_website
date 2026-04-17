@@ -27,6 +27,7 @@ from .downloads import build_download_response, download_asset_exists
 from .emails import has_valid_download_access_token, send_order_confirmation_email
 from .forms import CheckoutConsentForm, RegisterForm, ShopAuthenticationForm
 from .models import CustomerProfile, Order, OrderItem, Product
+from .ownership import get_owned_product_slugs
 
 stripe: Any | None = None
 
@@ -214,6 +215,28 @@ def _fulfill_checkout_session(checkout_session):
     return order
 
 
+def _already_owned_products(request, products):
+    """Return products in the current selection that the signed-in user already owns."""
+    owned_slugs = get_owned_product_slugs(request.user, slugs=[product.slug for product in products])
+    return [product for product in products if product.slug in owned_slugs]
+
+
+def _already_owned_error_for_products(products):
+    """Return a user-facing message when one or more selected products were already purchased."""
+    owned_titles = [product.title for product in products]
+    if len(owned_titles) == 1:
+        return (
+            "Already in your account",
+            f'You already bought "{owned_titles[0]}". It is ready in your account, so checkout has been paused.',
+        )
+
+    return (
+        "Some tracks are already yours",
+        "One or more tracks in your cart are already in your account, so checkout has been paused. "
+        "Remove them from the cart and try again.",
+    )
+
+
 class ShopLoginView(LoginView):
     """Render the login page for returning listeners."""
 
@@ -387,6 +410,7 @@ class CheckoutView(View):
         checkout_error="",
         checkout_error_title="Stripe checkout is unavailable",
         checkout_canceled=False,
+        owned_products=None,
     ):
         """Render the checkout template with a normalized context."""
 
@@ -399,6 +423,7 @@ class CheckoutView(View):
                 checkout_error=checkout_error,
                 checkout_error_title=checkout_error_title,
                 checkout_canceled=checkout_canceled,
+                owned_products=owned_products or [],
             ),
         )
 
@@ -425,6 +450,14 @@ class CheckoutView(View):
             "Please try again shortly or get in touch.",
         )
 
+    def _already_owned_error(self, request, products):
+        """Return a user-facing error when the signed-in shopper already owns cart items."""
+        owned_products = _already_owned_products(request, products)
+        if not owned_products:
+            return None
+        error_title, error_message = _already_owned_error_for_products(owned_products)
+        return error_title, error_message, owned_products
+
     def get(self, request):
         """Start Stripe Checkout or render a fallback page if needed.
 
@@ -436,6 +469,17 @@ class CheckoutView(View):
         products = self._get_checkout_products(request)
         if not products:
             return self._redirect_empty_cart(request)
+
+        ownership_error = self._already_owned_error(request, products)
+        if ownership_error:
+            error_title, error_message, owned_products = ownership_error
+            return self._render_checkout(
+                request,
+                products,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+                owned_products=owned_products,
+            )
 
         availability_error = self._download_availability_error(products)
         if availability_error:
@@ -468,6 +512,18 @@ class CheckoutView(View):
         form = CheckoutConsentForm(request.POST)
         if not form.is_valid():
             return self._render_checkout(request, products, form=form)
+
+        ownership_error = self._already_owned_error(request, products)
+        if ownership_error:
+            error_title, error_message, owned_products = ownership_error
+            return self._render_checkout(
+                request,
+                products,
+                form=form,
+                checkout_error=error_message,
+                checkout_error_title=error_title,
+                owned_products=owned_products,
+            )
 
         availability_error = self._download_availability_error(products)
         if availability_error:
@@ -586,7 +642,16 @@ class CheckoutView(View):
 
         return stripe_module.checkout.Session.create(**session_kwargs)
 
-    def _context(self, products, *, form, checkout_error="", checkout_error_title, checkout_canceled=False):
+    def _context(
+        self,
+        products,
+        *,
+        form,
+        checkout_error="",
+        checkout_error_title,
+        checkout_canceled=False,
+        owned_products=None,
+    ):
         """Build the checkout rendering context.
 
         :param products: Products in the cart.
@@ -606,6 +671,8 @@ class CheckoutView(View):
             "checkout_error": checkout_error,
             "checkout_error_title": checkout_error_title,
             "checkout_canceled": checkout_canceled,
+            "checkout_owned_products": owned_products or [],
+            "checkout_account_url": reverse("shop:account"),
         }
 
 
@@ -740,6 +807,15 @@ def cart_add(request, slug):
     :rtype: django.http.JsonResponse
     """
     product = get_object_or_404(Product, slug=slug, is_published=True)
+    if product.slug in get_owned_product_slugs(request.user, slugs=[product.slug]):
+        summary = build_cart_summary(request)
+        return JsonResponse(
+            {
+                **summary,
+                "message": f'You already bought "{product.title}". It is ready in your account.',
+            },
+            status=409,
+        )
     add_product(request, product)
     return JsonResponse(build_cart_summary(request))
 

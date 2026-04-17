@@ -11,6 +11,7 @@
     var dialog = modal.querySelector(".music-cart-dialog");
     var closeButtons = modal.querySelectorAll("[data-cart-close]");
     var checkoutButton = modal.querySelector("[data-cart-checkout]");
+    var ownershipNote = modal.querySelector("[data-cart-ownership-note]");
     var subtotalValue = modal.querySelector("[data-cart-subtotal]");
     var itemList = modal.querySelector("[data-cart-items]");
     var emptyState = modal.querySelector("[data-cart-empty]");
@@ -111,8 +112,14 @@
 
         if (checkoutButton) {
             checkoutButton.setAttribute("href", summary.checkout_url || checkoutButton.getAttribute("href") || "#");
-            checkoutButton.classList.toggle("is-disabled", !!summary.is_empty);
-            checkoutButton.setAttribute("aria-disabled", summary.is_empty ? "true" : "false");
+            checkoutButton.classList.toggle("is-disabled", !!summary.is_empty || !!summary.has_owned_items);
+            checkoutButton.classList.toggle("is-hidden", !!summary.has_owned_items);
+            checkoutButton.setAttribute("aria-disabled", (summary.is_empty || summary.has_owned_items) ? "true" : "false");
+        }
+
+        if (ownershipNote) {
+            ownershipNote.textContent = summary.ownership_message || "";
+            ownershipNote.classList.toggle("is-hidden", !summary.has_owned_items);
         }
     }
 
@@ -163,10 +170,14 @@
             },
             credentials: "same-origin"
         }).then(function (response) {
-            if (!response.ok) {
-                throw new Error("Cart request failed");
-            }
-            return response.json();
+            return response.json().then(function (payload) {
+                if (!response.ok) {
+                    var error = new Error(payload.message || "Cart request failed");
+                    error.payload = payload;
+                    throw error;
+                }
+                return payload;
+            });
         });
     }
 
@@ -260,8 +271,11 @@
                     trackAddToCart(button);
                     openModal(button);
                 })
-                .catch(function () {
-                    window.alert("Something went wrong adding that song. Please try again.");
+                .catch(function (error) {
+                    if (error && error.payload) {
+                        applySummary(error.payload);
+                    }
+                    window.alert(error && error.message ? error.message : "Something went wrong adding that song. Please try again.");
                 })
                 .finally(function () {
                     button.disabled = false;

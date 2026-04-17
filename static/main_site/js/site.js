@@ -1,4 +1,51 @@
 (function () {
+    var authEntry = document.querySelector("[data-music-auth-entry]");
+    var body = document.body;
+    var main = document.getElementById("main");
+    var wrapper = document.getElementById("wrapper");
+    if (!authEntry) {
+        return;
+    }
+
+    var routeSection = (wrapper && wrapper.getAttribute("data-route-section")) || "main";
+
+    function getActiveArticle() {
+        return document.querySelector("#main article.active");
+    }
+
+    function syncMusicAuthEntry() {
+        var activeArticle = getActiveArticle();
+        var isMusicVisible = !!(activeArticle && activeArticle.id === "music");
+
+        if (
+            !isMusicVisible
+            && routeSection === "music"
+            && window.location.hash === "#music"
+            && !body.classList.contains("is-article-visible")
+        ) {
+            isMusicVisible = true;
+        }
+
+        authEntry.classList.toggle("is-hidden", !isMusicVisible);
+        authEntry.setAttribute("aria-hidden", isMusicVisible ? "false" : "true");
+    }
+
+    window.addEventListener("hashchange", syncMusicAuthEntry);
+    if (main) {
+        new MutationObserver(syncMusicAuthEntry).observe(main, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["class"],
+        });
+    }
+    new MutationObserver(syncMusicAuthEntry).observe(body, {
+        attributes: true,
+        attributeFilter: ["class"],
+    });
+    syncMusicAuthEntry();
+})();
+
+(function () {
     var signupRoot = document.querySelector("[data-signup-root]");
     if (!signupRoot) {
         return;

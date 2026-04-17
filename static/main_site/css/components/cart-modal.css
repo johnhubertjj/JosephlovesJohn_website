@@ -257,6 +257,22 @@ body.is-cart-modal-visible {
     display: flex;
     align-items: center;
     gap: 0.8rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.music-cart-ownership-note {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.72rem;
+    letter-spacing: 0.05rem;
+    max-width: 18rem;
+    text-align: right;
+}
+
+.music-cart-ownership-note.is-hidden,
+.music-cart-checkout.is-hidden {
+    display: none;
 }
 
 .music-cart-text-link {
@@ -293,5 +309,10 @@ body.is-cart-modal-visible {
     .music-cart-actions {
         width: 100%;
         justify-content: space-between;
+    }
+
+    .music-cart-ownership-note {
+        max-width: none;
+        text-align: left;
     }
 }

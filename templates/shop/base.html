@@ -28,7 +28,6 @@
                 </div>
                 <nav class="shop-account-links" aria-label="Shop account">
                     {% if request.user.is_authenticated %}
-                        <a href="{% url 'shop:account' %}">Account</a>
                         <form method="post" action="{% url 'shop:logout' %}" class="shop-inline-form">
                             {% csrf_token %}
                             <button type="submit" class="shop-link-button">Log out</button>
