@@ -8,7 +8,7 @@ from collections.abc import Mapping, Sequence
 from josephlovesjohn_site.assets import public_asset_url
 from josephlovesjohn_site.site_urls import absolute_site_url
 
-SITE_SOCIAL_IMAGE = "images/album_art/Current_artist_profile_picture_optimized.jpg"
+SITE_SOCIAL_IMAGE = "images/album_art/Current_artist_profile_picture.jpg"
 
 SITE_SEO = {
     "main": {
