@@ -1,4 +1,46 @@
 (function () {
+    var validSections = ["intro", "music", "art", "contact"];
+
+    function normalizeSectionHash() {
+        var currentHash = window.location.hash || "";
+        if (!currentHash || currentHash === "#") {
+            return;
+        }
+
+        var section = currentHash.replace(/^#/, "");
+        if (section.indexOf("/") === -1) {
+            return;
+        }
+
+        var normalizedSection = "";
+        section.split("/").forEach(function (segment) {
+            if (validSections.indexOf(segment) !== -1) {
+                normalizedSection = segment;
+            }
+        });
+
+        if (!normalizedSection) {
+            return;
+        }
+
+        var normalizedHash = "#" + normalizedSection;
+        if (normalizedHash === currentHash) {
+            return;
+        }
+
+        window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search + normalizedHash
+        );
+    }
+
+    normalizeSectionHash();
+    window.addEventListener("pageshow", normalizeSectionHash);
+    window.addEventListener("hashchange", normalizeSectionHash);
+})();
+
+(function () {
     var authEntry = document.querySelector("[data-music-auth-entry]");
     var body = document.body;
     var main = document.getElementById("main");

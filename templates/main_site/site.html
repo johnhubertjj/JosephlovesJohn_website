@@ -62,7 +62,14 @@
     (function () {
         var section = "{{ active_section|default:'' }}";
         if (section) {
-            window.location.hash = section;
+            var targetHash = "#" + section;
+            if (window.location.hash !== targetHash) {
+                window.history.replaceState(
+                    null,
+                    "",
+                    window.location.pathname + window.location.search + targetHash
+                );
+            }
         }
     })();
 </script>

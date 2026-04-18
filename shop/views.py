@@ -1,5 +1,6 @@
 """Views for the demo music shop experience."""
 
+import logging
 from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, cast
@@ -30,6 +31,7 @@ from .models import CustomerProfile, Order, OrderItem, Product
 from .ownership import get_owned_product_slugs
 
 stripe: Any | None = None
+logger = logging.getLogger(__name__)
 
 try:
     import stripe as stripe_sdk
@@ -788,7 +790,10 @@ class StripeWebhookView(View):
             try:
                 order = _fulfill_checkout_session(checkout_session)
                 if order is not None:
-                    send_order_confirmation_email(request, order)
+                    try:
+                        send_order_confirmation_email(request, order)
+                    except Exception:  # pragma: no cover - exercised in production mail failures.
+                        logger.exception("Checkout webhook confirmed payment but failed to send the download email.")
             except Http404:
                 pass
 

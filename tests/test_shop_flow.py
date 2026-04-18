@@ -1254,6 +1254,73 @@ def test_webhook_and_success_page_do_not_send_duplicate_download_emails(
     assert len(mail.outbox) == 1
 
 
+def test_stripe_webhook_tolerates_confirmation_email_failures(
+    client, seeded_product: Product, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Webhook-confirmed payments should still return 200 when email delivery fails."""
+    order = Order.objects.create(
+        full_name="Guest Buyer",
+        email="guest@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+        status=Order.Status.PENDING,
+        stripe_checkout_session_id="cs_email_failure",
+    )
+    OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+        download_file_wav_path=seeded_product.download_file_wav_path,
+    )
+
+    checkout_session = {
+        "id": "cs_email_failure",
+        "status": "complete",
+        "payment_status": "paid",
+        "payment_intent": "pi_email_failure",
+        "customer_details": {
+            "name": "Webhook Buyer",
+            "email": "webhook@example.com",
+        },
+        "metadata": {"order_id": str(order.pk)},
+    }
+
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(
+            construct_event=lambda payload, sig_header, secret: {  # noqa: ARG005
+                "type": "checkout.session.completed",
+                "data": {"object": checkout_session},
+            }
+        )
+    )
+    monkeypatch.setattr(shop_views, "_get_stripe_module", lambda: stripe_module)
+    monkeypatch.setattr(shop_views.settings, "STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setattr(
+        shop_views,
+        "send_order_confirmation_email",
+        lambda request, order: (_ for _ in ()).throw(RuntimeError("smtp down")),
+    )
+
+    response = client.post(
+        reverse("shop:stripe_webhook"),
+        data=b"{}",
+        content_type="application/json",
+        HTTP_STRIPE_SIGNATURE="t=1,v1=test",
+    )
+    order.refresh_from_db()
+
+    assert response.status_code == 200
+    assert order.status == Order.Status.CONFIRMED
+    assert order.email == "webhook@example.com"
+    assert order.confirmation_email_sent_at is None
+
+
 def test_stripe_webhook_rejects_invalid_signature(
     client, monkeypatch: pytest.MonkeyPatch
 ) -> None:

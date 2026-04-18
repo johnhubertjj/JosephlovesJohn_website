@@ -1,6 +1,6 @@
 {% load static asset_urls %}
 <!DOCTYPE HTML>
-<html>
+<html lang="en-GB">
 <head>
     <title>{{ seo.title }}</title>
     <meta charset="utf-8" />
@@ -17,7 +17,9 @@
     <meta name="twitter:title" content="{{ seo.title }}" />
     <meta name="twitter:description" content="{{ seo.description }}" />
     <meta name="twitter:image" content="{{ seo.image_url }}" />
-    <link rel="icon" type="image/png" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" />
+    <link rel="icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="48x48" />
+    <link rel="icon" type="image/png" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="192x192" />
+    <link rel="apple-touch-icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" />
     <link rel="stylesheet" href="{% static 'mastering/assets/css/main.css' %}" />
     <noscript><link rel="stylesheet" href="{% static 'mastering/assets/css/noscript.css' %}" /></noscript>
     <style>
