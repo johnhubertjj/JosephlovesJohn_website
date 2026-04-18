@@ -12,10 +12,10 @@ SITE_SOCIAL_IMAGE = "images/album_art/Current_artist_profile_picture.jpg"
 
 SITE_SEO = {
     "main": {
-        "title": "JosephlovesJohn | Independent Music, Art, and Mastering in Bristol",
+        "title": "JosephlovesJohn | Independent Music and Art in Bristol",
         "description": (
-            "Discover JosephlovesJohn's music, artwork, live visuals, contact details, and direct download shop "
-            "from Bristol-based independent artist JosephlovesJohn."
+            "JosephlovesJohn is a Bristol-based singer, composer, guitarist, and bassist creating melancholic "
+            "original music, artwork, live visuals, and direct-download releases."
         ),
         "canonical_route": "main_site:main",
     },

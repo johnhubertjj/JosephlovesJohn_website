@@ -46,7 +46,9 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
         assert f'href="{link["href"]}"' in body
 
     assert '/static/images/jlovesj_symbol-my_version3.png' in body
-    assert 'content="JosephlovesJohn | Independent Music, Art, and Mastering in Bristol"' in body
+    assert 'rel="apple-touch-icon"' in body
+    assert 'sizes="192x192"' in body
+    assert 'content="JosephlovesJohn | Independent Music and Art in Bristol"' in body
     assert 'href="http://127.0.0.1:8000/"' in body
     assert 'application/ld+json' in body
     assert '"@type":"Person"' in body
@@ -145,6 +147,11 @@ def test_contact_page_smoke_renders_labeled_form_controls(client) -> None:
 
     for field_id in ("name", "email", "message"):
         assert f'id="{field_id}"' in body
+
+    assert 'href="https://ig.me/m/josephlovesjohn_music"' in body
+    assert 'href="https://www.tiktok.com/@joseph_loves_john"' in body
+    assert body.count('target="_blank"') >= 2
+    assert body.count('rel="noopener noreferrer"') >= 2
 
 
 def test_music_page_smoke_renders_route_specific_metadata(client) -> None:

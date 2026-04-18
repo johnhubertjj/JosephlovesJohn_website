@@ -144,6 +144,54 @@ def test_home_route_reveals_music_auth_entry_when_music_article_opens(browser_pa
     )
 
 
+def test_malformed_section_hash_normalizes_to_a_real_article(browser_page, live_server) -> None:
+    """Malformed hashes should be normalized so the shell opens the intended article cleanly."""
+    browser_page.goto(_route_url(live_server, "main_site:main") + "#contact/music", wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    assert browser_page.evaluate("window.location.hash") == "#music"
+    assert browser_page.locator("article#music.active").is_visible()
+
+
+def test_repeated_music_hash_normalizes_cleanly(browser_page, live_server) -> None:
+    """Repeated music hashes should collapse back to a single valid section hash."""
+    browser_page.goto(_route_url(live_server, "main_site:main") + "#music/music", wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    assert browser_page.evaluate("window.location.hash") == "#music"
+    assert browser_page.locator("article#music.active").is_visible()
+
+
+def test_art_to_contact_hash_normalizes_to_contact(browser_page, live_server) -> None:
+    """Cross-section malformed hashes should resolve to the last valid section."""
+    browser_page.goto(_route_url(live_server, "main_site:main") + "#art/contact", wait_until="load")
+    browser_page.wait_for_selector("article#contact.active")
+
+    assert browser_page.evaluate("window.location.hash") == "#contact"
+    assert browser_page.locator("article#contact.active").is_visible()
+
+
+def test_external_contact_link_does_not_poison_following_section_navigation(browser_page, live_server) -> None:
+    """Opening an external contact link and returning should not leave a compound section hash behind."""
+    browser_page.goto(_route_url(live_server, "main_site:contact"), wait_until="load")
+    browser_page.wait_for_selector("article#contact.active")
+
+    with browser_page.expect_popup() as popup_info:
+        browser_page.locator('a[href="https://www.tiktok.com/@joseph_loves_john"]').click()
+
+    popup = popup_info.value
+    popup.wait_for_load_state("domcontentloaded")
+    popup.close()
+
+    assert browser_page.evaluate("window.location.hash") == "#contact"
+
+    browser_page.evaluate("window.location.hash = 'music';")
+    browser_page.wait_for_selector("article#music.active")
+
+    assert browser_page.evaluate("window.location.hash") == "#music"
+    assert browser_page.locator("article#music.active").is_visible()
+
+
 def test_music_cart_modal_supports_add_remove_and_checkout(browser_page, live_server) -> None:
     """The cart UI should open from a track card, update counts, and link to checkout."""
     browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
