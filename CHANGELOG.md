@@ -3,7 +3,13 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
-- the current working tree is tracking `v1.0.1` until the next release commit is cut
+- the current working tree is tracking `v1.0.2` until the next release commit is cut
+
+## v1.0.2 - Unreleased
+
+- Cleaned direct section routes so `/music/` and `/intro/` no longer append redundant hash fragments
+- Hardened malformed one-page route handling for cases such as `#contact/music` and related variants
+- Opened external contact social links in a new tab to avoid contaminating in-tab route state
 
 ## v1.0.1 - Unreleased
 

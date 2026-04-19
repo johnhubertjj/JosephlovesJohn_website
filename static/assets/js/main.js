@@ -12,7 +12,8 @@
 		$header = $('#header'),
 		$footer = $('#footer'),
 		$main = $('#main'),
-		$main_articles = $main.children('article');
+		$main_articles = $main.children('article'),
+		routeSection = ($wrapper.attr('data-route-section') || 'main');
 
 	// Breakpoints.
 		breakpoints({
@@ -497,6 +498,12 @@
 				&&	location.hash != '#')
 					$window.on('load', function() {
 						$main._show(location.hash.substr(1), true);
+					});
+				else if (routeSection != ''
+				&& routeSection != 'main'
+				&& $main_articles.filter('#' + routeSection).length > 0)
+					$window.on('load', function() {
+						$main._show(routeSection, true);
 					});
 
 })(jQuery);
