@@ -188,7 +188,7 @@ def test_external_contact_link_does_not_poison_following_section_navigation(brow
     browser_page.wait_for_selector("article#contact.active")
 
     with browser_page.expect_popup() as popup_info:
-        browser_page.locator('a[href="https://www.tiktok.com/@joseph_loves_john"]').click()
+        browser_page.locator('article#contact a[href="https://www.tiktok.com/@joseph_loves_john"]').click()
 
     popup = popup_info.value
     popup.wait_for_load_state("domcontentloaded")
