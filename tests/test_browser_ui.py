@@ -56,16 +56,27 @@ def mobile_browser_page(playwright_browser, browser_engine_name: str):
 
 
 def test_intro_route_sets_hash_and_activates_intro_article(browser_page, live_server) -> None:
-    """The intro route should land the user directly in the intro article."""
+    """The intro route should land the user directly in the intro article without appending a hash."""
     browser_page.goto(_route_url(live_server, "main_site:intro"), wait_until="load")
     browser_page.wait_for_selector("article#intro.active")
 
-    assert browser_page.evaluate("window.location.hash") == "#intro"
+    assert browser_page.evaluate("window.location.hash") == ""
+    assert browser_page.url.endswith("/intro/")
     assert browser_page.locator("article#intro.active").is_visible()
     assert browser_page.locator(".intro-signup-form").is_visible()
     assert browser_page.locator("[data-cookie-banner]").is_visible()
     assert browser_page.locator("[data-cookie-essential-only]").is_visible()
     assert browser_page.locator("[data-cookie-accept-all]").is_visible()
+
+
+def test_music_route_keeps_clean_url_without_appending_hash(browser_page, live_server) -> None:
+    """The dedicated music route should not rewrite itself to include a trailing section hash."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    assert browser_page.evaluate("window.location.hash") == ""
+    assert browser_page.url.endswith("/music/")
+    assert browser_page.locator("article#music.active").is_visible()
 
 
 def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_page, live_server) -> None:
@@ -177,7 +188,7 @@ def test_external_contact_link_does_not_poison_following_section_navigation(brow
     browser_page.wait_for_selector("article#contact.active")
 
     with browser_page.expect_popup() as popup_info:
-        browser_page.locator('a[href="https://www.tiktok.com/@joseph_loves_john"]').click()
+        browser_page.locator('article#contact a[href="https://www.tiktok.com/@joseph_loves_john"]').click()
 
     popup = popup_info.value
     popup.wait_for_load_state("domcontentloaded")

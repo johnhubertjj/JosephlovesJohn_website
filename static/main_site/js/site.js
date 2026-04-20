@@ -41,6 +41,46 @@
 })();
 
 (function () {
+    function getActiveArticle() {
+        return document.querySelector("#main article.active");
+    }
+
+    document.addEventListener(
+        "click",
+        function (event) {
+            if (!(event.target instanceof Element)) {
+                return;
+            }
+
+            var link = event.target.closest("a[target='_blank']");
+            var currentHash = window.location.hash || "";
+            if (!link || (currentHash && currentHash !== "#")) {
+                return;
+            }
+
+            var activeArticle = getActiveArticle();
+            if (!activeArticle || !activeArticle.id || !activeArticle.contains(link)) {
+                return;
+            }
+
+            var href = link.getAttribute("href") || "";
+            if (!href || href.charAt(0) === "#") {
+                return;
+            }
+
+            // Preserve the active section before a popup/new-tab jump so
+            // hash-based navigation resumes from a single valid article id.
+            window.history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search + "#" + activeArticle.id
+            );
+        },
+        true
+    );
+})();
+
+(function () {
     var authEntry = document.querySelector("[data-music-auth-entry]");
     var body = document.body;
     var main = document.getElementById("main");
