@@ -46,6 +46,13 @@ docs/                   Deployment, R2, and shop-flow notes
 tests/                  Pytest test suite
 ```
 
+## Architecture
+
+For the repo-level architecture and Mermaid diagrams, see:
+
+- [Repository architecture](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/repository-architecture.md)
+- [Shop flow](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop-flow.md)
+
 ## Local Development
 
 ### 1. Install dependencies
