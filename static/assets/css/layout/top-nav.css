@@ -9,6 +9,14 @@
 	z-index: 4;
 }
 
+#wrapper.has-top-nav {
+	padding-top: 2.75rem;
+}
+
+#wrapper.has-top-nav #header {
+	margin-top: 2.25rem;
+}
+
 #top-nav ul {
 	display: -moz-flex;
 	display: -webkit-flex;
@@ -103,6 +111,14 @@ body.is-routing-mastering #top-nav {
 		top: 1rem;
 		width: calc(100% - 2rem);
 		max-width: 18rem;
+	}
+
+	#wrapper.has-top-nav {
+		padding-top: 3rem;
+	}
+
+	#wrapper.has-top-nav #header {
+		margin-top: 1.75rem;
 	}
 
 	#top-nav ul {

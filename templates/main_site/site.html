@@ -10,8 +10,11 @@
 {% endblock %}
 
 {% block content %}
+    {% include 'main_site/includes/layout/top_nav.html' %}
+
     <div
         id="wrapper"
+        class="has-top-nav"
         data-playerjs-src="{% static 'assets/js/playerjs_v4.js' %}"
         data-route-section="{{ active_section|default:'main' }}"
     >

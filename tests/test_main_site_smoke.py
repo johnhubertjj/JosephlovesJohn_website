@@ -16,6 +16,7 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
     assert response.status_code == 200
     for fragment in (
+        'id="top-nav"',
         'id="header"',
         'id="main"',
         'id="footer"',
@@ -67,6 +68,7 @@ def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
     assert "Open signup form" in body
     assert 'href="https://josephlovesjohn.kit.com/408ee57c19"' in body
     assert f'href="{reverse("mastering:home")}"' in body
+    assert "Mastering Services" in body
 
 
 def test_music_page_smoke_renders_all_published_tracks_and_share_controls(client) -> None:
