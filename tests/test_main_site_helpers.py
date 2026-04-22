@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.db import OperationalError
 from django.test import override_settings
@@ -110,6 +111,35 @@ def test_get_primary_nav_items_returns_active_database_rows_in_order() -> None:
         {"href": "#music", "label": "Music"},
         {"href": "#art", "label": "Art"},
     ]
+
+
+@pytest.mark.django_db
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_get_header_social_links_cache_invalidates_when_content_changes() -> None:
+    """Shared site-content cache should refresh when admin-managed content changes."""
+    cache.clear()
+    HeaderSocialLink.objects.all().delete()
+    HeaderSocialLink.objects.create(
+        label="Bandcamp",
+        href="https://example.com/bandcamp",
+        icon_class="icon brands fa-bandcamp",
+        sort_order=0,
+        is_active=True,
+    )
+
+    first_links = views._get_header_social_links()
+
+    HeaderSocialLink.objects.create(
+        label="YouTube",
+        href="https://example.com/youtube",
+        icon_class="icon brands fa-youtube",
+        sort_order=1,
+        is_active=True,
+    )
+    refreshed_links = views._get_header_social_links()
+
+    assert [link["label"] for link in first_links] == ["Bandcamp", "Spotify"]
+    assert [link["label"] for link in refreshed_links] == ["Bandcamp", "Spotify", "YouTube"]
 
 
 @pytest.mark.django_db
@@ -343,6 +373,43 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
     assert items[0]["file_wav_url"] == "/static/audio/first.wav"
     assert items[0]["file_mp3_url"] == "/static/audio/first.mp3"
     assert items[1]["is_reversed"] is True
+
+
+@pytest.mark.django_db
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_get_music_library_items_cache_invalidates_when_products_change() -> None:
+    """Shared music-library cache should refresh after product changes."""
+    cache.clear()
+    Product.objects.all().delete()
+    Product.objects.create(
+        title="First Track",
+        slug="first-track",
+        meta="Single",
+        art_path="images/album_art/first.jpg",
+        preview_file_wav="audio/first.wav",
+        preview_file_mp3="audio/first.mp3",
+        download_file_path="audio/first.mp3",
+        sort_order=0,
+        is_published=True,
+    )
+
+    first_items = views._get_music_library_items()
+
+    Product.objects.create(
+        title="Second Track",
+        slug="second-track",
+        meta="Single",
+        art_path="images/album_art/second.jpg",
+        preview_file_wav="audio/second.wav",
+        preview_file_mp3="audio/second.mp3",
+        download_file_path="audio/second.mp3",
+        sort_order=1,
+        is_published=True,
+    )
+    refreshed_items = views._get_music_library_items()
+
+    assert [item["title"] for item in first_items] == ["First Track"]
+    assert [item["title"] for item in refreshed_items] == ["First Track", "Second Track"]
 
 
 @pytest.mark.django_db

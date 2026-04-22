@@ -1,7 +1,10 @@
 """Session-backed cart helpers for the demo music shop."""
 
 from decimal import Decimal
+from hashlib import sha256
 
+from django.conf import settings
+from django.core.cache import cache
 from django.urls import reverse
 
 from .models import Product
@@ -111,7 +114,31 @@ def get_cart_products(request):
     return [products_by_slug[slug] for slug in slugs if slug in products_by_slug]
 
 
-def build_cart_summary(request):
+def empty_cart_summary():
+    """Return the default empty cart payload used by templates and JSON responses."""
+    return {
+        "items": [],
+        "item_count": 0,
+        "subtotal": "0.00",
+        "subtotal_display": "£0.00",
+        "is_empty": True,
+        "owned_item_slugs": [],
+        "has_owned_items": False,
+        "ownership_message": "",
+        "checkout_url": reverse("shop:checkout"),
+        "account_url": reverse("shop:account"),
+    }
+
+
+def _cart_summary_cache_key(request, slugs):
+    """Build a cache key for the current cart/user combination."""
+    user_id = getattr(getattr(request, "user", None), "pk", None) or "anon"
+    raw_key = f"{user_id}:{','.join(slugs)}"
+    digest = sha256(raw_key.encode("utf-8")).hexdigest()
+    return f"shop-cart-summary:{digest}"
+
+
+def build_cart_summary(request, *, use_cache=False):
     """Build the cart payload used by templates and JSON responses.
 
     :param request: Current HTTP request.
@@ -119,6 +146,18 @@ def build_cart_summary(request):
     :returns: Structured cart summary for rendering.
     :rtype: dict[str, object]
     """
+    slugs = get_cart_slugs(request)
+    if not slugs:
+        return empty_cart_summary()
+
+    cache_ttl = max(getattr(settings, "CART_SUMMARY_CACHE_TTL", 0), 0)
+    cache_key = ""
+    if use_cache and cache_ttl > 0:
+        cache_key = _cart_summary_cache_key(request, slugs)
+        cached_summary = cache.get(cache_key)
+        if cached_summary is not None:
+            return cached_summary
+
     products = get_cart_products(request)
     owned_slugs = get_owned_product_slugs(request.user, slugs=[product.slug for product in products])
     subtotal = sum((product.price for product in products), Decimal("0.00"))
@@ -148,7 +187,7 @@ def build_cart_summary(request):
     else:
         ownership_message = ""
 
-    return {
+    summary = {
         "items": items,
         "item_count": len(items),
         "subtotal": str(subtotal),
@@ -160,3 +199,6 @@ def build_cart_summary(request):
         "checkout_url": reverse("shop:checkout"),
         "account_url": reverse("shop:account"),
     }
+    if cache_key:
+        cache.set(cache_key, summary, timeout=cache_ttl)
+    return summary

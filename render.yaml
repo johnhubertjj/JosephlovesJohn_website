@@ -22,6 +22,8 @@ services:
           property: connectionString
       - key: DATABASE_CONN_MAX_AGE
         value: "600"
+      - key: REDIS_URL
+        sync: false
       - key: PYTHON_VERSION
         value: 3.14.3
       - key: UV_VERSION
@@ -82,6 +84,20 @@ services:
         sync: false
       - key: PUBLIC_ASSET_BASE_URL
         sync: false
+      - key: MEDIA_FILES_BUCKET_NAME
+        sync: false
+      - key: MEDIA_FILES_ENDPOINT_URL
+        sync: false
+      - key: MEDIA_FILES_ACCESS_KEY_ID
+        sync: false
+      - key: MEDIA_FILES_SECRET_ACCESS_KEY
+        sync: false
+      - key: MEDIA_FILES_REGION
+        value: auto
+      - key: MEDIA_FILES_BASE_URL
+        sync: false
+      - key: MEDIA_FILES_KEY_PREFIX
+        sync: false
       - key: PRIVATE_DOWNLOADS_BUCKET_NAME
         sync: false
       - key: PRIVATE_DOWNLOADS_ENDPOINT_URL
@@ -110,6 +126,10 @@ services:
         sync: false
       - key: PRIVATE_PREVIEWS_URL_EXPIRY
         value: "900"
+      - key: SITE_CONTENT_CACHE_TTL
+        value: "300"
+      - key: CART_SUMMARY_CACHE_TTL
+        value: "60"
       - key: PLAUSIBLE_DOMAIN
         value: josephlovesjohn.com
       - key: PLAUSIBLE_SCRIPT_SRC

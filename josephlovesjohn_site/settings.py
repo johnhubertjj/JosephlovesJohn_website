@@ -123,6 +123,7 @@ ASGI_APPLICATION = "josephlovesjohn_site.asgi.application"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 DATABASE_CONN_MAX_AGE = _env_int("DATABASE_CONN_MAX_AGE", default=600 if not DEBUG else 0)
+REDIS_URL = os.environ.get("REDIS_URL", "").strip()
 
 if DATABASE_URL:
     DATABASES = {
@@ -154,12 +155,21 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "/media/"
+MEDIA_URL = os.environ.get("MEDIA_URL", "/media/").strip() or "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 SITE_URL = os.environ.get("SITE_URL", "").strip().rstrip("/")
 if not SITE_URL and DEBUG:
     SITE_URL = "http://127.0.0.1:8000"
 PUBLIC_ASSET_BASE_URL = os.environ.get("PUBLIC_ASSET_BASE_URL", "").strip().rstrip("/")
+MEDIA_FILES_BUCKET_NAME = os.environ.get("MEDIA_FILES_BUCKET_NAME", "").strip()
+MEDIA_FILES_ENDPOINT_URL = os.environ.get("MEDIA_FILES_ENDPOINT_URL", "").strip()
+MEDIA_FILES_ACCESS_KEY_ID = os.environ.get("MEDIA_FILES_ACCESS_KEY_ID", "").strip()
+MEDIA_FILES_SECRET_ACCESS_KEY = os.environ.get("MEDIA_FILES_SECRET_ACCESS_KEY", "").strip()
+MEDIA_FILES_REGION = os.environ.get("MEDIA_FILES_REGION", "auto").strip() or "auto"
+MEDIA_FILES_BASE_URL = os.environ.get("MEDIA_FILES_BASE_URL", "").strip().rstrip("/")
+MEDIA_FILES_KEY_PREFIX = os.environ.get("MEDIA_FILES_KEY_PREFIX", "").strip().strip("/")
+if MEDIA_FILES_BASE_URL and MEDIA_URL == "/media/":
+    MEDIA_URL = f"{MEDIA_FILES_BASE_URL}/"
 PRIVATE_DOWNLOADS_ROOT = Path(
     os.environ.get("PRIVATE_DOWNLOADS_ROOT", "").strip() or str(MEDIA_ROOT / "private_downloads")
 )
@@ -185,21 +195,48 @@ PRIVATE_PREVIEWS_KEY_PREFIX = os.environ.get("PRIVATE_PREVIEWS_KEY_PREFIX", PRIV
     "/"
 )
 PRIVATE_PREVIEWS_URL_EXPIRY = _env_int("PRIVATE_PREVIEWS_URL_EXPIRY", default=900)
+SITE_CONTENT_CACHE_TTL = _env_int("SITE_CONTENT_CACHE_TTL", default=0 if DEBUG else 300)
+CART_SUMMARY_CACHE_TTL = _env_int("CART_SUMMARY_CACHE_TTL", default=0 if DEBUG else 60)
 
 STATICFILES_STORAGE_BACKEND = (
     "django.contrib.staticfiles.storage.StaticFilesStorage"
     if DEBUG
     else "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
+MEDIA_STORAGE_BACKEND = (
+    "josephlovesjohn_site.storage.S3CompatibleMediaStorage"
+    if MEDIA_FILES_BUCKET_NAME
+    else "django.core.files.storage.FileSystemStorage"
+)
 
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": MEDIA_STORAGE_BACKEND,
     },
     "staticfiles": {
         "BACKEND": STATICFILES_STORAGE_BACKEND,
     },
 }
+
+CACHES = (
+    {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+    if REDIS_URL
+    else {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "josephlovesjohn-local-cache",
+        }
+    }
+)
+
+if REDIS_URL:
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+    SESSION_CACHE_ALIAS = "default"
 
 WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_USE_FINDERS = DEBUG

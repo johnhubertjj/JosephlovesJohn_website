@@ -90,6 +90,41 @@ def test_blank_private_downloads_root_falls_back_to_default(monkeypatch: pytest.
         importlib.reload(settings)
 
 
+def test_settings_enable_redis_cache_and_cached_sessions_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A REDIS_URL should switch cache/session settings to shared backends."""
+    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.CACHES["default"]["BACKEND"] == "django.core.cache.backends.redis.RedisCache"
+        assert reloaded.CACHES["default"]["LOCATION"] == "redis://127.0.0.1:6379/1"
+        assert reloaded.SESSION_ENGINE == "django.contrib.sessions.backends.cached_db"
+        assert reloaded.SESSION_CACHE_ALIAS == "default"
+    finally:
+        monkeypatch.delenv("REDIS_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_settings_enable_object_storage_media_backend_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Public uploaded media should switch to object storage when configured."""
+    monkeypatch.setenv("MEDIA_FILES_BUCKET_NAME", "jlj-media")
+    monkeypatch.setenv("MEDIA_FILES_BASE_URL", "https://pub.example.com")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.MEDIA_STORAGE_BACKEND == "josephlovesjohn_site.storage.S3CompatibleMediaStorage"
+        assert reloaded.STORAGES["default"]["BACKEND"] == "josephlovesjohn_site.storage.S3CompatibleMediaStorage"
+        assert reloaded.MEDIA_URL == "https://pub.example.com/"
+    finally:
+        monkeypatch.delenv("MEDIA_FILES_BUCKET_NAME", raising=False)
+        monkeypatch.delenv("MEDIA_FILES_BASE_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
 def test_settings_load_dotenv_values_when_present(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
