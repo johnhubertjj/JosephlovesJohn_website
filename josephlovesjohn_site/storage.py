@@ -106,7 +106,10 @@ class S3CompatibleMediaStorage(Storage):
         )
         return int(response.get("ContentLength", 0))
 
-    def url(self, name: str) -> str:
+    def url(self, name: str | None) -> str:
+        if not name:
+            raise ValueError("Set a file name before requesting an object-storage media URL.")
+
         base_url = self.base_url.strip().rstrip("/")
         if not base_url and str(settings.MEDIA_URL).startswith(("http://", "https://", "//")):
             base_url = str(settings.MEDIA_URL).strip().rstrip("/")

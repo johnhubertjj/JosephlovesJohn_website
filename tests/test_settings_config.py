@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from josephlovesjohn_site import settings
+from josephlovesjohn_site.storage import S3CompatibleMediaStorage
 
 pytestmark = pytest.mark.smoke
 
@@ -123,6 +124,15 @@ def test_settings_enable_object_storage_media_backend_when_configured(monkeypatc
         monkeypatch.delenv("MEDIA_FILES_BASE_URL", raising=False)
         monkeypatch.delenv("DOTENV_PATH", raising=False)
         importlib.reload(settings)
+
+
+def test_s3_compatible_media_storage_url_requires_a_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Storage URLs should fail clearly when Django asks for a blank name."""
+    monkeypatch.setattr(settings, "MEDIA_FILES_BASE_URL", "https://pub.example.com")
+    storage = S3CompatibleMediaStorage()
+
+    with pytest.raises(ValueError, match="file name"):
+        storage.url(None)
 
 
 def test_settings_load_dotenv_values_when_present(

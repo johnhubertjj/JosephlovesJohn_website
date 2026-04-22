@@ -64,7 +64,7 @@ body.is-safari-browser #main article#art {
 body.is-safari-browser.is-art-shell-transition #main article#art,
 body.is-safari-browser.is-art-shell-visible #main article#art,
 body.is-safari-browser #main article#art.active {
-    transition: opacity 0.18s ease-out !important;
+    transition: opacity 0.325s ease-in-out !important;
 }
 
 body.is-safari-browser #art,

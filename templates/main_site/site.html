@@ -1,18 +1,18 @@
 {% extends 'main_site/base.html' %}
-{% load static %}
+{% load asset_urls %}
 
 {% block title %}{{ seo.title }}{% endblock %}
 
 {% block styles %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'main_site/css/site.css' %}" />
-    <link rel="stylesheet" href="{% static 'main_site/css/components/account-entry.css' %}" />
+    <link rel="stylesheet" href="{% versioned_static 'main_site/css/site.css' %}" />
+    <link rel="stylesheet" href="{% versioned_static 'main_site/css/components/account-entry.css' %}" />
 {% endblock %}
 
 {% block content %}
     <div
         id="wrapper"
-        data-playerjs-src="{% static 'assets/js/playerjs_v4.js' %}"
+        data-playerjs-src="{% versioned_static 'assets/js/playerjs_v4.js' %}"
         data-route-section="{{ active_section|default:'main' }}"
     >
         <div
@@ -59,6 +59,6 @@
 
 {% block scripts %}
 {{ block.super }}
-<script src="{% static 'main_site/js/site.js' %}"></script>
-<script src="{% static 'main_site/js/cart.js' %}"></script>
+<script src="{% versioned_static 'main_site/js/site.js' %}"></script>
+<script src="{% versioned_static 'main_site/js/cart.js' %}"></script>
 {% endblock %}
