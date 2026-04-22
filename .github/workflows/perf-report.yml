@@ -1,0 +1,87 @@
+name: perf-report
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  perf-report:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jlj_bench
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d jlj_bench"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create comparison branches
+        shell: bash
+        run: |
+          git branch -f perf-head HEAD
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git branch -f perf-base "origin/${{ github.base_ref }}"
+          elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+            git branch -f perf-base origin/main
+          else
+            git branch -f perf-base HEAD~1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dev dependencies
+        run: uv sync --frozen --group dev
+
+      - name: Prepare benchmark database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jlj_bench
+          DJANGO_SETTINGS_MODULE: josephlovesjohn_site.settings
+        run: uv run python manage.py migrate
+
+      - name: Generate performance report
+        env:
+          OLD_BRANCH: perf-base
+          NEW_BRANCH: perf-head
+          SHARED_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/jlj_bench
+          OLD_REDIS_URL: redis://127.0.0.1:6379/1
+          NEW_REDIS_URL: redis://127.0.0.1:6379/2
+        run: >
+          uv run python scripts/generate_perf_report.py
+          --output-dir perf-report
+          --runs 10
+          --query-requests 2
+          --profile-warmup-requests 1
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-report
+          path: perf-report

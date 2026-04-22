@@ -173,6 +173,7 @@ Useful docs:
 
 - [Render deployment notes](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/deployment.md)
 - [Cloudflare R2 asset setup](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/cloudflare_r2.md)
+- [Performance report workflow](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/performance_reports.md)
 - [Shop flow notes](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop-flow.md)
 - [Versioning notes](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/versioning.md)
 - [Changelog](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/CHANGELOG.md)
