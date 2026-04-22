@@ -79,6 +79,27 @@ def test_music_route_keeps_clean_url_without_appending_hash(browser_page, live_s
     assert browser_page.locator("article#music.active").is_visible()
 
 
+def test_music_route_close_button_hides_article_without_needing_a_hash(browser_page, live_server) -> None:
+    """The article close control should work on clean section routes like /music/."""
+    browser_page.goto(_route_url(live_server, "main_site:music"), wait_until="load")
+    browser_page.wait_for_selector("article#music.active")
+
+    browser_page.locator("article#music .close").click()
+    browser_page.wait_for_function(
+        """
+        () => {
+            const body = document.body;
+            const article = document.querySelector('article#music');
+            return !body.classList.contains('is-article-visible')
+                && !!article
+                && !article.classList.contains('active');
+        }
+        """
+    )
+
+    assert browser_page.url.endswith("/music/#")
+
+
 def test_music_share_modal_supports_copy_dialog_interaction_and_escape(browser_page, live_server) -> None:
     """The share modal should open, stay open during dialog clicks, and close on escape."""
     browser_page.add_init_script(

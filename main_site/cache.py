@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from typing import TypeVar
 
 from django.conf import settings
@@ -34,7 +34,24 @@ def _content_cache_key(name: str) -> str:
     return f"main-site:{name}:v{_content_cache_version()}"
 
 
-def cache_shared_content(name: str, builder: Callable[[], T]) -> T:
+def _should_cache_value(value: object, *, cache_empty: bool) -> bool:
+    """Return whether a shared-content value should be stored in cache."""
+    if cache_empty:
+        return True
+
+    if value is None:
+        return False
+
+    if isinstance(value, (str, bytes, bytearray)):
+        return len(value) > 0
+
+    if isinstance(value, Collection):
+        return len(value) > 0
+
+    return True
+
+
+def cache_shared_content(name: str, builder: Callable[[], T], *, cache_empty: bool = True) -> T:
     """Return a shared-content payload, using cache when enabled."""
     ttl = _content_cache_ttl()
     if ttl <= 0:
@@ -43,10 +60,13 @@ def cache_shared_content(name: str, builder: Callable[[], T]) -> T:
     key = _content_cache_key(name)
     cached = cache.get(key, _MISSING)
     if cached is not _MISSING:
-        return cached
+        if _should_cache_value(cached, cache_empty=cache_empty):
+            return cached
+        cache.delete(key)
 
     value = builder()
-    cache.set(key, value, timeout=ttl)
+    if _should_cache_value(value, cache_empty=cache_empty):
+        cache.set(key, value, timeout=ttl)
     return value
 
 

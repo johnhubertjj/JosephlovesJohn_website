@@ -142,7 +142,7 @@ def _get_header_social_links() -> list[HeaderSocialLinkItem]:
         ordered_links.insert(insert_at, spotify_link)
         return ordered_links
 
-    return cache_shared_content("header-social-links", _build)
+    return cache_shared_content("header-social-links", _build, cache_empty=False)
 
 
 def _get_primary_nav_items():
@@ -157,7 +157,7 @@ def _get_primary_nav_items():
         except (OperationalError, ProgrammingError):
             return []
 
-    return cache_shared_content("primary-nav-items", _build)
+    return cache_shared_content("primary-nav-items", _build, cache_empty=False)
 
 
 def _get_gig_photo_items():
@@ -190,7 +190,7 @@ def _get_gig_photo_items():
 
         return items
 
-    return cache_shared_content("gig-photo-items", _build)
+    return cache_shared_content("gig-photo-items", _build, cache_empty=False)
 
 
 def _get_album_art_items():
@@ -238,7 +238,7 @@ def _get_album_art_items():
         items.sort(key=lambda row: (row[0], row[1], row[2]))
         return [row[3] for row in items]
 
-    return cache_shared_content("album-art-items", _build)
+    return cache_shared_content("album-art-items", _build, cache_empty=False)
 
 
 def _get_music_library_items():
@@ -278,4 +278,4 @@ def _get_music_library_items():
             )
         return items
 
-    return cache_shared_content("music-library-items", _build)
+    return cache_shared_content("music-library-items", _build, cache_empty=False)

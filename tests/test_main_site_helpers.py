@@ -206,6 +206,48 @@ def test_get_gig_photo_items_supports_uploaded_files(media_base_dir) -> None:
     ]
 
 
+@pytest.mark.django_db
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_get_gig_photo_items_does_not_reuse_cached_empty_results(monkeypatch, create_static_asset) -> None:
+    """Transient empty gig-photo results should not get stuck in shared cache."""
+    cache.clear()
+    GigPhoto.objects.all().delete()
+    create_static_asset("images/gallery/live-1.jpg")
+    photo = GigPhoto.objects.create(
+        title="Recovered Photo",
+        image_path="images/gallery/live-1.jpg",
+        alt_text="Recovered alt",
+        sort_order=0,
+        is_active=True,
+    )
+
+    original_filter = views.GigPhoto.objects.filter
+    calls = {"count": 0}
+
+    def flaky_filter(*args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise OperationalError("temporary db issue")
+        return original_filter(*args, **kwargs)
+
+    monkeypatch.setattr(views.GigPhoto.objects, "filter", flaky_filter)
+
+    first_items = views._get_gig_photo_items()
+    second_items = views._get_gig_photo_items()
+
+    assert first_items == []
+    assert second_items == [
+        {
+            "title": photo.title,
+            "image_path": photo.image_path,
+            "thumbnail_path": photo.image_path,
+            "image_url": "/static/images/gallery/live-1.jpg",
+            "thumbnail_url": "/static/images/gallery/live-1.jpg",
+            "alt_text": photo.alt_text,
+        }
+    ]
+
+
 def test_normalize_asset_path_strips_prefixes() -> None:
     """Static paths should be normalized consistently by the shared asset helpers."""
     assert assets.normalize_asset_path("/static/images/example.jpg") == "images/example.jpg"
