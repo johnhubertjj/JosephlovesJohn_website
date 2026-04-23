@@ -198,9 +198,14 @@ def build_findings(report: dict[str, Any]) -> list[str]:
         scaling_query_new = scaling_queries["new"]["endpoints"][endpoint]["query_counts"]
 
         if scaling_query_new[-1] == 0 and scaling_query_new[0] > 0:
+            timing_phrase = (
+                f"{abs(scaling_timing_delta):.2f}ms faster"
+                if scaling_timing_delta < 0
+                else f"{scaling_timing_delta:.2f}ms slower"
+            )
             findings.append(
                 f"`{endpoint}` reaches a zero-query warm path on `{new_label}`, "
-                f"but its warm request time is still {scaling_timing_delta:.2f}ms slower than `{old_label}` locally."
+                f"and its warm cached request time is {timing_phrase} than `{old_label}` locally."
             )
 
         if base_timing_delta > 0.75:
@@ -607,6 +612,14 @@ def build_html(report: dict[str, Any]) -> str:
         profile_sections.append("".join(mode_parts))
 
     finding_html = "".join(f"<li>{html.escape(item)}</li>" for item in findings) or "<li>No obvious hotspots detected.</li>"
+    caching_intro = (
+        "Baseline timings are repeated local requests with cache TTLs disabled. "
+        "Scaling timings are repeated warm cached requests with the scaling cache/session settings enabled."
+    )
+    concurrency_intro = (
+        "Concurrency benchmarks use Gunicorn in a production-style DEBUG=false setup. "
+        "Fresh-cache runs measure after minimal warmup; warm steady-state runs measure after full endpoint prewarm cycles."
+    )
 
     return f"""<!doctype html>
 <html lang="en">
@@ -726,9 +739,19 @@ def build_html(report: dict[str, Any]) -> str:
       <ul>{finding_html}</ul>
     </section>
 
-    {''.join(timing_sections)}
-    {''.join(query_sections)}
-    {''.join(concurrency_sections)}
+    <section>
+      <h2>Caching</h2>
+      <p class="muted">{html.escape(caching_intro)}</p>
+      {''.join(timing_sections)}
+      {''.join(query_sections)}
+    </section>
+
+    <section>
+      <h2>Concurrency</h2>
+      <p class="muted">{html.escape(concurrency_intro)}</p>
+      {''.join(concurrency_sections)}
+    </section>
+
     {''.join(profile_sections)}
   </main>
 </body>

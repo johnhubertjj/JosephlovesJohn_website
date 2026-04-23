@@ -550,10 +550,15 @@ def test_checkout_get_renders_review_page_before_redirect_to_stripe(
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
 
     response = client.get(reverse("shop:checkout"))
+    body = response.content.decode()
 
     assert response.status_code == 200
     assert Order.objects.count() == 0
-    assert "Continue to Stripe Checkout" in response.content.decode()
+    assert "shop/css/shop.css" in body
+    assert 'id="id_accept_terms"' in body
+    assert 'for="id_accept_terms"' in body
+    assert 'class="shop-checkbox-indicator"' in body
+    assert "Continue to Stripe Checkout" in body
 
 
 def test_checkout_post_redirects_to_stripe_checkout(client, seeded_product: Product, fake_stripe_checkout) -> None:

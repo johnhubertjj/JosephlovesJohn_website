@@ -46,10 +46,11 @@ The script writes:
 
 ### What the report contains
 
-- **Baseline timings**: repeated local request timings without Redis-backed caching.
-- **Scaling timings**: repeated local request timings with the cache/session settings enabled.
+- **Caching**:
+  - baseline timings = repeated local requests with cache TTLs disabled
+  - scaling timings = repeated warm cached requests with the scaling cache/session settings enabled
 - **Query counts**: DB queries for repeated requests to the same route.
-- **Concurrent Gunicorn load**:
+- **Concurrency**:
   - fresh-cache burst medians
   - warm steady-state medians after full endpoint prewarm cycles
   - both measured in a production-style `DEBUG=false` setup with manifest-collected static files

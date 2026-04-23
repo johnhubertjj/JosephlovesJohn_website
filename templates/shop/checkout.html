@@ -55,9 +55,10 @@
                     {% csrf_token %}
                     {% for field in form %}
                         <div class="shop-form-field shop-form-field--checkbox{% if field.errors %} has-errors{% endif %}">
+                            {{ field }}
                             <label for="{{ field.id_for_label }}" class="shop-checkbox-label">
-                                {{ field }}
-                                <span>{{ field.label }}</span>
+                                <span class="shop-checkbox-indicator" aria-hidden="true"></span>
+                                <span class="shop-checkbox-text">{{ field.label }}</span>
                             </label>
                             {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
                         </div>
