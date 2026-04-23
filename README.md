@@ -20,6 +20,7 @@ It includes:
 - WhiteNoise for static file serving
 - Gunicorn as the production application server
 - Render for deployment
+- Redis for shared cache, sessions, and rate limiting in multi-instance deployments
 - Cloudflare R2 for large public and private media assets
 - PostgreSQL in production and SQLite locally by default
 - `uv` for dependency management
@@ -107,8 +108,14 @@ The site will then be available at [http://127.0.0.1:8000](http://127.0.0.1:8000
 This project supports a split storage model:
 
 - repo-tracked static assets for CSS, JS, icons, and smaller site assets
+- public object storage for uploaded admin-managed media files
 - public Cloudflare R2 assets for artwork, gig photos, and optionally preview audio
 - private Cloudflare R2 assets for paid downloads
+
+Uploaded `FileField` media can now use an S3-compatible bucket directly by setting
+`MEDIA_FILES_BUCKET_NAME`, `MEDIA_FILES_ENDPOINT_URL`, credentials, and a public
+`MEDIA_FILES_BASE_URL`. That removes the single-instance dependency on local disk
+for admin-uploaded gallery assets.
 
 Keep the same relative keys when uploading to R2. For example:
 
@@ -166,6 +173,7 @@ Useful docs:
 
 - [Render deployment notes](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/deployment.md)
 - [Cloudflare R2 asset setup](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/cloudflare_r2.md)
+- [Performance report workflow](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/performance_reports.md)
 - [Shop flow notes](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop-flow.md)
 - [Versioning notes](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/versioning.md)
 - [Changelog](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/CHANGELOG.md)

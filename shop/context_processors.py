@@ -1,6 +1,8 @@
 """Template context processors for the shop app."""
 
-from .cart import build_cart_summary
+from .cart import build_cart_summary, empty_cart_summary
+
+_CART_TEMPLATE_NAMES = {"main", "intro", "music", "art", "contact"}
 
 
 def cart_summary(request):
@@ -11,4 +13,12 @@ def cart_summary(request):
     :returns: Mapping with the current cart summary.
     :rtype: dict[str, object]
     """
-    return {"cart_summary": build_cart_summary(request)}
+    resolver_match = getattr(request, "resolver_match", None)
+    if (
+        resolver_match is None
+        or resolver_match.namespace != "main_site"
+        or resolver_match.url_name not in _CART_TEMPLATE_NAMES
+    ):
+        return {"cart_summary": empty_cart_summary()}
+
+    return {"cart_summary": build_cart_summary(request, use_cache=True)}

@@ -61,7 +61,16 @@ def resolve_public_asset_source(value, *, file_exists: Callable[[str], bool] | N
             "is_static": False,
         }
 
-    file_is_available = True if getattr(settings, "PUBLIC_ASSET_BASE_URL", "").strip() else bool(
+    asset_base_url = getattr(settings, "PUBLIC_ASSET_BASE_URL", "").strip()
+    verify_static_asset_files = getattr(settings, "VERIFY_STATIC_ASSET_FILES", getattr(settings, "DEBUG", False))
+    if asset_base_url or not verify_static_asset_files:
+        return {
+            "path": normalized,
+            "url": public_asset_url(normalized),
+            "is_static": True,
+        }
+
+    file_is_available = True if asset_base_url or not verify_static_asset_files else bool(
         file_exists and file_exists(normalized)
     )
     if not file_is_available:

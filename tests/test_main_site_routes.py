@@ -55,3 +55,12 @@ def test_legal_routes_render(client, route_name: str, expected_text: str) -> Non
 
     assert response.status_code == 200
     assert expected_text in response.content.decode()
+
+
+def test_legal_routes_use_empty_cart_summary_context(client) -> None:
+    """Pages without cart UI should not do full cart-summary work."""
+    response = client.get(reverse("main_site:privacy"))
+
+    assert response.status_code == 200
+    assert response.context["cart_summary"]["is_empty"] is True
+    assert response.context["cart_summary"]["item_count"] == 0

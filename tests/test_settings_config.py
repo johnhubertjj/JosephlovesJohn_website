@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from josephlovesjohn_site import settings
+from josephlovesjohn_site.storage import S3CompatibleMediaStorage
 
 pytestmark = pytest.mark.smoke
 
@@ -90,6 +91,50 @@ def test_blank_private_downloads_root_falls_back_to_default(monkeypatch: pytest.
         importlib.reload(settings)
 
 
+def test_settings_enable_redis_cache_and_cached_sessions_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A REDIS_URL should switch cache/session settings to shared backends."""
+    monkeypatch.setenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.CACHES["default"]["BACKEND"] == "django.core.cache.backends.redis.RedisCache"
+        assert reloaded.CACHES["default"]["LOCATION"] == "redis://127.0.0.1:6379/1"
+        assert reloaded.SESSION_ENGINE == "django.contrib.sessions.backends.cached_db"
+        assert reloaded.SESSION_CACHE_ALIAS == "default"
+    finally:
+        monkeypatch.delenv("REDIS_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_settings_enable_object_storage_media_backend_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Public uploaded media should switch to object storage when configured."""
+    monkeypatch.setenv("MEDIA_FILES_BUCKET_NAME", "jlj-media")
+    monkeypatch.setenv("MEDIA_FILES_BASE_URL", "https://pub.example.com")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.MEDIA_STORAGE_BACKEND == "josephlovesjohn_site.storage.S3CompatibleMediaStorage"
+        assert reloaded.STORAGES["default"]["BACKEND"] == "josephlovesjohn_site.storage.S3CompatibleMediaStorage"
+        assert reloaded.MEDIA_URL == "https://pub.example.com/"
+    finally:
+        monkeypatch.delenv("MEDIA_FILES_BUCKET_NAME", raising=False)
+        monkeypatch.delenv("MEDIA_FILES_BASE_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_s3_compatible_media_storage_url_requires_a_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Storage URLs should fail clearly when Django asks for a blank name."""
+    monkeypatch.setattr(settings, "MEDIA_FILES_BASE_URL", "https://pub.example.com")
+    storage = S3CompatibleMediaStorage()
+
+    with pytest.raises(ValueError, match="file name"):
+        storage.url(None)
+
+
 def test_settings_load_dotenv_values_when_present(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -166,5 +211,48 @@ def test_settings_expose_site_url_from_environment(monkeypatch: pytest.MonkeyPat
         assert reloaded.SITE_URL == "https://josephlovesjohn.com"
     finally:
         monkeypatch.delenv("SITE_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_render_preview_defaults_site_url_hosts_and_csrf(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Render preview metadata should automatically trust the preview hostname."""
+    monkeypatch.delenv("SITE_URL", raising=False)
+    monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("CSRF_TRUSTED_ORIGINS", raising=False)
+    monkeypatch.setenv("DEBUG", "false")
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "josephlovesjohn-website-pr-16.onrender.com")
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://josephlovesjohn-website-pr-16.onrender.com/")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SITE_URL == "https://josephlovesjohn-website-pr-16.onrender.com"
+        assert reloaded.ALLOWED_HOSTS == ["josephlovesjohn-website-pr-16.onrender.com"]
+        assert reloaded.CSRF_TRUSTED_ORIGINS == ["https://josephlovesjohn-website-pr-16.onrender.com"]
+    finally:
+        monkeypatch.delenv("DEBUG", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_HOSTNAME", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_explicit_site_url_wins_over_render_external_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An explicit canonical domain should override Render's ephemeral preview URL."""
+    monkeypatch.setenv("SITE_URL", "https://josephlovesjohn.com/")
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "josephlovesjohn-website-pr-16.onrender.com")
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://josephlovesjohn-website-pr-16.onrender.com/")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SITE_URL == "https://josephlovesjohn.com"
+        assert "josephlovesjohn-website-pr-16.onrender.com" in reloaded.ALLOWED_HOSTS
+        assert "https://josephlovesjohn-website-pr-16.onrender.com" in reloaded.CSRF_TRUSTED_ORIGINS
+    finally:
+        monkeypatch.delenv("SITE_URL", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_HOSTNAME", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_URL", raising=False)
         monkeypatch.delenv("DOTENV_PATH", raising=False)
         importlib.reload(settings)

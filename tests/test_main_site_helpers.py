@@ -4,10 +4,13 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.db import OperationalError
+from django.http import HttpResponse
 from django.test import override_settings
 from josephlovesjohn_site import assets
+from main_site import cache as main_site_cache
 from main_site import views
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
@@ -113,6 +116,60 @@ def test_get_primary_nav_items_returns_active_database_rows_in_order() -> None:
 
 
 @pytest.mark.django_db
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_get_header_social_links_cache_invalidates_when_content_changes() -> None:
+    """Shared site-content cache should refresh when admin-managed content changes."""
+    cache.clear()
+    HeaderSocialLink.objects.all().delete()
+    HeaderSocialLink.objects.create(
+        label="Bandcamp",
+        href="https://example.com/bandcamp",
+        icon_class="icon brands fa-bandcamp",
+        sort_order=0,
+        is_active=True,
+    )
+
+    first_links = views._get_header_social_links()
+
+    HeaderSocialLink.objects.create(
+        label="YouTube",
+        href="https://example.com/youtube",
+        icon_class="icon brands fa-youtube",
+        sort_order=1,
+        is_active=True,
+    )
+    refreshed_links = views._get_header_social_links()
+
+    assert [link["label"] for link in first_links] == ["Bandcamp", "Spotify"]
+    assert [link["label"] for link in refreshed_links] == ["Bandcamp", "Spotify", "YouTube"]
+
+
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_shared_content_cache_context_reuses_version_lookup_per_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One request should only fetch the shared-content cache version once."""
+    version_calls = {"count": 0}
+
+    def fake_get(key, default=None):
+        if key == main_site_cache._VERSION_KEY:
+            version_calls["count"] += 1
+            return 7
+        return default
+
+    monkeypatch.setattr(main_site_cache.cache, "get", fake_get)
+
+    middleware = main_site_cache.SharedContentCacheContextMiddleware(
+        lambda request: HttpResponse(
+            f"{main_site_cache._content_cache_version()}:{main_site_cache._content_cache_version()}"
+        )
+    )
+
+    response = middleware(SimpleNamespace())
+
+    assert response.content.decode() == "7:7"
+    assert version_calls["count"] == 1
+
+
+@pytest.mark.django_db
 def test_get_gig_photo_items_prefers_active_database_rows(create_static_asset) -> None:
     """Database-backed active photos should be returned in display order."""
     GigPhoto.objects.all().delete()
@@ -172,6 +229,48 @@ def test_get_gig_photo_items_supports_uploaded_files(media_base_dir) -> None:
             "image_url": f"/media/{photo.image_file.name}",
             "thumbnail_url": f"/media/{photo.thumbnail_file.name}",
             "alt_text": "Uploaded alt",
+        }
+    ]
+
+
+@pytest.mark.django_db
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_get_gig_photo_items_does_not_reuse_cached_empty_results(monkeypatch, create_static_asset) -> None:
+    """Transient empty gig-photo results should not get stuck in shared cache."""
+    cache.clear()
+    GigPhoto.objects.all().delete()
+    create_static_asset("images/gallery/live-1.jpg")
+    photo = GigPhoto.objects.create(
+        title="Recovered Photo",
+        image_path="images/gallery/live-1.jpg",
+        alt_text="Recovered alt",
+        sort_order=0,
+        is_active=True,
+    )
+
+    original_filter = views.GigPhoto.objects.filter
+    calls = {"count": 0}
+
+    def flaky_filter(*args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise OperationalError("temporary db issue")
+        return original_filter(*args, **kwargs)
+
+    monkeypatch.setattr(views.GigPhoto.objects, "filter", flaky_filter)
+
+    first_items = views._get_gig_photo_items()
+    second_items = views._get_gig_photo_items()
+
+    assert first_items == []
+    assert second_items == [
+        {
+            "title": photo.title,
+            "image_path": photo.image_path,
+            "thumbnail_path": photo.image_path,
+            "image_url": "/static/images/gallery/live-1.jpg",
+            "thumbnail_url": "/static/images/gallery/live-1.jpg",
+            "alt_text": photo.alt_text,
         }
     ]
 
@@ -343,6 +442,43 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
     assert items[0]["file_wav_url"] == "/static/audio/first.wav"
     assert items[0]["file_mp3_url"] == "/static/audio/first.mp3"
     assert items[1]["is_reversed"] is True
+
+
+@pytest.mark.django_db
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_get_music_library_items_cache_invalidates_when_products_change() -> None:
+    """Shared music-library cache should refresh after product changes."""
+    cache.clear()
+    Product.objects.all().delete()
+    Product.objects.create(
+        title="First Track",
+        slug="first-track",
+        meta="Single",
+        art_path="images/album_art/first.jpg",
+        preview_file_wav="audio/first.wav",
+        preview_file_mp3="audio/first.mp3",
+        download_file_path="audio/first.mp3",
+        sort_order=0,
+        is_published=True,
+    )
+
+    first_items = views._get_music_library_items()
+
+    Product.objects.create(
+        title="Second Track",
+        slug="second-track",
+        meta="Single",
+        art_path="images/album_art/second.jpg",
+        preview_file_wav="audio/second.wav",
+        preview_file_mp3="audio/second.mp3",
+        download_file_path="audio/second.mp3",
+        sort_order=1,
+        is_published=True,
+    )
+    refreshed_items = views._get_music_library_items()
+
+    assert [item["title"] for item in first_items] == ["First Track"]
+    assert [item["title"] for item in refreshed_items] == ["First Track", "Second Track"]
 
 
 @pytest.mark.django_db

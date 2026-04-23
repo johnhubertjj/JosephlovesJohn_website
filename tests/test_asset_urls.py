@@ -1,9 +1,12 @@
 """Tests for static/CDN asset URL helpers."""
 
+from pathlib import Path
+
 import pytest
 from django.test import override_settings
 from django.urls import reverse
 from josephlovesjohn_site import assets
+from main_site.templatetags import asset_urls as asset_url_tags
 from shop import models as shop_models
 from shop.models import Order, OrderItem, Product
 
@@ -46,6 +49,32 @@ def test_resolve_public_asset_source_returns_none_when_file_is_missing() -> None
     ) is None
 
 
+@override_settings(DEBUG=False, VERIFY_STATIC_ASSET_FILES=False, STATIC_URL="/static/")
+def test_resolve_public_asset_source_skips_file_checks_outside_debug() -> None:
+    """Production-style requests should trust configured static paths without stat calls."""
+    file_exists_called = {"called": False}
+
+    def file_exists(path: str) -> bool:
+        file_exists_called["called"] = True
+        return False
+
+    assert assets.resolve_public_asset_source("images/cover.jpg", file_exists=file_exists) == {
+        "path": "images/cover.jpg",
+        "url": "/static/images/cover.jpg",
+        "is_static": True,
+    }
+    assert file_exists_called["called"] is False
+
+
+@override_settings(DEBUG=False, VERIFY_STATIC_ASSET_FILES=True)
+def test_resolve_public_asset_source_can_force_file_checks_outside_debug() -> None:
+    """Production can opt back into strict repo-file validation when desired."""
+    assert assets.resolve_public_asset_source(
+        "images/missing.jpg",
+        file_exists=lambda path: False,
+    ) is None
+
+
 @override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
 def test_public_asset_url_uses_public_asset_base_url_for_relative_paths() -> None:
     """Relative paths should resolve against the configured public asset base URL."""
@@ -69,6 +98,27 @@ def test_public_asset_url_falls_back_when_manifest_lookup_fails(monkeypatch: pyt
     monkeypatch.setattr(assets, "static_url", lambda path: (_ for _ in ()).throw(ValueError("missing manifest")))
 
     assert assets.public_asset_url("images/gig_photos/test.jpg") == "/static/images/gig_photos/test.jpg"
+
+
+@override_settings(DEBUG=True)
+def test_versioned_static_appends_mtime_in_debug(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Debug static asset URLs should be cache-busted with the local file mtime."""
+    asset_path = tmp_path / "site.js"
+    asset_path.write_text("console.log('hello');", encoding="utf-8")
+    monkeypatch.setattr(asset_url_tags, "static", lambda path: f"/static/{path}")
+    monkeypatch.setattr(asset_url_tags.finders, "find", lambda path: str(asset_path))
+
+    versioned_url = asset_url_tags.versioned_static("main_site/js/site.js")
+
+    assert versioned_url == f"/static/main_site/js/site.js?v={int(asset_path.stat().st_mtime)}"
+
+
+@override_settings(DEBUG=False)
+def test_versioned_static_uses_plain_static_url_outside_debug(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Production/static-manifest mode should leave the asset URL unchanged."""
+    monkeypatch.setattr(asset_url_tags, "static", lambda path: f"/static/{path}")
+
+    assert asset_url_tags.versioned_static("main_site/js/site.js") == "/static/main_site/js/site.js"
 
 
 @pytest.mark.django_db

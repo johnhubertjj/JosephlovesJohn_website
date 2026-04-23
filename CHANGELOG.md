@@ -3,9 +3,20 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
-- the current working tree is tracking `v1.0.2` until the next release commit is cut
+- the latest tagged release is `v1.1.0`
 
-## v1.0.2 - Unreleased
+## v1.1.0 - 2026-04-23
+
+- Added Redis-backed scaling support for cache and session state, with object-storage-ready media handling for production-style deployments
+- Introduced shared main-site content caching, cache invalidation signals, narrower cart context generation, and short-lived cart summary caching
+- Added performance benchmarking and reporting tooling for branch comparisons, concurrency checks, query profiling, and HTML report generation
+- Fixed benchmark server cleanup so generated concurrency reports now align with direct and manual runs instead of being distorted by leaked processes
+- Improved public-page throughput under warm and concurrent traffic on `feature/scaling`, while keeping benchmark artifacts and report wording clearer and more trustworthy
+- Hardened shop checkout presentation with a Samsung-safe custom terms checkbox and versioned shop stylesheet URLs so mobile browsers pick up CSS changes reliably
+- Fixed Safari-specific `/art/` image handling and related front-end regressions
+- Improved CI and deployment support with preview URL handling, faster asset state verification, PR deployment fixes, and benchmark script fallbacks when `redis-cli` is unavailable
+
+## v1.0.2 - 2026-04-19
 
 - Cleaned direct section routes so `/music/` and `/intro/` no longer append redundant hash fragments
 - Hardened malformed one-page route handling for cases such as `#contact/music` and related variants
@@ -15,7 +26,7 @@ This project follows simple semantic versioning for production releases:
 - Added repository-level architecture documentation and Mermaid diagrams for routing, rendering, state, and shop flow
 - Upgraded Django from `6.0.3` to `6.0.4` to clear the April 2026 audit advisories affecting uploads, admin privilege boundaries, and ASGI header handling
 
-## v1.0.1 - Unreleased
+## v1.0.1 - 2026-04-18
 
 - Post-launch fixes and polish after the first live deployment
 - Domain, email, SEO, and analytics hardening

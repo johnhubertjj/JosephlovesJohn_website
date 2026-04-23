@@ -8,12 +8,13 @@ Deploy on Render as:
 
 - 1 web service for Django
 - 1 managed Postgres database
-- 1 persistent disk mounted at `/opt/render/project/src/media`
+- optional Redis service for shared cache, sessions, and rate limiting
+- optional persistent disk mounted at `/opt/render/project/src/media` while migrating off local uploads
 
 Current app behavior matches that setup:
 
 - static files are served with WhiteNoise
-- uploaded media stays on the filesystem
+- uploaded media can stay on the filesystem or move to S3-compatible object storage
 - local development still falls back to SQLite when `DATABASE_URL` is unset
 - production should use Postgres through `DATABASE_URL`
 
@@ -60,7 +61,14 @@ Notes:
 
 - keep the service to a single instance while media is disk-backed
 - disk-backed uploads persist across deploys
-- object storage is still the better long-term option if you later need multiple web instances
+- object storage is the better long-term option if you later need multiple web instances
+
+### Redis
+
+Add a Redis service if you want shared cache-backed rate limits and cached sessions
+across multiple Django instances.
+
+Set the Redis internal URL as `REDIS_URL`.
 
 ### Postgres
 
@@ -81,6 +89,7 @@ PYTHON_VERSION=3.14.3
 UV_VERSION=0.7.12
 DATABASE_URL=postgresql://...
 DATABASE_CONN_MAX_AGE=600
+REDIS_URL=redis://...
 ```
 
 ### Host and HTTPS
@@ -134,6 +143,24 @@ PUBLIC_ASSET_BASE_URL=https://your-public-bucket-domain
 With this set, the site will resolve relative asset paths such as
 `audio/song.mp3` and `images/gig_photos/photo.jpg` against that public bucket
 instead of the local repo's `static/` directory.
+
+### Optional public uploaded-media storage
+
+If admin-uploaded media files should no longer live on the web service disk,
+configure a public S3-compatible bucket:
+
+```env
+MEDIA_FILES_BUCKET_NAME=jlj-media
+MEDIA_FILES_ENDPOINT_URL=https://<account-id>.r2.cloudflarestorage.com
+MEDIA_FILES_ACCESS_KEY_ID=replace-me
+MEDIA_FILES_SECRET_ACCESS_KEY=replace-me
+MEDIA_FILES_REGION=auto
+MEDIA_FILES_BASE_URL=https://pub-<account-id>.r2.dev
+MEDIA_FILES_KEY_PREFIX=
+```
+
+With those settings enabled, Django `FileField` uploads will be written directly
+to the bucket and rendered from `MEDIA_FILES_BASE_URL`.
 
 ### Optional private paid downloads
 

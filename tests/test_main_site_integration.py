@@ -205,7 +205,7 @@ def test_gig_photo_grid_component_renders_empty_state() -> None:
 
 @pytest.mark.integration
 def test_gig_photo_grid_component_renders_direct_urls() -> None:
-    """Gig photo cards should render directly from the prepared helper URLs."""
+    """Gig photo cards should render thumbs in the grid and full images in the lightbox link."""
     html = render_to_string(
         "main_site/includes/components/art/gig_photo_grid.html",
         {
@@ -222,6 +222,8 @@ def test_gig_photo_grid_component_renders_direct_urls() -> None:
 
     assert 'href="/media/gig_photos/uploads/reusable.jpg"' in html
     assert 'src="/media/gig_photos/thumbs/uploads/reusable-thumb.jpg"' in html
+    assert 'loading="lazy"' in html
+    assert 'decoding="async"' in html
 
 
 @pytest.mark.integration

@@ -140,41 +140,76 @@
     border-color: rgba(255, 120, 120, 0.7);
 }
 
-.shop-form-field input[type='checkbox'] {
-    appearance: auto;
-    display: inline-block;
-    float: none;
-    width: 0.95rem;
-    height: 0.95rem;
-    margin: 0;
-    opacity: 1;
-    position: relative;
-    z-index: 1;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 0.2rem;
-    background: rgba(255, 255, 255, 0.1);
-    accent-color: #ffffff;
-    box-shadow: 0 0 0 1px rgba(10, 12, 18, 0.35);
-}
-
 .shop-form-field--checkbox {
     align-items: flex-start;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+    position: relative;
+}
+
+.shop-form-field--checkbox input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    height: 1.65rem;
+    left: 0;
+    margin: 0;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    width: 1.65rem;
+    z-index: 2;
 }
 
 .shop-form-field--checkbox .shop-checkbox-label {
-    align-items: center;
-    display: inline-flex;
-    gap: 0.50rem;
+    align-items: start;
+    color: inherit;
+    cursor: pointer;
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: 1.65rem minmax(0, 1fr);
     margin-bottom: 0;
+    padding: 0;
+    padding-left: 0;
+    padding-right: 0;
+    position: static;
 }
 
-.shop-form-field--checkbox .shop-checkbox-label span {
+.shop-form-field--checkbox input[type='checkbox'] + .shop-checkbox-label::before {
+    content: none !important;
+    display: none !important;
+}
+
+.shop-form-field--checkbox .shop-checkbox-indicator {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 4px;
+    box-shadow: none;
+    height: 1.65rem;
+    position: relative;
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    width: 1.65rem;
+}
+
+.shop-form-field--checkbox .shop-checkbox-indicator::after {
+    border: solid #10131a;
+    border-width: 0 0.16rem 0.16rem 0;
+    content: '';
+    height: 0.68rem;
+    left: 0.62rem;
+    opacity: 0;
+    position: absolute;
+    top: 0.34rem;
+    transform: rotate(45deg);
+    transition: opacity 0.18s ease;
+    width: 0.34rem;
+}
+
+.shop-form-field--checkbox .shop-checkbox-text {
     display: flex;
+    min-height: 1.65rem;
     align-items: center;
-    min-height: 0.95rem;
     line-height: 1.5;
     font-size: 0.72rem;
     letter-spacing: 0.05rem;
@@ -182,8 +217,28 @@
     white-space: nowrap;
 }
 
+.shop-form-field--checkbox input[type='checkbox']:checked + .shop-checkbox-label .shop-checkbox-indicator {
+    background: #ffffff;
+    border-color: #ffffff;
+}
+
+.shop-form-field--checkbox input[type='checkbox']:checked + .shop-checkbox-label .shop-checkbox-indicator::after {
+    opacity: 1;
+}
+
+.shop-form-field--checkbox input[type='checkbox']:focus + .shop-checkbox-label .shop-checkbox-indicator,
+.shop-form-field--checkbox input[type='checkbox']:focus-visible + .shop-checkbox-label .shop-checkbox-indicator {
+    background: rgba(255, 255, 255, 0.075);
+    box-shadow: 0 0 0 1px #ffffff;
+}
+
+.shop-form-field--checkbox.has-errors .shop-checkbox-indicator {
+    border-color: rgba(255, 120, 120, 0.75);
+    box-shadow: 0 0 0 1px rgba(255, 120, 120, 0.35);
+}
+
 @media screen and (max-width: 736px) {
-    .shop-form-field--checkbox .shop-checkbox-label span {
+    .shop-form-field--checkbox .shop-checkbox-text {
         white-space: normal;
     }
 }

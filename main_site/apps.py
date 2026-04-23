@@ -8,3 +8,7 @@ class MainSiteConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "main_site"
+
+    def ready(self) -> None:
+        """Register signal handlers for cache invalidation."""
+        from . import signals  # noqa: F401

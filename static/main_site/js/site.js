@@ -1,4 +1,25 @@
 (function () {
+    var body = document.body;
+    if (!body) {
+        return;
+    }
+
+    var ua = navigator.userAgent || "";
+    var vendor = navigator.vendor || "";
+    var isSafari = vendor.indexOf("Apple") !== -1
+        && ua.indexOf("CriOS") === -1
+        && ua.indexOf("Chrome") === -1
+        && ua.indexOf("Chromium") === -1
+        && ua.indexOf("Edg") === -1
+        && ua.indexOf("OPR") === -1
+        && ua.indexOf("FxiOS") === -1;
+
+    if (isSafari) {
+        body.classList.add("is-safari-browser");
+    }
+})();
+
+(function () {
     var validSections = ["intro", "music", "art", "contact"];
 
     function normalizeSectionHash() {
@@ -521,6 +542,40 @@
 })();
 
 (function () {
+    var artArticle = document.getElementById("art");
+    if (!artArticle) {
+        return;
+    }
+
+    function pauseArtVideos() {
+        artArticle.querySelectorAll(".album-art-card video").forEach(function (video) {
+            if (!video.paused) {
+                video.pause();
+            }
+        });
+    }
+
+    function syncArtMediaState() {
+        if (!artArticle.classList.contains("active")) {
+            pauseArtVideos();
+        }
+    }
+
+    new MutationObserver(function () {
+        syncArtMediaState();
+    }).observe(artArticle, {
+        attributes: true,
+        attributeFilter: ["class"]
+    });
+
+    window.addEventListener("hashchange", function () {
+        window.setTimeout(syncArtMediaState, 0);
+    });
+
+    syncArtMediaState();
+})();
+
+(function () {
     var modal = document.getElementById("music-share-modal");
     if (!modal) {
         return;
@@ -717,6 +772,22 @@
     var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
     var lightboxCloseButton = lightbox.querySelector("[data-art-close]");
     var lastTrigger = null;
+    var lastWindowScrollY = 0;
+    var lastArticleScrollTop = 0;
+
+    function getActiveArticle() {
+        return document.querySelector("#main article.active");
+    }
+
+    function restoreLightboxScrollPosition() {
+        var activeArticle = getActiveArticle();
+
+        if (activeArticle) {
+            activeArticle.scrollTop = lastArticleScrollTop;
+        }
+
+        window.scrollTo(0, lastWindowScrollY);
+    }
 
     function getLightboxFocusableElements() {
         if (!lightboxInner && !lightboxCloseButton) {
@@ -738,9 +809,16 @@
         lightboxImage.removeAttribute("src");
         lightboxImage.alt = "";
         lightboxCaption.textContent = "";
+        restoreLightboxScrollPosition();
         if (lastTrigger) {
-            lastTrigger.focus();
+            try {
+                lastTrigger.focus({ preventScroll: true });
+            } catch (error) {
+                lastTrigger.focus();
+            }
         }
+
+        window.requestAnimationFrame(restoreLightboxScrollPosition);
     }
 
     document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
@@ -753,6 +831,9 @@
             }
 
             lastTrigger = trigger;
+            lastWindowScrollY = window.scrollY || window.pageYOffset || 0;
+            var activeArticle = getActiveArticle();
+            lastArticleScrollTop = activeArticle ? activeArticle.scrollTop : 0;
             var image = trigger.querySelector("img");
             lightboxImage.src = targetUrl;
             lightboxImage.alt = image ? image.alt : "Artwork";

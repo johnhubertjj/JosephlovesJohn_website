@@ -1,5 +1,5 @@
 {% extends 'main_site/base.html' %}
-{% load static %}
+{% load asset_urls %}
 
 {% block title %}{% block shop_title %}Music Shop | JosephlovesJohn{% endblock %}{% endblock %}
 {% block meta_description %}Official JosephlovesJohn checkout and customer account pages for direct music downloads.{% endblock %}
@@ -8,8 +8,8 @@
 
 {% block styles %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'main_site/css/site.css' %}" />
-    <link rel="stylesheet" href="{% static 'shop/css/shop.css' %}" />
+    <link rel="stylesheet" href="{% versioned_static 'main_site/css/site.css' %}" />
+    <link rel="stylesheet" href="{% versioned_static 'shop/css/shop.css' %}" />
 {% endblock %}
 
 {% block content %}
