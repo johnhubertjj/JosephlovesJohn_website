@@ -213,3 +213,46 @@ def test_settings_expose_site_url_from_environment(monkeypatch: pytest.MonkeyPat
         monkeypatch.delenv("SITE_URL", raising=False)
         monkeypatch.delenv("DOTENV_PATH", raising=False)
         importlib.reload(settings)
+
+
+def test_render_preview_defaults_site_url_hosts_and_csrf(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Render preview metadata should automatically trust the preview hostname."""
+    monkeypatch.delenv("SITE_URL", raising=False)
+    monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("CSRF_TRUSTED_ORIGINS", raising=False)
+    monkeypatch.setenv("DEBUG", "false")
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "josephlovesjohn-website-pr-16.onrender.com")
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://josephlovesjohn-website-pr-16.onrender.com/")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SITE_URL == "https://josephlovesjohn-website-pr-16.onrender.com"
+        assert reloaded.ALLOWED_HOSTS == ["josephlovesjohn-website-pr-16.onrender.com"]
+        assert reloaded.CSRF_TRUSTED_ORIGINS == ["https://josephlovesjohn-website-pr-16.onrender.com"]
+    finally:
+        monkeypatch.delenv("DEBUG", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_HOSTNAME", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
+def test_explicit_site_url_wins_over_render_external_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An explicit canonical domain should override Render's ephemeral preview URL."""
+    monkeypatch.setenv("SITE_URL", "https://josephlovesjohn.com/")
+    monkeypatch.setenv("RENDER_EXTERNAL_HOSTNAME", "josephlovesjohn-website-pr-16.onrender.com")
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://josephlovesjohn-website-pr-16.onrender.com/")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.SITE_URL == "https://josephlovesjohn.com"
+        assert "josephlovesjohn-website-pr-16.onrender.com" in reloaded.ALLOWED_HOSTS
+        assert "https://josephlovesjohn-website-pr-16.onrender.com" in reloaded.CSRF_TRUSTED_ORIGINS
+    finally:
+        monkeypatch.delenv("SITE_URL", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_HOSTNAME", raising=False)
+        monkeypatch.delenv("RENDER_EXTERNAL_URL", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)

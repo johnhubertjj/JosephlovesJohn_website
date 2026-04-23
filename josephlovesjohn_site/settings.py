@@ -74,6 +74,14 @@ DEBUG = _env_bool("DEBUG", default=True)
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-me")
 ALLOWED_HOSTS = _env_list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else [])
 CSRF_TRUSTED_ORIGINS = _env_list("CSRF_TRUSTED_ORIGINS")
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+if RENDER_EXTERNAL_URL and RENDER_EXTERNAL_URL not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(RENDER_EXTERNAL_URL)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -158,6 +166,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = os.environ.get("MEDIA_URL", "/media/").strip() or "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 SITE_URL = os.environ.get("SITE_URL", "").strip().rstrip("/")
+if not SITE_URL and RENDER_EXTERNAL_URL:
+    SITE_URL = RENDER_EXTERNAL_URL
 if not SITE_URL and DEBUG:
     SITE_URL = "http://127.0.0.1:8000"
 PUBLIC_ASSET_BASE_URL = os.environ.get("PUBLIC_ASSET_BASE_URL", "").strip().rstrip("/")
