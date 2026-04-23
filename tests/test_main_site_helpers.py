@@ -6,8 +6,8 @@ from unittest.mock import Mock
 import pytest
 from django.core.cache import cache
 from django.core.files.base import ContentFile
-from django.http import HttpResponse
 from django.db import OperationalError
+from django.http import HttpResponse
 from django.test import override_settings
 from josephlovesjohn_site import assets
 from main_site import cache as main_site_cache

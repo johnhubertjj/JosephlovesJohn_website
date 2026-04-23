@@ -218,7 +218,11 @@ stop_server() {
 flush_redis_db() {
     local redis_url="$1"
     if [[ -n "$redis_url" ]]; then
-        redis-cli -u "$redis_url" FLUSHDB >/dev/null
+        if command -v redis-cli >/dev/null 2>&1; then
+            redis-cli -u "$redis_url" FLUSHDB >/dev/null
+        else
+            "$PYTHON_BIN" -c 'import sys, redis; redis.Redis.from_url(sys.argv[1]).flushdb()' "$redis_url"
+        fi
     fi
 }
 

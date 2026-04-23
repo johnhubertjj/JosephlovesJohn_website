@@ -113,7 +113,14 @@ def ensure_worktree(ref: str, dir_path: Path) -> Path:
 
 def flush_redis_db(redis_url: str) -> None:
     if redis_url:
-        subprocess.run(["redis-cli", "-u", redis_url, "FLUSHDB"], check=True, stdout=subprocess.DEVNULL)
+        redis_cli = shutil.which("redis-cli")
+        if redis_cli:
+            subprocess.run([redis_cli, "-u", redis_url, "FLUSHDB"], check=True, stdout=subprocess.DEVNULL)
+            return
+
+        import redis
+
+        redis.Redis.from_url(redis_url).flushdb()
 
 
 def request_once(url: str) -> dict[str, float | int | str]:
