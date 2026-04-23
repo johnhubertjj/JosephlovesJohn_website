@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
-OLD_BRANCH="${OLD_BRANCH:-feature/render_deploy}"
-NEW_BRANCH="${NEW_BRANCH:-feature/scaling}"
+OLD_REF="${OLD_REF:-${OLD_BRANCH:-feature/render_deploy}}"
+NEW_REF="${NEW_REF:-${NEW_BRANCH:-feature/scaling}}"
+OLD_LABEL="${OLD_LABEL:-$OLD_REF}"
+NEW_LABEL="${NEW_LABEL:-$NEW_REF}"
 MODE="${MODE:-baseline}"
 ENDPOINTS="${ENDPOINTS:-/,/music/,/art/}"
 REQUESTS_PER_ENDPOINT="${REQUESTS_PER_ENDPOINT:-2}"
@@ -12,7 +14,7 @@ NEW_REDIS_URL="${NEW_REDIS_URL:-}"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 PARENT_DIR="$(dirname "$REPO_ROOT")"
-CURRENT_BRANCH="$(git -C "$REPO_ROOT" branch --show-current)"
+CURRENT_HEAD="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 PYTHON_BIN="${PYTHON_BIN:-$REPO_ROOT/.venv/bin/python}"
 SHARED_DB_PATH="${SHARED_DB_PATH:-$REPO_ROOT/db.sqlite3}"
 SHARED_DATABASE_URL="${SHARED_DATABASE_URL:-}"
@@ -21,13 +23,14 @@ NEW_WORKTREE="${NEW_WORKTREE:-$PARENT_DIR/jlj-scaling-bench}"
 
 usage() {
     cat <<'EOF'
-Compare branch query counts for feature/render_deploy vs feature/scaling.
+Compare query counts for any two git refs.
 
 Usage:
   scripts/compare_branch_queries.sh
 
 Environment overrides:
-  OLD_BRANCH, NEW_BRANCH             Branch names to compare.
+  OLD_REF, NEW_REF                   Git refs to compare (branch, tag, or commit SHA).
+  OLD_LABEL, NEW_LABEL               Optional human-friendly labels for the report output.
   MODE                               baseline | scaling  (default: baseline)
   ENDPOINTS                          Comma-separated endpoints (default: /,/music/,/art/)
   REQUESTS_PER_ENDPOINT              Repeated requests per endpoint after cache clear (default: 2)
@@ -80,25 +83,32 @@ ensure_clean_worktree() {
     fi
 }
 
-ensure_worktree() {
-    local branch="$1"
-    local dir="$2"
+resolve_ref() {
+    local ref="$1"
+    git -C "$REPO_ROOT" rev-parse "${ref}^{commit}"
+}
 
-    if [[ "$branch" == "$CURRENT_BRANCH" && "$dir" != "$REPO_ROOT" ]]; then
+ensure_worktree() {
+    local ref="$1"
+    local dir="$2"
+    local resolved_ref
+    resolved_ref="$(resolve_ref "$ref")"
+
+    if [[ "$resolved_ref" == "$CURRENT_HEAD" && "$dir" != "$REPO_ROOT" ]]; then
         echo "$REPO_ROOT"
         return 0
     fi
 
     if [[ ! -e "$dir" ]]; then
-        git -C "$REPO_ROOT" worktree add "$dir" "$branch"
+        git -C "$REPO_ROOT" worktree add --detach "$dir" "$resolved_ref"
     fi
 
     ensure_clean_worktree "$dir"
 
-    local current_branch
-    current_branch="$(git -C "$dir" branch --show-current)"
-    if [[ "$current_branch" != "$branch" ]]; then
-        echo "Worktree $dir is on branch '$current_branch', expected '$branch'." >&2
+    local current_head
+    current_head="$(git -C "$dir" rev-parse HEAD)"
+    if [[ "$current_head" != "$resolved_ref" ]]; then
+        echo "Worktree $dir is on commit '$current_head', expected ref '$ref' ($resolved_ref)." >&2
         exit 1
     fi
 
@@ -223,17 +233,17 @@ for endpoint in old["endpoints"]:
 PY
 }
 
-OLD_WORKTREE="$(ensure_worktree "$OLD_BRANCH" "$OLD_WORKTREE")"
-NEW_WORKTREE="$(ensure_worktree "$NEW_BRANCH" "$NEW_WORKTREE")"
+OLD_WORKTREE="$(ensure_worktree "$OLD_REF" "$OLD_WORKTREE")"
+NEW_WORKTREE="$(ensure_worktree "$NEW_REF" "$NEW_WORKTREE")"
 
 OLD_RESULTS="$(mktemp -t jlj-old-queries.XXXXXX.json)"
 NEW_RESULTS="$(mktemp -t jlj-new-queries.XXXXXX.json)"
 
-echo "Collecting query counts for $OLD_BRANCH ..."
-collect_queries "$OLD_WORKTREE" "$OLD_BRANCH" "$OLD_REDIS_URL" "$OLD_RESULTS"
+echo "Collecting query counts for $OLD_LABEL ($OLD_REF) ..."
+collect_queries "$OLD_WORKTREE" "$OLD_LABEL" "$OLD_REDIS_URL" "$OLD_RESULTS"
 
-echo "Collecting query counts for $NEW_BRANCH ..."
-collect_queries "$NEW_WORKTREE" "$NEW_BRANCH" "$NEW_REDIS_URL" "$NEW_RESULTS"
+echo "Collecting query counts for $NEW_LABEL ($NEW_REF) ..."
+collect_queries "$NEW_WORKTREE" "$NEW_LABEL" "$NEW_REDIS_URL" "$NEW_RESULTS"
 
 echo
 print_summary "$OLD_RESULTS" "$NEW_RESULTS"

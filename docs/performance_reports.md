@@ -1,17 +1,42 @@
 ## Performance Reports
 
-Use the combined report script to compare request timings, query counts, and Python-side hotspots between two branches.
+Use the combined report script to compare request timings, query counts, Python-side hotspots, and charts between any two git refs.
 
 ### Local usage
 
 With Postgres and Redis running locally:
 
 ```bash
+OLD_REF=feature/render_deploy \
+NEW_REF=feature/scaling \
+OLD_LABEL=render_deploy \
+NEW_LABEL=scaling \
 SHARED_DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@127.0.0.1:5432/jlj_bench \
 OLD_REDIS_URL=redis://127.0.0.1:6379/1 \
 NEW_REDIS_URL=redis://127.0.0.1:6379/2 \
 python3 scripts/generate_perf_report.py --output-dir perf-report
 ```
+
+`OLD_REF` and `NEW_REF` can be:
+
+- branch names
+- tags
+- commit SHAs
+
+Example comparing two commits directly:
+
+```bash
+OLD_REF=877ca75b \
+NEW_REF=6ae8b92 \
+OLD_LABEL=before \
+NEW_LABEL=after \
+SHARED_DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@127.0.0.1:5432/jlj_bench \
+OLD_REDIS_URL=redis://127.0.0.1:6379/1 \
+NEW_REDIS_URL=redis://127.0.0.1:6379/2 \
+python3 scripts/generate_perf_report.py --output-dir perf-report-compare
+```
+
+If you omit `OLD_LABEL` and `NEW_LABEL`, the report uses the refs themselves as labels.
 
 The script writes:
 
@@ -24,8 +49,44 @@ The script writes:
 - **Baseline timings**: repeated local request timings without Redis-backed caching.
 - **Scaling timings**: repeated local request timings with the cache/session settings enabled.
 - **Query counts**: DB queries for repeated requests to the same route.
-- **Concurrent Gunicorn load**: realistic multi-request route benchmarks using a production-style app server.
+- **Concurrent Gunicorn load**:
+  - fresh-cache burst medians
+  - warm steady-state medians after full endpoint prewarm cycles
+  - both measured in a production-style `DEBUG=false` setup with manifest-collected static files
 - **Python hotspots**: cProfile summaries of the slowest application files/functions on the profiled request path.
+- **Inline plots**: endpoint charts for request timings, repeated query counts, and concurrent load throughput/latency.
+
+### Full comparison runthrough
+
+1. Choose the two refs you want to compare.
+2. Make sure both refs can use the same database shape.
+3. Start Postgres and Redis locally.
+4. Pick two separate Redis DBs so caches do not overlap.
+5. Run the combined report with `OLD_REF`, `NEW_REF`, `OLD_LABEL`, and `NEW_LABEL`.
+6. Open the generated `report.html`.
+7. Use the matching `report.json` and `raw/*.txt` files if you want to inspect exact script output.
+
+Recommended command skeleton:
+
+```bash
+OLD_REF=<old-ref> \
+NEW_REF=<new-ref> \
+OLD_LABEL=<old-label> \
+NEW_LABEL=<new-label> \
+SHARED_DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@127.0.0.1:5432/jlj_bench \
+OLD_REDIS_URL=redis://127.0.0.1:6379/1 \
+NEW_REDIS_URL=redis://127.0.0.1:6379/2 \
+python3 scripts/generate_perf_report.py --output-dir perf-report
+```
+
+Useful knobs:
+
+- `--runs 20` for more stable request timing samples
+- `--query-requests 3` to see more than one repeated request
+- `--profile-warmup-requests 2` to reduce cold-start noise in Python hotspots
+- `--concurrent-requests 400` and `--concurrency 40` for a heavier Gunicorn load check
+- `--concurrency-runs 7` if you want concurrency medians across more repeated runs
+- `--endpoints /,/music/,/art/,/contact/` to include more routes
 
 ### Important limits
 
@@ -36,6 +97,19 @@ The script writes:
 ### Concurrent load testing
 
 Use concurrent load tests when you want to know whether the scaling branch behaves better under pressure, not just on one request at a time.
+
+The combined report now runs the concurrent Gunicorn step multiple times and charts the **median** latency/throughput per endpoint for two states:
+
+- `fresh-cache burst`: flush Redis, start Gunicorn, do minimal route warmup, then measure
+- `warm steady-state`: flush Redis, start Gunicorn, prewarm all benchmark endpoints for several full cycles, then measure
+
+Those Gunicorn runs use a production-style benchmark setup:
+
+- `DEBUG=false`
+- manifest static files collected into temporary static roots for each ref
+- no debug-only static finder/autorefresh behavior
+
+That makes one-off local outliers much less likely to distort the report and helps separate cache-fill cost from genuinely warm steady-state behavior.
 
 #### Recommended local setup
 

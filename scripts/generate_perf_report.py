@@ -73,6 +73,18 @@ def parse_args() -> argparse.Namespace:
         default=1,
         help="Warmup requests per endpoint before concurrent benchmarking.",
     )
+    parser.add_argument(
+        "--concurrency-runs",
+        type=int,
+        default=5,
+        help="Repeated Gunicorn concurrency runs to aggregate with medians.",
+    )
+    parser.add_argument(
+        "--steady-state-warmup-rounds",
+        type=int,
+        default=5,
+        help="Full endpoint warmup cycles before the steady-state concurrency benchmark.",
+    )
     return parser.parse_args()
 
 
@@ -163,12 +175,15 @@ def top_deltas(
 
 def build_findings(report: dict[str, Any]) -> list[str]:
     findings: list[str] = []
+    old_label = report["metadata"]["old_label"]
+    new_label = report["metadata"]["new_label"]
 
     baseline_timing = report["timings"]["baseline"]
     scaling_timing = report["timings"]["scaling"]
     baseline_queries = report["queries"]["baseline"]
     scaling_queries = report["queries"]["scaling"]
-    concurrency = report["concurrency"]["scaling"]
+    concurrency_fresh = report["concurrency"]["fresh"]
+    concurrency_warm = report["concurrency"]["warm"]
 
     for endpoint in report["endpoints"]:
         base_timing_delta = (
@@ -184,13 +199,13 @@ def build_findings(report: dict[str, Any]) -> list[str]:
 
         if scaling_query_new[-1] == 0 and scaling_query_new[0] > 0:
             findings.append(
-                f"`{endpoint}` reaches a zero-query warm path on `feature/scaling`, "
-                f"but its warm request time is still {scaling_timing_delta:.2f}ms slower than the baseline branch locally."
+                f"`{endpoint}` reaches a zero-query warm path on `{new_label}`, "
+                f"but its warm request time is still {scaling_timing_delta:.2f}ms slower than `{old_label}` locally."
             )
 
         if base_timing_delta > 0.75:
             findings.append(
-                f"`{endpoint}` shows a steady uncached overhead on `feature/scaling` "
+                f"`{endpoint}` shows a steady uncached overhead on `{new_label}` "
                 f"({base_timing_delta:.2f}ms slower in baseline mode)."
             )
 
@@ -203,22 +218,45 @@ def build_findings(report: dict[str, Any]) -> list[str]:
 
         if base_query_new[-1] == base_query_new[0] and scaling_query_new[-1] < scaling_query_new[0]:
             findings.append(
-                f"`{endpoint}` only reduces repeated DB work on `feature/scaling`; "
-                "the older branch continues issuing the same queries on repeated requests."
+                f"`{endpoint}` only reduces repeated DB work on `{new_label}`; "
+                f"`{old_label}` continues issuing the same queries on repeated requests."
             )
 
-        concurrency_old = concurrency["old"]["endpoints"][endpoint]
-        concurrency_new = concurrency["new"]["endpoints"][endpoint]
+        concurrency_old_fresh = concurrency_fresh["old"]["endpoints"][endpoint]
+        concurrency_new_fresh = concurrency_fresh["new"]["endpoints"][endpoint]
+        concurrency_old_warm = concurrency_warm["old"]["endpoints"][endpoint]
+        concurrency_new_warm = concurrency_warm["new"]["endpoints"][endpoint]
         if (
-            concurrency_new["success_count"] == concurrency_new["total_requests"]
-            and concurrency_old["success_count"] == concurrency_old["total_requests"]
-            and concurrency_new["avg_ms"] < concurrency_old["avg_ms"] * 0.75
+            concurrency_new_fresh["success_count"] == concurrency_new_fresh["total_requests"]
+            and concurrency_old_fresh["success_count"] == concurrency_old_fresh["total_requests"]
+            and concurrency_new_fresh["avg_ms"] < concurrency_old_fresh["avg_ms"] * 0.75
         ):
             findings.append(
-                f"Under concurrent Gunicorn load, `{endpoint}` improves from "
-                f"{concurrency_old['avg_ms']:.2f}ms avg / {concurrency_old['requests_per_second']:.1f} req/s "
-                f"to {concurrency_new['avg_ms']:.2f}ms avg / {concurrency_new['requests_per_second']:.1f} req/s "
-                "on `feature/scaling`."
+                f"Under fresh-cache concurrent Gunicorn load, `{endpoint}` improves from "
+                f"{concurrency_old_fresh['avg_ms']:.2f}ms avg / {concurrency_old_fresh['requests_per_second']:.1f} req/s "
+                f"to {concurrency_new_fresh['avg_ms']:.2f}ms avg / {concurrency_new_fresh['requests_per_second']:.1f} req/s "
+                f"on `{new_label}`."
+            )
+
+        if (
+            concurrency_new_warm["success_count"] == concurrency_new_warm["total_requests"]
+            and concurrency_old_warm["success_count"] == concurrency_old_warm["total_requests"]
+            and concurrency_new_warm["avg_ms"] < concurrency_old_warm["avg_ms"] * 0.75
+        ):
+            findings.append(
+                f"Under warm steady-state Gunicorn load, `{endpoint}` improves from "
+                f"{concurrency_old_warm['avg_ms']:.2f}ms avg / {concurrency_old_warm['requests_per_second']:.1f} req/s "
+                f"to {concurrency_new_warm['avg_ms']:.2f}ms avg / {concurrency_new_warm['requests_per_second']:.1f} req/s "
+                f"on `{new_label}`."
+            )
+
+        if (
+            concurrency_new_fresh["avg_ms"] > concurrency_old_fresh["avg_ms"]
+            and concurrency_new_warm["avg_ms"] < concurrency_new_fresh["avg_ms"] * 0.9
+        ):
+            findings.append(
+                f"`{endpoint}` is notably better on `{new_label}` after a deeper warmup than on a fresh-cache burst, "
+                f"suggesting its cache path pays off after initial shared payloads are populated."
             )
 
     deduped: list[str] = []
@@ -242,10 +280,114 @@ def format_ms(value: float) -> str:
     return f"{value:.2f}ms"
 
 
+def format_req_per_sec(value: float) -> str:
+    return f"{value:.1f} req/s"
+
+
+def format_range(values: list[float], formatter) -> str:
+    if not values:
+        return "n/a"
+    low = min(values)
+    high = max(values)
+    if abs(high - low) < 1e-9:
+        return formatter(low)
+    return f"{formatter(low)} - {formatter(high)}"
+
+
+def render_bar_chart(
+    title: str,
+    *,
+    endpoints: list[str],
+    old_values: list[float],
+    new_values: list[float],
+    old_label: str,
+    new_label: str,
+    value_formatter,
+    max_value: float | None = None,
+) -> str:
+    width = 860
+    height = 300
+    margin_left = 56
+    margin_right = 24
+    margin_top = 24
+    margin_bottom = 56
+    plot_width = width - margin_left - margin_right
+    plot_height = height - margin_top - margin_bottom
+    group_width = plot_width / max(len(endpoints), 1)
+    bar_width = min(40.0, group_width * 0.3)
+    gap = bar_width * 0.35
+    scale_max = max_value or max(old_values + new_values + [1.0])
+
+    def bar_height(value: float) -> float:
+        return (value / scale_max) * plot_height if scale_max else 0.0
+
+    elements: list[str] = [
+        f'<line x1="{margin_left}" y1="{margin_top + plot_height}" x2="{margin_left + plot_width}" y2="{margin_top + plot_height}" stroke="#cbd5e1" stroke-width="1" />',
+        f'<line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{margin_top + plot_height}" stroke="#cbd5e1" stroke-width="1" />',
+    ]
+
+    ticks = 4
+    for tick in range(ticks + 1):
+        value = scale_max * tick / ticks
+        y = margin_top + plot_height - (plot_height * tick / ticks)
+        elements.append(
+            f'<line x1="{margin_left}" y1="{y:.2f}" x2="{margin_left + plot_width}" y2="{y:.2f}" stroke="#e5e7eb" stroke-width="1" />'
+        )
+        elements.append(
+            f'<text x="{margin_left - 8}" y="{y + 4:.2f}" text-anchor="end" font-size="11" fill="#667085">{html.escape(value_formatter(value))}</text>'
+        )
+
+    for index, endpoint in enumerate(endpoints):
+        group_x = margin_left + index * group_width + group_width / 2
+        old_height = bar_height(old_values[index])
+        new_height = bar_height(new_values[index])
+        old_x = group_x - bar_width - gap / 2
+        new_x = group_x + gap / 2
+        old_y = margin_top + plot_height - old_height
+        new_y = margin_top + plot_height - new_height
+        label_y = margin_top + plot_height + 18
+
+        elements.append(
+            f'<rect x="{old_x:.2f}" y="{old_y:.2f}" width="{bar_width:.2f}" height="{old_height:.2f}" rx="4" fill="#94a3b8" />'
+        )
+        elements.append(
+            f'<rect x="{new_x:.2f}" y="{new_y:.2f}" width="{bar_width:.2f}" height="{new_height:.2f}" rx="4" fill="#0f766e" />'
+        )
+        elements.append(
+            f'<text x="{old_x + bar_width / 2:.2f}" y="{old_y - 6:.2f}" text-anchor="middle" font-size="11" fill="#475467">{html.escape(value_formatter(old_values[index]))}</text>'
+        )
+        elements.append(
+            f'<text x="{new_x + bar_width / 2:.2f}" y="{new_y - 6:.2f}" text-anchor="middle" font-size="11" fill="#0f766e">{html.escape(value_formatter(new_values[index]))}</text>'
+        )
+        elements.append(
+            f'<text x="{group_x:.2f}" y="{label_y:.2f}" text-anchor="middle" font-size="12" fill="#475467">{html.escape(endpoint)}</text>'
+        )
+
+    legend_y = height - 16
+    elements.extend(
+        [
+            f'<rect x="{margin_left}" y="{legend_y - 10}" width="12" height="12" rx="3" fill="#94a3b8" />',
+            f'<text x="{margin_left + 18}" y="{legend_y}" font-size="12" fill="#475467">{html.escape(old_label)}</text>',
+            f'<rect x="{margin_left + 160}" y="{legend_y - 10}" width="12" height="12" rx="3" fill="#0f766e" />',
+            f'<text x="{margin_left + 178}" y="{legend_y}" font-size="12" fill="#475467">{html.escape(new_label)}</text>',
+        ]
+    )
+
+    return (
+        '<div class="chart-card">'
+        f"<h3>{html.escape(title)}</h3>"
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{html.escape(title)}">'
+        + "".join(elements)
+        + "</svg></div>"
+    )
+
+
 def build_html(report: dict[str, Any]) -> str:
     metadata = report["metadata"]
     endpoints = report["endpoints"]
     findings = report["findings"]
+    old_label = metadata["old_label"]
+    new_label = metadata["new_label"]
 
     timing_sections: list[str] = []
     for mode in ("baseline", "scaling"):
@@ -267,17 +409,27 @@ def build_html(report: dict[str, Any]) -> str:
                     format_ms(new[endpoint]["avg_ms"] - old[endpoint]["avg_ms"]),
                 ]
             )
+        chart = render_bar_chart(
+            f"{mode.title()} average request times",
+            endpoints=endpoints,
+            old_values=[old[endpoint]["avg_ms"] for endpoint in endpoints],
+            new_values=[new[endpoint]["avg_ms"] for endpoint in endpoints],
+            old_label=old_label,
+            new_label=new_label,
+            value_formatter=format_ms,
+        )
         timing_sections.append(
             f"<section><h2>{html.escape(mode.title())} Request Timings</h2>"
+            + chart
             + render_table(
                 [
                     "Endpoint",
-                    f"{metadata['old_branch']} cold",
-                    f"{metadata['old_branch']} avg",
-                    f"{metadata['old_branch']} median",
-                    f"{metadata['new_branch']} cold",
-                    f"{metadata['new_branch']} avg",
-                    f"{metadata['new_branch']} median",
+                    f"{old_label} cold",
+                    f"{old_label} avg",
+                    f"{old_label} median",
+                    f"{new_label} cold",
+                    f"{new_label} avg",
+                    f"{new_label} median",
                     "Avg delta",
                 ],
                 rows,
@@ -299,14 +451,32 @@ def build_html(report: dict[str, Any]) -> str:
                     html.escape(str(new[endpoint]["delta_after_first"])),
                 ]
             )
+        chart = render_bar_chart(
+            f"{mode.title()} repeated request query counts",
+            endpoints=endpoints,
+            old_values=[float(old[endpoint]["query_counts"][-1]) for endpoint in endpoints],
+            new_values=[float(new[endpoint]["query_counts"][-1]) for endpoint in endpoints],
+            old_label=old_label,
+            new_label=new_label,
+            value_formatter=lambda value: str(int(round(value))),
+            max_value=max(
+                [
+                    float(old[endpoint]["query_counts"][0])
+                    for endpoint in endpoints
+                ]
+                + [float(new[endpoint]["query_counts"][0]) for endpoint in endpoints]
+                + [1.0]
+            ),
+        )
         query_sections.append(
             f"<section><h2>{html.escape(mode.title())} Query Counts</h2>"
+            + chart
             + render_table(
                 [
                     "Endpoint",
-                    f"{metadata['old_branch']} queries",
-                    f"{metadata['new_branch']} queries",
-                    f"{metadata['new_branch']} repeated delta",
+                    f"{old_label} queries",
+                    f"{new_label} queries",
+                    f"{new_label} repeated delta",
                 ],
                 rows,
             )
@@ -314,37 +484,73 @@ def build_html(report: dict[str, Any]) -> str:
         )
 
     concurrency_sections: list[str] = []
-    for mode in ("scaling",):
-        old = report["concurrency"][mode]["old"]["endpoints"]
-        new = report["concurrency"][mode]["new"]["endpoints"]
+    concurrency_modes = (
+        ("fresh", "Fresh-cache burst"),
+        ("warm", "Warm steady-state"),
+    )
+    for mode_key, mode_title in concurrency_modes:
+        old = report["concurrency"][mode_key]["old"]["endpoints"]
+        new = report["concurrency"][mode_key]["new"]["endpoints"]
+        concurrency_runs = report["concurrency"][mode_key]["old"].get("run_count", 1)
+        warmup_rounds = report["concurrency"][mode_key]["old"].get("steady_state_warmup_rounds", 0)
         rows: list[list[str]] = []
         for endpoint in endpoints:
+            old_runs = old[endpoint].get("runs", [])
+            new_runs = new[endpoint].get("runs", [])
             rows.append(
                 [
                     html.escape(endpoint),
                     format_ms(old[endpoint]["avg_ms"]),
                     format_ms(old[endpoint]["p95_ms"]),
                     html.escape(str(old[endpoint]["requests_per_second"])),
+                    html.escape(format_range([float(run["avg_ms"]) for run in old_runs], format_ms)),
                     html.escape(f"{old[endpoint]['success_count']}/{old[endpoint]['total_requests']}"),
                     format_ms(new[endpoint]["avg_ms"]),
                     format_ms(new[endpoint]["p95_ms"]),
                     html.escape(str(new[endpoint]["requests_per_second"])),
+                    html.escape(format_range([float(run["avg_ms"]) for run in new_runs], format_ms)),
                     html.escape(f"{new[endpoint]['success_count']}/{new[endpoint]['total_requests']}"),
                 ]
             )
+        avg_chart = render_bar_chart(
+            f"{mode_title} average latency",
+            endpoints=endpoints,
+            old_values=[old[endpoint]["avg_ms"] for endpoint in endpoints],
+            new_values=[new[endpoint]["avg_ms"] for endpoint in endpoints],
+            old_label=old_label,
+            new_label=new_label,
+            value_formatter=format_ms,
+        )
+        throughput_chart = render_bar_chart(
+            f"{mode_title} throughput",
+            endpoints=endpoints,
+            old_values=[old[endpoint]["requests_per_second"] for endpoint in endpoints],
+            new_values=[new[endpoint]["requests_per_second"] for endpoint in endpoints],
+            old_label=old_label,
+            new_label=new_label,
+            value_formatter=format_req_per_sec,
+        )
+        note = f"Latency and throughput charts below use medians across {concurrency_runs} repeated run(s)."
+        if mode_key == "warm":
+            note += f" Each run prewarms all benchmark endpoints for {warmup_rounds} full cycle(s) before timing."
         concurrency_sections.append(
-            f"<section><h2>{html.escape(mode.title())} Concurrent Gunicorn Load</h2>"
+            f"<section><h2>{html.escape(mode_title)} Concurrent Gunicorn Load</h2>"
+            f"<p class=\"muted\">{html.escape(note)}</p>"
+            + avg_chart
+            + throughput_chart
             + render_table(
                 [
                     "Endpoint",
-                    f"{metadata['old_branch']} avg",
-                    f"{metadata['old_branch']} p95",
-                    f"{metadata['old_branch']} req/s",
-                    f"{metadata['old_branch']} ok",
-                    f"{metadata['new_branch']} avg",
-                    f"{metadata['new_branch']} p95",
-                    f"{metadata['new_branch']} req/s",
-                    f"{metadata['new_branch']} ok",
+                    f"{old_label} avg (med)",
+                    f"{old_label} p95 (med)",
+                    f"{old_label} req/s (med)",
+                    f"{old_label} avg range",
+                    f"{old_label} ok",
+                    f"{new_label} avg (med)",
+                    f"{new_label} p95 (med)",
+                    f"{new_label} req/s (med)",
+                    f"{new_label} avg range",
+                    f"{new_label} ok",
                 ],
                 rows,
             )
@@ -370,10 +576,7 @@ def build_html(report: dict[str, Any]) -> str:
                 value_field="cumtime_ms",
             )
             mode_parts.append(f"<h3>{html.escape(endpoint)}</h3>")
-            mode_parts.append(
-                f"<p>{metadata['old_branch']}: {format_ms(old[endpoint]['elapsed_ms'])} | "
-                f"{metadata['new_branch']}: {format_ms(new[endpoint]['elapsed_ms'])}</p>"
-            )
+            mode_parts.append(f"<p>{old_label}: {format_ms(old[endpoint]['elapsed_ms'])} | {new_label}: {format_ms(new[endpoint]['elapsed_ms'])}</p>")
 
             if file_deltas:
                 rows = [
@@ -485,6 +688,22 @@ def build_html(report: dict[str, Any]) -> str:
     .muted {{
       color: var(--muted);
     }}
+    .chart-card {{
+      margin: 0.75rem 0 1.2rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem;
+      background: #fcfcfd;
+    }}
+    .chart-card h3 {{
+      margin-bottom: 0.35rem;
+      font-size: 1rem;
+    }}
+    svg {{
+      width: 100%;
+      height: auto;
+      display: block;
+    }}
   </style>
 </head>
 <body>
@@ -493,10 +712,12 @@ def build_html(report: dict[str, Any]) -> str:
       <h1>Branch Performance Report</h1>
       <p class="muted">Generated {html.escape(metadata['generated_at'])}</p>
       <div class="meta">
-        <div><strong>Old branch</strong><br><span class="pill">{html.escape(metadata['old_branch'])}</span></div>
-        <div><strong>New branch</strong><br><span class="pill">{html.escape(metadata['new_branch'])}</span></div>
+        <div><strong>Old ref</strong><br><span class="pill">{html.escape(metadata['old_label'])}</span><br><code>{html.escape(metadata['old_ref'])}</code></div>
+        <div><strong>New ref</strong><br><span class="pill">{html.escape(metadata['new_label'])}</span><br><code>{html.escape(metadata['new_ref'])}</code></div>
         <div><strong>Database</strong><br><code>{html.escape(metadata['shared_database_url'])}</code></div>
         <div><strong>Endpoints</strong><br><code>{html.escape(', '.join(endpoints))}</code></div>
+        <div><strong>Concurrency runs</strong><br><code>{html.escape(str(metadata['concurrency_runs']))}</code></div>
+        <div><strong>Steady-state warmup cycles</strong><br><code>{html.escape(str(metadata['steady_state_warmup_rounds']))}</code></div>
       </div>
     </section>
 
@@ -520,8 +741,10 @@ def main() -> int:
     output_dir = (REPO_ROOT / args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    old_branch = os.environ.get("OLD_BRANCH", "feature/render_deploy")
-    new_branch = os.environ.get("NEW_BRANCH", "feature/scaling")
+    old_ref = os.environ.get("OLD_REF") or os.environ.get("OLD_BRANCH", "feature/render_deploy")
+    new_ref = os.environ.get("NEW_REF") or os.environ.get("NEW_BRANCH", "feature/scaling")
+    old_label = os.environ.get("OLD_LABEL", old_ref)
+    new_label = os.environ.get("NEW_LABEL", new_ref)
     shared_database_url = require_env("SHARED_DATABASE_URL")
     old_redis_url = require_env("OLD_REDIS_URL")
     new_redis_url = require_env("NEW_REDIS_URL")
@@ -529,8 +752,10 @@ def main() -> int:
     base_env = os.environ.copy()
     base_env.update(
         {
-            "OLD_BRANCH": old_branch,
-            "NEW_BRANCH": new_branch,
+            "OLD_REF": old_ref,
+            "NEW_REF": new_ref,
+            "OLD_LABEL": old_label,
+            "NEW_LABEL": new_label,
             "ENDPOINTS": args.endpoints,
             "SHARED_DATABASE_URL": shared_database_url,
             "OLD_REDIS_URL": old_redis_url,
@@ -542,9 +767,13 @@ def main() -> int:
     report: dict[str, Any] = {
         "metadata": {
             "generated_at": dt.datetime.now(dt.timezone.utc).astimezone().isoformat(timespec="seconds"),
-            "old_branch": old_branch,
-            "new_branch": new_branch,
+            "old_ref": old_ref,
+            "new_ref": new_ref,
+            "old_label": old_label,
+            "new_label": new_label,
             "shared_database_url": mask_url(shared_database_url),
+            "concurrency_runs": args.concurrency_runs,
+            "steady_state_warmup_rounds": args.steady_state_warmup_rounds,
         },
         "endpoints": [item.strip() for item in args.endpoints.split(",") if item.strip()],
         "timings": {},
@@ -584,13 +813,22 @@ def main() -> int:
     concurrency_env["CONCURRENCY"] = str(args.concurrency)
     concurrency_env["GUNICORN_WORKERS"] = str(args.gunicorn_workers)
     concurrency_env["WARMUP_REQUESTS"] = str(args.concurrent_warmup_requests)
+    concurrency_env["CONCURRENCY_RUNS"] = str(args.concurrency_runs)
+    concurrency_env["STEADY_STATE_WARMUP_ROUNDS"] = str(args.steady_state_warmup_rounds)
 
     flush_redis_db(old_redis_url)
     flush_redis_db(new_redis_url)
-    raw_outputs["concurrency_scaling"], paths = run_script(
-        "compare_branch_concurrency.sh", {**concurrency_env, "MODE": "scaling"}
+    raw_outputs["concurrency_fresh"], paths = run_script(
+        "compare_branch_concurrency.sh", {**concurrency_env, "MODE": "scaling", "CACHE_STATE": "fresh"}
     )
-    report["concurrency"]["scaling"] = {"old": load_json(paths[0]), "new": load_json(paths[1])}
+    report["concurrency"]["fresh"] = {"old": load_json(paths[0]), "new": load_json(paths[1])}
+
+    flush_redis_db(old_redis_url)
+    flush_redis_db(new_redis_url)
+    raw_outputs["concurrency_warm"], paths = run_script(
+        "compare_branch_concurrency.sh", {**concurrency_env, "MODE": "scaling", "CACHE_STATE": "warm"}
+    )
+    report["concurrency"]["warm"] = {"old": load_json(paths[0]), "new": load_json(paths[1])}
 
     # Python hotspots.
     profile_env = dict(base_env)
