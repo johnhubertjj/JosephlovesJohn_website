@@ -72,7 +72,11 @@ body.is-safari-browser #art .art-showcase,
 body.is-safari-browser #art .gig-photo-grid,
 body.is-safari-browser #art .album-art-grid,
 body.is-safari-browser #art .gig-photo-card,
-body.is-safari-browser #art .album-art-card {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
+body.is-safari-browser #art .album-art-card,
+body.is-safari-browser #art .gig-photo-card img,
+body.is-safari-browser #art .album-art-card img,
+body.is-safari-browser #art .album-art-card video {
+    -webkit-transform: none !important;
+    transform: none !important;
+    will-change: auto;
 }

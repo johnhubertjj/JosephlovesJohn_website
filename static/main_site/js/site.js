@@ -772,6 +772,22 @@
     var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
     var lightboxCloseButton = lightbox.querySelector("[data-art-close]");
     var lastTrigger = null;
+    var lastWindowScrollY = 0;
+    var lastArticleScrollTop = 0;
+
+    function getActiveArticle() {
+        return document.querySelector("#main article.active");
+    }
+
+    function restoreLightboxScrollPosition() {
+        var activeArticle = getActiveArticle();
+
+        if (activeArticle) {
+            activeArticle.scrollTop = lastArticleScrollTop;
+        }
+
+        window.scrollTo(0, lastWindowScrollY);
+    }
 
     function getLightboxFocusableElements() {
         if (!lightboxInner && !lightboxCloseButton) {
@@ -793,9 +809,16 @@
         lightboxImage.removeAttribute("src");
         lightboxImage.alt = "";
         lightboxCaption.textContent = "";
+        restoreLightboxScrollPosition();
         if (lastTrigger) {
-            lastTrigger.focus();
+            try {
+                lastTrigger.focus({ preventScroll: true });
+            } catch (error) {
+                lastTrigger.focus();
+            }
         }
+
+        window.requestAnimationFrame(restoreLightboxScrollPosition);
     }
 
     document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
@@ -808,6 +831,9 @@
             }
 
             lastTrigger = trigger;
+            lastWindowScrollY = window.scrollY || window.pageYOffset || 0;
+            var activeArticle = getActiveArticle();
+            lastArticleScrollTop = activeArticle ? activeArticle.scrollTop : 0;
             var image = trigger.querySelector("img");
             lightboxImage.src = targetUrl;
             lightboxImage.alt = image ? image.alt : "Artwork";
