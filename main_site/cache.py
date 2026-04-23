@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Collection
+from contextvars import ContextVar
 from typing import TypeVar
 
 from django.conf import settings
@@ -12,6 +13,7 @@ T = TypeVar("T")
 
 _VERSION_KEY = "main-site:content-version"
 _MISSING = object()
+_REQUEST_CACHE_VERSION: ContextVar[int | None] = ContextVar("main_site_request_cache_version", default=None)
 
 
 def _content_cache_ttl() -> int:
@@ -19,14 +21,22 @@ def _content_cache_ttl() -> int:
     return max(getattr(settings, "SITE_CONTENT_CACHE_TTL", 0), 0)
 
 
-def _content_cache_version() -> int:
-    """Return the current cache version for shared content."""
+def _load_content_cache_version() -> int:
+    """Return the current cache version from the backing cache."""
     version = cache.get(_VERSION_KEY)
     if isinstance(version, int) and version > 0:
         return version
 
     cache.set(_VERSION_KEY, 1, timeout=None)
     return 1
+
+
+def _content_cache_version() -> int:
+    """Return the current cache version for shared content."""
+    request_version = _REQUEST_CACHE_VERSION.get()
+    if isinstance(request_version, int) and request_version > 0:
+        return request_version
+    return _load_content_cache_version()
 
 
 def _content_cache_key(name: str) -> str:
@@ -76,3 +86,20 @@ def invalidate_shared_content_cache() -> None:
         cache.incr(_VERSION_KEY)
     except ValueError:
         cache.set(_VERSION_KEY, 2, timeout=None)
+
+
+class SharedContentCacheContextMiddleware:
+    """Reuse one shared-content cache version lookup for the current request."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if _content_cache_ttl() <= 0:
+            return self.get_response(request)
+
+        token = _REQUEST_CACHE_VERSION.set(_load_content_cache_version())
+        try:
+            return self.get_response(request)
+        finally:
+            _REQUEST_CACHE_VERSION.reset(token)

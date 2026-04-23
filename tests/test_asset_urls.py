@@ -49,6 +49,32 @@ def test_resolve_public_asset_source_returns_none_when_file_is_missing() -> None
     ) is None
 
 
+@override_settings(DEBUG=False, VERIFY_STATIC_ASSET_FILES=False, STATIC_URL="/static/")
+def test_resolve_public_asset_source_skips_file_checks_outside_debug() -> None:
+    """Production-style requests should trust configured static paths without stat calls."""
+    file_exists_called = {"called": False}
+
+    def file_exists(path: str) -> bool:
+        file_exists_called["called"] = True
+        return False
+
+    assert assets.resolve_public_asset_source("images/cover.jpg", file_exists=file_exists) == {
+        "path": "images/cover.jpg",
+        "url": "/static/images/cover.jpg",
+        "is_static": True,
+    }
+    assert file_exists_called["called"] is False
+
+
+@override_settings(DEBUG=False, VERIFY_STATIC_ASSET_FILES=True)
+def test_resolve_public_asset_source_can_force_file_checks_outside_debug() -> None:
+    """Production can opt back into strict repo-file validation when desired."""
+    assert assets.resolve_public_asset_source(
+        "images/missing.jpg",
+        file_exists=lambda path: False,
+    ) is None
+
+
 @override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
 def test_public_asset_url_uses_public_asset_base_url_for_relative_paths() -> None:
     """Relative paths should resolve against the configured public asset base URL."""

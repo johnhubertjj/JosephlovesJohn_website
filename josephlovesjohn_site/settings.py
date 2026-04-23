@@ -100,6 +100,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "main_site.cache.SharedContentCacheContextMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -244,13 +245,17 @@ CACHES = (
     }
 )
 
-if REDIS_URL:
-    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
-    SESSION_CACHE_ALIAS = "default"
+SESSION_ENGINE = (
+    "django.contrib.sessions.backends.cached_db"
+    if REDIS_URL
+    else "django.contrib.sessions.backends.db"
+)
+SESSION_CACHE_ALIAS = "default"
 
 WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_USE_FINDERS = DEBUG
 WHITENOISE_MAX_AGE = 60 if DEBUG else 31536000
+VERIFY_STATIC_ASSET_FILES = _env_bool("VERIFY_STATIC_ASSET_FILES", default=DEBUG)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

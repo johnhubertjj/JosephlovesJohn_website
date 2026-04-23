@@ -6,9 +6,11 @@ from unittest.mock import Mock
 import pytest
 from django.core.cache import cache
 from django.core.files.base import ContentFile
+from django.http import HttpResponse
 from django.db import OperationalError
 from django.test import override_settings
 from josephlovesjohn_site import assets
+from main_site import cache as main_site_cache
 from main_site import views
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
@@ -140,6 +142,31 @@ def test_get_header_social_links_cache_invalidates_when_content_changes() -> Non
 
     assert [link["label"] for link in first_links] == ["Bandcamp", "Spotify"]
     assert [link["label"] for link in refreshed_links] == ["Bandcamp", "Spotify", "YouTube"]
+
+
+@override_settings(SITE_CONTENT_CACHE_TTL=60)
+def test_shared_content_cache_context_reuses_version_lookup_per_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One request should only fetch the shared-content cache version once."""
+    version_calls = {"count": 0}
+
+    def fake_get(key, default=None):
+        if key == main_site_cache._VERSION_KEY:
+            version_calls["count"] += 1
+            return 7
+        return default
+
+    monkeypatch.setattr(main_site_cache.cache, "get", fake_get)
+
+    middleware = main_site_cache.SharedContentCacheContextMiddleware(
+        lambda request: HttpResponse(
+            f"{main_site_cache._content_cache_version()}:{main_site_cache._content_cache_version()}"
+        )
+    )
+
+    response = middleware(SimpleNamespace())
+
+    assert response.content.decode() == "7:7"
+    assert version_calls["count"] == 1
 
 
 @pytest.mark.django_db
