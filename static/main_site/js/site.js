@@ -1281,10 +1281,10 @@
         lightbox.classList.add("is-closing");
         lightbox.setAttribute("aria-hidden", "true");
         document.body.classList.remove("is-lightbox-visible");
+        restoreTriggerFocus();
         scheduleLightboxCloseCleanup();
         window.requestAnimationFrame(function () {
             restoreLightboxScrollPosition();
-            restoreTriggerFocus();
             if (artPerf && closeInteraction) {
                 artPerf.finishClose(closeInteraction);
             }

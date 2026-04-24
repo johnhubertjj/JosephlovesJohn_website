@@ -92,6 +92,10 @@
     display: block;
 }
 
+.album-art-video-trigger video {
+    pointer-events: none;
+}
+
 .album-art-card img,
 .album-art-card video {
     display: block;

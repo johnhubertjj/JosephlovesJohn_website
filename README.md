@@ -12,7 +12,7 @@ It includes:
 ## Stack
 
 - Python 3.14
-- Django 5
+- Django 6.0.4
 - JavaScript for the site shell, media players, cart UI, cookie controls, and interactive embeds
 - Stripe Checkout for payments
 - Plausible for lightweight privacy-friendly web analytics
