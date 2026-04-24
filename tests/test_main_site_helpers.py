@@ -337,6 +337,23 @@ def test_build_gig_photo_item_prefers_webp_thumbnail_when_available(create_stati
     assert item["thumbnail_webp_url"] == "/static/images/gig_photos/thumbs/test-photo-thumb.webp"
 
 
+@override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
+def test_build_gig_photo_item_assumes_remote_webp_thumbnail_when_public_assets_enabled(create_static_asset) -> None:
+    """Public-asset mode should emit the sibling WebP URL even when only the remote copy exists."""
+    create_static_asset("images/gig_photos/test-photo.jpg")
+    create_static_asset("images/gig_photos/thumbs/test-photo-thumb.jpg")
+
+    item = views._build_gig_photo_item(
+        title="Test Photo",
+        image_path="images/gig_photos/test-photo.jpg",
+        thumbnail_path="images/gig_photos/thumbs/test-photo-thumb.jpg",
+    )
+
+    assert item["image_url"] == "https://assets.example.com/images/gig_photos/test-photo.jpg"
+    assert item["thumbnail_url"] == "https://assets.example.com/images/gig_photos/thumbs/test-photo-thumb.jpg"
+    assert item["thumbnail_webp_url"] == "https://assets.example.com/images/gig_photos/thumbs/test-photo-thumb.webp"
+
+
 def test_build_album_art_item_prefers_smaller_mp4_for_gif_animation(create_static_asset) -> None:
     """GIF-backed animation cards should upgrade to MP4 when the sibling video is smaller."""
     create_static_asset("images/album_art/loop.gif", b"g" * 1000)
@@ -353,6 +370,36 @@ def test_build_album_art_item_prefers_smaller_mp4_for_gif_animation(create_stati
         "kind": "video",
         "path": "images/album_art/loop.mp4",
         "url": "/static/images/album_art/loop.mp4",
+        "caption": "Loop Animation",
+        "alt": "Loop alt",
+        "featured": False,
+        "fit_contain": False,
+        "mime_type": "video/mp4",
+        "poster": "",
+        "poster_url": "",
+        "autoplay": True,
+        "loop": True,
+        "muted": True,
+        "show_controls": False,
+    }
+
+
+@override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
+def test_build_album_art_item_assumes_remote_mp4_variant_when_public_assets_enabled(create_static_asset) -> None:
+    """Public-asset mode should emit the sibling MP4 URL even when only the remote copy exists."""
+    create_static_asset("images/album_art/loop.gif", b"g" * 1000)
+
+    item = views._build_album_art_item(
+        kind="image",
+        title="Loop Animation",
+        asset_path="images/album_art/loop.gif",
+        alt_text="Loop alt",
+    )
+
+    assert item == {
+        "kind": "video",
+        "path": "images/album_art/loop.mp4",
+        "url": "https://assets.example.com/images/album_art/loop.mp4",
         "caption": "Loop Animation",
         "alt": "Loop alt",
         "featured": False,

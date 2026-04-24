@@ -78,7 +78,7 @@ def _resolve_static_webp_variant(asset):
         }
 
     webp_path = str(Path(normalized_path).with_suffix(".webp"))
-    if not _static_file_exists(webp_path):
+    if not settings.PUBLIC_ASSET_BASE_URL and not _static_file_exists(webp_path):
         return None
 
     return {
@@ -96,11 +96,17 @@ def _resolve_smaller_static_video_variant(asset):
     if not normalized_path or not normalized_path.lower().endswith(".gif"):
         return None
 
+    mp4_path = str(Path(normalized_path).with_suffix(".mp4"))
+    if settings.PUBLIC_ASSET_BASE_URL:
+        return {
+            "path": mp4_path,
+            "url": public_asset_url(mp4_path),
+        }
+
     source_size = _static_file_size(normalized_path)
     if source_size is None:
         return None
 
-    mp4_path = str(Path(normalized_path).with_suffix(".mp4"))
     mp4_size = _static_file_size(mp4_path)
     if mp4_size is None or mp4_size >= source_size:
         return None
