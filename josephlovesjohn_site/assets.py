@@ -6,6 +6,11 @@ from django.conf import settings
 from django.templatetags.static import static as static_url
 
 
+def _public_asset_base_url() -> str:
+    """Return the configured public asset base URL without a trailing slash."""
+    return getattr(settings, "PUBLIC_ASSET_BASE_URL", "").strip().rstrip("/")
+
+
 def is_external_url(value):
     """Return whether the supplied asset value is already an absolute URL."""
     cleaned = (value or "").strip()
@@ -33,7 +38,7 @@ def public_asset_url(value):
     if is_external_url(normalized):
         return normalized
 
-    asset_base_url = getattr(settings, "PUBLIC_ASSET_BASE_URL", "").strip().rstrip("/")
+    asset_base_url = _public_asset_base_url()
     if asset_base_url:
         return f"{asset_base_url}/{normalized}"
 
@@ -61,7 +66,7 @@ def resolve_public_asset_source(value, *, file_exists: Callable[[str], bool] | N
             "is_static": False,
         }
 
-    asset_base_url = getattr(settings, "PUBLIC_ASSET_BASE_URL", "").strip()
+    asset_base_url = _public_asset_base_url()
     verify_static_asset_files = getattr(settings, "VERIFY_STATIC_ASSET_FILES", getattr(settings, "DEBUG", False))
     if asset_base_url or not verify_static_asset_files:
         return {
