@@ -26,6 +26,15 @@ def _static_file_exists(relative_path):
     return (Path(settings.BASE_DIR) / "static" / relative_path).is_file()
 
 
+def _static_file_size(relative_path):
+    """Return a static asset size in bytes when the file exists."""
+    static_path = Path(settings.BASE_DIR) / "static" / relative_path
+    if not static_path.is_file():
+        return None
+
+    return static_path.stat().st_size
+
+
 def _uploaded_file_exists(file_field):
     """Check whether an uploaded media file exists in storage."""
     if not file_field:
@@ -78,6 +87,31 @@ def _resolve_static_webp_variant(asset):
     }
 
 
+def _resolve_smaller_static_video_variant(asset):
+    """Return a smaller sibling MP4 for a static GIF source when available."""
+    if not asset or not asset.get("is_static"):
+        return None
+
+    normalized_path = normalize_asset_path(cast(str, asset.get("path") or ""))
+    if not normalized_path or not normalized_path.lower().endswith(".gif"):
+        return None
+
+    source_size = _static_file_size(normalized_path)
+    if source_size is None:
+        return None
+
+    mp4_path = str(Path(normalized_path).with_suffix(".mp4"))
+    mp4_size = _static_file_size(mp4_path)
+    if mp4_size is None or mp4_size >= source_size:
+        return None
+
+    return {
+        "path": mp4_path,
+        "url": public_asset_url(mp4_path),
+        "size": mp4_size,
+    }
+
+
 def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path="", thumbnail_file=None, alt_text=""):
     """Build a gallery item dictionary when the referenced files exist."""
     image_asset = _resolve_asset_source(static_path=image_path, uploaded_file=image_file)
@@ -127,6 +161,20 @@ def _build_album_art_item(
         "fit_contain": fit_contain,
     }
     if kind == "image":
+        smaller_video_asset = _resolve_smaller_static_video_variant(asset)
+        if smaller_video_asset:
+            item["kind"] = "video"
+            item["path"] = smaller_video_asset["path"]
+            item["url"] = smaller_video_asset["url"]
+            item["mime_type"] = mimetypes.guess_type(smaller_video_asset["path"])[0] or "video/mp4"
+            item["poster"] = ""
+            item["poster_url"] = ""
+            item["autoplay"] = True
+            item["loop"] = True
+            item["muted"] = True
+            item["show_controls"] = False
+            return item
+
         item["thumbnail_url"] = asset["url"]
         thumbnail_webp_asset = _resolve_static_webp_variant(asset)
         if thumbnail_webp_asset:
@@ -137,6 +185,7 @@ def _build_album_art_item(
         poster = _resolve_asset_source(static_path=poster_path, uploaded_file=poster_file)
         item["poster"] = poster["path"] if poster else ""
         item["poster_url"] = poster["url"] if poster else ""
+        item["show_controls"] = True
     return item
 
 

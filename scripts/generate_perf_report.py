@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 DETAIL_PATH_RE = re.compile(r"^\s{2}(/.+)$")
@@ -85,6 +84,23 @@ def parse_args() -> argparse.Namespace:
         default=5,
         help="Full endpoint warmup cycles before the steady-state concurrency benchmark.",
     )
+    parser.add_argument(
+        "--browser-runs",
+        type=int,
+        default=3,
+        help="Fresh-context browser page loads per endpoint for browser metrics.",
+    )
+    parser.add_argument(
+        "--browser-interaction-runs",
+        type=int,
+        default=3,
+        help="Repeated browser interaction scenarios per endpoint where defined.",
+    )
+    parser.add_argument(
+        "--browser-engine",
+        default="chromium",
+        help="Playwright browser engine for browser-side metrics.",
+    )
     return parser.parse_args()
 
 
@@ -117,10 +133,11 @@ def flush_redis_db(url: str) -> None:
     client.flushdb()
 
 
-def run_script(script_name: str, env: dict[str, str]) -> tuple[str, list[Path]]:
+def run_script(script_name: str, env: dict[str, str], *, python_script: bool = False) -> tuple[str, list[Path]]:
     script_path = SCRIPTS_DIR / script_name
+    command = [sys.executable, str(script_path)] if python_script else [str(script_path)]
     result = subprocess.run(
-        [str(script_path)],
+        command,
         cwd=REPO_ROOT,
         env=env,
         capture_output=True,
@@ -264,6 +281,38 @@ def build_findings(report: dict[str, Any]) -> list[str]:
                 f"suggesting its cache path pays off after initial shared payloads are populated."
             )
 
+    browser_report = report.get("browser", {})
+    for mode in ("baseline", "scaling"):
+        mode_report = browser_report.get(mode, {})
+        old_browser = mode_report.get("old", {})
+        new_browser = mode_report.get("new", {})
+        if old_browser.get("status") != "ok" or new_browser.get("status") != "ok":
+            continue
+
+        for endpoint in report["endpoints"]:
+            old_endpoint = old_browser["endpoints"][endpoint]
+            new_endpoint = new_browser["endpoints"][endpoint]
+
+            if (
+                old_endpoint["cold_transfer_size_bytes"] > 0
+                and new_endpoint["cold_transfer_size_bytes"] < old_endpoint["cold_transfer_size_bytes"] * 0.9
+            ):
+                findings.append(
+                    f"Browser-side payload for `{endpoint}` drops from "
+                    f"{format_bytes(old_endpoint['cold_transfer_size_bytes'])} to "
+                    f"{format_bytes(new_endpoint['cold_transfer_size_bytes'])} on `{new_label}` "
+                    f"in {mode} mode."
+                )
+
+            old_warm_load = old_endpoint.get("warm_median_load_ms") or 0.0
+            new_warm_load = new_endpoint.get("warm_median_load_ms") or 0.0
+            if old_warm_load > 0 and new_warm_load < old_warm_load * 0.85:
+                findings.append(
+                    f"Browser load for `{endpoint}` improves from "
+                    f"{old_warm_load:.2f}ms to {new_warm_load:.2f}ms on `{new_label}` "
+                    f"in {mode} mode."
+                )
+
     deduped: list[str] = []
     seen: set[str] = set()
     for item in findings:
@@ -287,6 +336,15 @@ def format_ms(value: float) -> str:
 
 def format_req_per_sec(value: float) -> str:
     return f"{value:.1f} req/s"
+
+
+def format_bytes(value: float) -> str:
+    absolute = abs(value)
+    if absolute >= 1024 * 1024:
+        return f"{value / (1024 * 1024):.2f} MB"
+    if absolute >= 1024:
+        return f"{value / 1024:.1f} KB"
+    return f"{value:.0f} B"
 
 
 def format_range(values: list[float], formatter) -> str:
@@ -381,6 +439,108 @@ def render_bar_chart(
     return (
         '<div class="chart-card">'
         f"<h3>{html.escape(title)}</h3>"
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{html.escape(title)}">'
+        + "".join(elements)
+        + "</svg></div>"
+    )
+
+
+def render_timeline_chart(
+    title: str,
+    *,
+    steps: list[tuple[str, str]],
+    old_metrics: dict[str, Any],
+    new_metrics: dict[str, Any],
+    old_label: str,
+    new_label: str,
+) -> str:
+    width = 860
+    height = 360
+    margin_left = 72
+    margin_right = 24
+    margin_top = 28
+    margin_bottom = 86
+    plot_width = width - margin_left - margin_right
+    plot_height = height - margin_top - margin_bottom
+    step_count = max(len(steps), 2)
+    x_gap = plot_width / (step_count - 1)
+
+    def build_series(metrics: dict[str, Any]) -> list[float]:
+        open_visible = float(metrics["open_visible_ms"])
+        open_ready = max(float(metrics["open_ready_ms"]), open_visible)
+        close_complete = open_ready + float(metrics["close_ms"])
+        reopen_visible = close_complete + float(metrics["reopen_visible_ms"])
+        reopen_ready = max(close_complete + float(metrics["reopen_ready_ms"]), reopen_visible)
+        return [open_visible, open_ready, close_complete, reopen_visible, reopen_ready]
+
+    old_series = build_series(old_metrics)
+    new_series = build_series(new_metrics)
+    scale_max = max(old_series + new_series + [1.0])
+
+    def point_y(value: float) -> float:
+        return margin_top + plot_height - ((value / scale_max) * plot_height)
+
+    def point_x(index: int) -> float:
+        return margin_left + index * x_gap
+
+    def polyline_points(series: list[float]) -> str:
+        return " ".join(f"{point_x(index):.2f},{point_y(value):.2f}" for index, value in enumerate(series))
+
+    elements: list[str] = [
+        f'<line x1="{margin_left}" y1="{margin_top + plot_height}" x2="{margin_left + plot_width}" y2="{margin_top + plot_height}" stroke="#cbd5e1" stroke-width="1" />',
+        f'<line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{margin_top + plot_height}" stroke="#cbd5e1" stroke-width="1" />',
+    ]
+
+    ticks = 4
+    for tick in range(ticks + 1):
+        value = scale_max * tick / ticks
+        y = margin_top + plot_height - (plot_height * tick / ticks)
+        elements.append(
+            f'<line x1="{margin_left}" y1="{y:.2f}" x2="{margin_left + plot_width}" y2="{y:.2f}" stroke="#e5e7eb" stroke-width="1" />'
+        )
+        elements.append(
+            f'<text x="{margin_left - 8}" y="{y + 4:.2f}" text-anchor="end" font-size="11" fill="#667085">{html.escape(format_ms(value))}</text>'
+        )
+
+    for index, (label, _) in enumerate(steps):
+        x = point_x(index)
+        elements.append(
+            f'<line x1="{x:.2f}" y1="{margin_top}" x2="{x:.2f}" y2="{margin_top + plot_height}" stroke="#eef2f6" stroke-width="1" />'
+        )
+        elements.append(
+            f'<text x="{x:.2f}" y="{margin_top + plot_height + 18:.2f}" text-anchor="middle" font-size="12" fill="#475467">{html.escape(label)}</text>'
+        )
+
+    elements.extend(
+        [
+            f'<polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="{polyline_points(old_series)}" />',
+            f'<polyline fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="{polyline_points(new_series)}" />',
+        ]
+    )
+
+    for series, color in ((old_series, "#475467"), (new_series, "#0f766e")):
+        for index, value in enumerate(series):
+            x = point_x(index)
+            y = point_y(value)
+            elements.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="4.5" fill="{color}" />')
+            elements.append(
+                f'<text x="{x:.2f}" y="{y - 10:.2f}" text-anchor="middle" font-size="11" fill="{color}">{html.escape(format_ms(value))}</text>'
+            )
+
+    legend_y = height - 18
+    elements.extend(
+        [
+            f'<rect x="{margin_left}" y="{legend_y - 10}" width="12" height="12" rx="3" fill="#94a3b8" />',
+            f'<text x="{margin_left + 18}" y="{legend_y}" font-size="12" fill="#475467">{html.escape(old_label)}</text>',
+            f'<rect x="{margin_left + 160}" y="{legend_y - 10}" width="12" height="12" rx="3" fill="#0f766e" />',
+            f'<text x="{margin_left + 178}" y="{legend_y}" font-size="12" fill="#475467">{html.escape(new_label)}</text>',
+        ]
+    )
+
+    return (
+        '<div class="chart-card">'
+        f"<h3>{html.escape(title)}</h3>"
+        '<p class="muted">Cumulative milestone timing across the open, close, and reopen flow.</p>'
         f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{html.escape(title)}">'
         + "".join(elements)
         + "</svg></div>"
@@ -562,6 +722,137 @@ def build_html(report: dict[str, Any]) -> str:
             + "</section>"
         )
 
+    browser_sections: list[str] = []
+    browser_interaction_sections: list[str] = []
+    for mode in ("baseline", "scaling"):
+        old_browser = report["browser"][mode]["old"]
+        new_browser = report["browser"][mode]["new"]
+        mode_title = f"{mode.title()} Browser Load"
+        if old_browser.get("status") != "ok" or new_browser.get("status") != "ok":
+            reason = new_browser.get("reason") or old_browser.get("reason") or "Browser metrics were skipped."
+            browser_sections.append(
+                f"<section><h2>{html.escape(mode_title)}</h2><p class=\"muted\">{html.escape(reason)}</p></section>"
+            )
+            browser_interaction_sections.append(
+                f"<section><h2>{html.escape(mode.title())} Browser Interactions</h2>"
+                f"<p class=\"muted\">{html.escape(reason)}</p></section>"
+            )
+            continue
+
+        rows: list[list[str]] = []
+        for endpoint in endpoints:
+            old = old_browser["endpoints"][endpoint]
+            new = new_browser["endpoints"][endpoint]
+            old_lcp = old.get("warm_median_lcp_ms")
+            new_lcp = new.get("warm_median_lcp_ms")
+            rows.append(
+                [
+                    html.escape(endpoint),
+                    format_ms(old["cold_load_ms"]),
+                    format_ms(old["warm_median_load_ms"]),
+                    format_ms(old_lcp) if old_lcp is not None else "n/a",
+                    format_bytes(float(old["cold_transfer_size_bytes"])),
+                    html.escape(str(old["cold_request_count"])),
+                    format_ms(new["cold_load_ms"]),
+                    format_ms(new["warm_median_load_ms"]),
+                    format_ms(new_lcp) if new_lcp is not None else "n/a",
+                    format_bytes(float(new["cold_transfer_size_bytes"])),
+                    html.escape(str(new["cold_request_count"])),
+                ]
+            )
+
+        browser_sections.append(
+            f"<section><h2>{html.escape(mode_title)}</h2>"
+            f"<p class=\"muted\">Fresh browser contexts, {old_browser['run_count']} run(s) per endpoint on {html.escape(old_browser['browser_engine'])}.</p>"
+            + render_bar_chart(
+                f"{mode.title()} browser warm load time",
+                endpoints=endpoints,
+                old_values=[old_browser["endpoints"][endpoint]["warm_median_load_ms"] for endpoint in endpoints],
+                new_values=[new_browser["endpoints"][endpoint]["warm_median_load_ms"] for endpoint in endpoints],
+                old_label=old_label,
+                new_label=new_label,
+                value_formatter=format_ms,
+            )
+            + render_bar_chart(
+                f"{mode.title()} browser cold transfer size",
+                endpoints=endpoints,
+                old_values=[float(old_browser["endpoints"][endpoint]["cold_transfer_size_bytes"]) for endpoint in endpoints],
+                new_values=[float(new_browser["endpoints"][endpoint]["cold_transfer_size_bytes"]) for endpoint in endpoints],
+                old_label=old_label,
+                new_label=new_label,
+                value_formatter=format_bytes,
+            )
+            + render_table(
+                [
+                    "Endpoint",
+                    f"{old_label} cold load",
+                    f"{old_label} warm load",
+                    f"{old_label} warm LCP",
+                    f"{old_label} cold transfer",
+                    f"{old_label} requests",
+                    f"{new_label} cold load",
+                    f"{new_label} warm load",
+                    f"{new_label} warm LCP",
+                    f"{new_label} cold transfer",
+                    f"{new_label} requests",
+                ],
+                rows,
+            )
+            + "</section>"
+        )
+
+        old_interaction = old_browser.get("interactions", {}).get("/art/")
+        new_interaction = new_browser.get("interactions", {}).get("/art/")
+        if old_interaction and new_interaction:
+            timeline_steps = [
+                ("Open visible", "open_visible_ms"),
+                ("Open ready", "open_ready_ms"),
+                ("Close complete", "close_ms"),
+                ("Reopen visible", "reopen_visible_ms"),
+                ("Reopen ready", "reopen_ready_ms"),
+            ]
+            browser_interaction_sections.append(
+                f"<section><h2>{html.escape(mode.title())} Browser Interactions</h2>"
+                f"<p class=\"muted\">Current route-specific scenario: `/art/` lightbox open, close, and reopen ({old_interaction['run_count']} run(s)).</p>"
+                + render_timeline_chart(
+                    f"{mode.title()} /art/ interaction journey",
+                    steps=timeline_steps,
+                    old_metrics=old_interaction,
+                    new_metrics=new_interaction,
+                    old_label=old_label,
+                    new_label=new_label,
+                )
+                + render_table(
+                    [
+                        "Endpoint",
+                        f"{old_label} open visible",
+                        f"{old_label} open ready",
+                        f"{old_label} close",
+                        f"{old_label} reopen visible",
+                        f"{old_label} reopen ready",
+                        f"{new_label} open visible",
+                        f"{new_label} open ready",
+                        f"{new_label} close",
+                        f"{new_label} reopen visible",
+                        f"{new_label} reopen ready",
+                    ],
+                    [[
+                        "/art/",
+                        format_ms(old_interaction["open_visible_ms"]),
+                        format_ms(old_interaction["open_ready_ms"]),
+                        format_ms(old_interaction["close_ms"]),
+                        format_ms(old_interaction["reopen_visible_ms"]),
+                        format_ms(old_interaction["reopen_ready_ms"]),
+                        format_ms(new_interaction["open_visible_ms"]),
+                        format_ms(new_interaction["open_ready_ms"]),
+                        format_ms(new_interaction["close_ms"]),
+                        format_ms(new_interaction["reopen_visible_ms"]),
+                        format_ms(new_interaction["reopen_ready_ms"]),
+                    ]],
+                )
+                + "</section>"
+            )
+
     profile_sections: list[str] = []
     for mode in ("baseline", "scaling"):
         old = report["profiles"][mode]["old"]["endpoints"]
@@ -619,6 +910,10 @@ def build_html(report: dict[str, Any]) -> str:
     concurrency_intro = (
         "Concurrency benchmarks use Gunicorn in a production-style DEBUG=false setup. "
         "Fresh-cache runs measure after minimal warmup; warm steady-state runs measure after full endpoint prewarm cycles."
+    )
+    browser_intro = (
+        "Browser benchmarks use fresh browser contexts per run to compare page-load timing and transferred bytes "
+        "without relying on a warmed browser cache."
     )
 
     return f"""<!doctype html>
@@ -731,6 +1026,8 @@ def build_html(report: dict[str, Any]) -> str:
         <div><strong>Endpoints</strong><br><code>{html.escape(', '.join(endpoints))}</code></div>
         <div><strong>Concurrency runs</strong><br><code>{html.escape(str(metadata['concurrency_runs']))}</code></div>
         <div><strong>Steady-state warmup cycles</strong><br><code>{html.escape(str(metadata['steady_state_warmup_rounds']))}</code></div>
+        <div><strong>Browser engine</strong><br><code>{html.escape(metadata['browser_engine'])}</code></div>
+        <div><strong>Browser runs</strong><br><code>{html.escape(str(metadata['browser_runs']))}</code></div>
       </div>
     </section>
 
@@ -750,6 +1047,18 @@ def build_html(report: dict[str, Any]) -> str:
       <h2>Concurrency</h2>
       <p class="muted">{html.escape(concurrency_intro)}</p>
       {''.join(concurrency_sections)}
+    </section>
+
+    <section>
+      <h2>Browser Load</h2>
+      <p class="muted">{html.escape(browser_intro)}</p>
+      {''.join(browser_sections)}
+    </section>
+
+    <section>
+      <h2>Browser Interactions</h2>
+      <p class="muted">Route-specific UI interaction timings currently focus on `/art/` lightbox behavior.</p>
+      {''.join(browser_interaction_sections)}
     </section>
 
     {''.join(profile_sections)}
@@ -797,11 +1106,15 @@ def main() -> int:
             "shared_database_url": mask_url(shared_database_url),
             "concurrency_runs": args.concurrency_runs,
             "steady_state_warmup_rounds": args.steady_state_warmup_rounds,
+            "browser_engine": args.browser_engine,
+            "browser_runs": args.browser_runs,
+            "browser_interaction_runs": args.browser_interaction_runs,
         },
         "endpoints": [item.strip() for item in args.endpoints.split(",") if item.strip()],
         "timings": {},
         "queries": {},
         "concurrency": {},
+        "browser": {},
         "profiles": {},
     }
 
@@ -852,6 +1165,30 @@ def main() -> int:
         "compare_branch_concurrency.sh", {**concurrency_env, "MODE": "scaling", "CACHE_STATE": "warm"}
     )
     report["concurrency"]["warm"] = {"old": load_json(paths[0]), "new": load_json(paths[1])}
+
+    # Browser-side load and interaction metrics.
+    browser_env = dict(base_env)
+    browser_env["BROWSER_ENGINE"] = args.browser_engine
+    browser_env["BROWSER_RUNS"] = str(args.browser_runs)
+    browser_env["BROWSER_INTERACTION_RUNS"] = str(args.browser_interaction_runs)
+
+    flush_redis_db(old_redis_url)
+    flush_redis_db(new_redis_url)
+    raw_outputs["browser_baseline"], paths = run_script(
+        "compare_branch_browser_perf.py",
+        {**browser_env, "MODE": "baseline"},
+        python_script=True,
+    )
+    report["browser"]["baseline"] = {"old": load_json(paths[0]), "new": load_json(paths[1])}
+
+    flush_redis_db(old_redis_url)
+    flush_redis_db(new_redis_url)
+    raw_outputs["browser_scaling"], paths = run_script(
+        "compare_branch_browser_perf.py",
+        {**browser_env, "MODE": "scaling"},
+        python_script=True,
+    )
+    report["browser"]["scaling"] = {"old": load_json(paths[0]), "new": load_json(paths[1])}
 
     # Python hotspots.
     profile_env = dict(base_env)

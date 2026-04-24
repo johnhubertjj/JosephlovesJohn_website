@@ -300,6 +300,14 @@ def test_art_lightbox_supports_backdrop_and_escape_close(browser_page, live_serv
         "document.getElementById('art-lightbox').getAttribute('aria-hidden') === 'true'"
     )
 
+    browser_page.locator(".album-art-card a[data-art-lightbox='video']").first.click()
+    assert lightbox.get_attribute("aria-hidden") == "false"
+    assert browser_page.locator(".art-lightbox-video").get_attribute("src") or ""
+    browser_page.keyboard.press("Escape")
+    browser_page.wait_for_function(
+        "document.getElementById('art-lightbox').getAttribute('aria-hidden') === 'true'"
+    )
+
 
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",

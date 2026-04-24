@@ -1,12 +1,14 @@
 ## Performance Reports
 
-Use the combined report script to compare request timings, query counts, Python-side hotspots, and charts between any two git refs.
+Use the combined report script to compare request timings, query counts, Python-side hotspots, browser load metrics, and charts between any two git refs.
 
 ### Local usage
 
 With Postgres and Redis running locally:
 
 ```bash
+uv run playwright install chromium
+
 OLD_REF=feature/render_deploy \
 NEW_REF=feature/scaling \
 OLD_LABEL=render_deploy \
@@ -54,6 +56,12 @@ The script writes:
   - fresh-cache burst medians
   - warm steady-state medians after full endpoint prewarm cycles
   - both measured in a production-style `DEBUG=false` setup with manifest-collected static files
+- **Browser load**:
+  - cold transferred bytes and request counts per route
+  - repeated fresh-context browser load timing per route
+  - current route-specific interaction timing for `/art/` lightbox open/close/reopen
+- **Interaction journey plot**:
+  - a cumulative milestone line chart for `/art/` showing the open, ready, close, and reopen steps on a single timeline
 - **Python hotspots**: cProfile summaries of the slowest application files/functions on the profiled request path.
 - **Inline plots**: endpoint charts for request timings, repeated query counts, and concurrent load throughput/latency.
 
@@ -87,6 +95,9 @@ Useful knobs:
 - `--profile-warmup-requests 2` to reduce cold-start noise in Python hotspots
 - `--concurrent-requests 400` and `--concurrency 40` for a heavier Gunicorn load check
 - `--concurrency-runs 7` if you want concurrency medians across more repeated runs
+- `--browser-runs 5` for more stable browser load medians
+- `--browser-interaction-runs 5` for more stable `/art/` interaction timing medians
+- `--browser-engine chromium` to match the CI browser perf run
 - `--endpoints /,/music/,/art/,/contact/` to include more routes
 
 ### Important limits

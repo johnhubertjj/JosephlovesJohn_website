@@ -9,9 +9,30 @@
                     </picture>
                 </a>
             {% elif item.kind == 'video' %}
-                <video controls preload="metadata" playsinline{% if item.poster_url %} poster="{{ item.poster_url }}"{% endif %}>
-                    <source src="{{ item.url }}" type="{{ item.mime_type }}" />
-                </video>
+                <a
+                    href="{{ item.url }}"
+                    class="album-art-video-trigger"
+                    data-art-lightbox="video"
+                    data-art-caption="{{ item.caption }}"
+                    aria-label="{{ item.alt|default:item.caption }}"
+                >
+                    <video
+                        {% if item.fit_contain %}class="is-contain"{% endif %}
+                        {% if item.show_controls %}controls{% endif %}
+                        preload="metadata"
+                        playsinline
+                        webkit-playsinline
+                        {% if item.autoplay %}autoplay{% endif %}
+                        {% if item.loop %}loop{% endif %}
+                        {% if item.muted %}muted{% endif %}
+                        {% if item.autoplay %}data-art-preview-video{% endif %}
+                        aria-hidden="true"
+                        tabindex="-1"
+                        {% if item.poster_url %}poster="{{ item.poster_url }}"{% endif %}
+                    >
+                        <source src="{{ item.url }}" type="{{ item.mime_type }}" />
+                    </video>
+                </a>
             {% endif %}
             <figcaption>{{ item.caption }}</figcaption>
         </figure>

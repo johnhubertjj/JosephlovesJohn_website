@@ -547,6 +547,23 @@
         return;
     }
 
+    function playArtPreviewVideos() {
+        artArticle.querySelectorAll(".album-art-card video[data-art-preview-video]").forEach(function (video) {
+            var playAttempt;
+
+            if (!video.paused) {
+                return;
+            }
+
+            playAttempt = video.play();
+            if (playAttempt && typeof playAttempt.catch === "function") {
+                playAttempt.catch(function () {
+                    // Ignore autoplay rejections on stricter browsers.
+                });
+            }
+        });
+    }
+
     function pauseArtVideos() {
         artArticle.querySelectorAll(".album-art-card video").forEach(function (video) {
             if (!video.paused) {
@@ -558,7 +575,10 @@
     function syncArtMediaState() {
         if (!artArticle.classList.contains("active")) {
             pauseArtVideos();
+            return;
         }
+
+        playArtPreviewVideos();
     }
 
     new MutationObserver(function () {
@@ -570,6 +590,14 @@
 
     window.addEventListener("hashchange", function () {
         window.setTimeout(syncArtMediaState, 0);
+    });
+
+    artArticle.querySelectorAll(".album-art-card video[data-art-preview-video]").forEach(function (video) {
+        video.addEventListener("loadeddata", function () {
+            if (artArticle.classList.contains("active")) {
+                playArtPreviewVideos();
+            }
+        });
     });
 
     syncArtMediaState();
@@ -1108,6 +1136,7 @@
     }
 
     var lightboxImage = lightbox.querySelector(".art-lightbox-image");
+    var lightboxVideo = lightbox.querySelector(".art-lightbox-video");
     var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
     var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
     var lightboxCloseButton = lightbox.querySelector("[data-art-close]");
@@ -1146,6 +1175,51 @@
         );
     }
 
+    function hideLightboxVideo() {
+        if (!lightboxVideo) {
+            return;
+        }
+
+        lightboxVideo.pause();
+        lightboxVideo.setAttribute("hidden", "");
+        lightboxVideo.removeAttribute("src");
+        lightboxVideo.load();
+    }
+
+    function showLightboxImage(targetUrl, altText) {
+        if (lightboxVideo) {
+            hideLightboxVideo();
+        }
+
+        lightboxImage.removeAttribute("hidden");
+        lightboxImage.src = targetUrl;
+        lightboxImage.alt = altText;
+    }
+
+    function showLightboxVideo(targetUrl) {
+        var playAttempt = null;
+
+        lightboxImage.setAttribute("hidden", "");
+        lightboxImage.removeAttribute("src");
+        lightboxImage.alt = "";
+        if (!lightboxVideo) {
+            return;
+        }
+
+        lightboxVideo.removeAttribute("hidden");
+        lightboxVideo.currentTime = 0;
+        lightboxVideo.muted = true;
+        lightboxVideo.loop = true;
+        lightboxVideo.src = targetUrl;
+        lightboxVideo.load();
+        playAttempt = lightboxVideo.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+            playAttempt.catch(function () {
+                // Ignore autoplay rejections; the controls remain available.
+            });
+        }
+    }
+
     function clearLightboxCloseCleanup() {
         if (!lightboxCloseCleanupTimer) {
             return;
@@ -1161,6 +1235,8 @@
         }
 
         lightbox.classList.remove("is-closing");
+        hideLightboxVideo();
+        lightboxImage.removeAttribute("hidden");
         lightboxImage.removeAttribute("src");
         lightboxImage.alt = "";
         lightboxCaption.textContent = "";
@@ -1226,11 +1302,23 @@
         });
     }
 
-    document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
+    if (lightboxVideo && artPerf) {
+        lightboxVideo.addEventListener("loadeddata", function () {
+            if (!pendingOpenInteraction) {
+                return;
+            }
+
+            artPerf.finishOpenReady(pendingOpenInteraction, "loadeddata");
+            pendingOpenInteraction = null;
+        });
+    }
+
+    document.querySelectorAll('[data-art-lightbox="image"], [data-art-lightbox="video"]').forEach(function (trigger) {
         trigger.addEventListener("click", function (event) {
             event.preventDefault();
 
             var targetUrl = trigger.getAttribute("href");
+            var lightboxKind = trigger.getAttribute("data-art-lightbox") || "image";
             var openInteraction = null;
             if (!targetUrl) {
                 return;
@@ -1245,8 +1333,11 @@
             pendingOpenInteraction = openInteraction;
             clearLightboxCloseCleanup();
             lightbox.classList.remove("is-closing");
-            lightboxImage.src = targetUrl;
-            lightboxImage.alt = image ? image.alt : "Artwork";
+            if (lightboxKind === "video") {
+                showLightboxVideo(targetUrl);
+            } else {
+                showLightboxImage(targetUrl, image ? image.alt : "Artwork");
+            }
             lightboxCaption.textContent = trigger.getAttribute("data-art-caption") || "";
 
             lightbox.classList.add("is-visible");
@@ -1262,7 +1353,7 @@
                     artPerf.finishOpenVisible(openInteraction);
                 }
 
-                if (artPerf && openInteraction && lightboxImage.complete) {
+                if (artPerf && openInteraction && lightboxKind === "image" && lightboxImage.complete) {
                     artPerf.finishOpenReady(openInteraction, "complete");
                     pendingOpenInteraction = null;
                 }

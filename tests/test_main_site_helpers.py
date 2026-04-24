@@ -337,6 +337,52 @@ def test_build_gig_photo_item_prefers_webp_thumbnail_when_available(create_stati
     assert item["thumbnail_webp_url"] == "/static/images/gig_photos/thumbs/test-photo-thumb.webp"
 
 
+def test_build_album_art_item_prefers_smaller_mp4_for_gif_animation(create_static_asset) -> None:
+    """GIF-backed animation cards should upgrade to MP4 when the sibling video is smaller."""
+    create_static_asset("images/album_art/loop.gif", b"g" * 1000)
+    create_static_asset("images/album_art/loop.mp4", b"m" * 100)
+
+    item = views._build_album_art_item(
+        kind="image",
+        title="Loop Animation",
+        asset_path="images/album_art/loop.gif",
+        alt_text="Loop alt",
+    )
+
+    assert item == {
+        "kind": "video",
+        "path": "images/album_art/loop.mp4",
+        "url": "/static/images/album_art/loop.mp4",
+        "caption": "Loop Animation",
+        "alt": "Loop alt",
+        "featured": False,
+        "fit_contain": False,
+        "mime_type": "video/mp4",
+        "poster": "",
+        "poster_url": "",
+        "autoplay": True,
+        "loop": True,
+        "muted": True,
+        "show_controls": False,
+    }
+
+
+def test_build_album_art_item_keeps_gif_when_mp4_is_not_smaller(create_static_asset) -> None:
+    """Animation cards should stay on GIF when the sibling MP4 is larger."""
+    create_static_asset("images/album_art/loop.gif", b"g" * 100)
+    create_static_asset("images/album_art/loop.mp4", b"m" * 1000)
+
+    item = views._build_album_art_item(
+        kind="image",
+        title="Loop Animation",
+        asset_path="images/album_art/loop.gif",
+    )
+
+    assert item["kind"] == "image"
+    assert item["url"] == "/static/images/album_art/loop.gif"
+    assert item["thumbnail_url"] == "/static/images/album_art/loop.gif"
+
+
 def test_resolve_asset_source_supports_external_urls() -> None:
     """Absolute asset URLs should be returned directly without static lookup."""
     url = "https://assets.example.com/images/gig_photos/live.jpg"

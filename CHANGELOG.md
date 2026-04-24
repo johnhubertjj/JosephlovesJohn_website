@@ -3,7 +3,14 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
-- the latest tagged release is `v1.1.0`
+- the latest tagged release is `v1.1.1`
+
+## v1.1.1 - 2026-04-24
+
+- Improved `/art/` gallery performance with WebP thumbnail delivery for static art assets and lighter animation preview media
+- Re-encoded Buddlea and Symbol animation loops to compact MP4 previews and automatically prefer them when they are smaller than the GIF source
+- Restored Safari-friendly animation lightbox previews so inline video cards stay clickable, open correctly in the lightbox, and avoid image/video overlap
+- Smoothed art lightbox close and reopen behavior by deferring heavy cleanup work and reducing preview preload cost during navigation
 
 ## v1.1.0 - 2026-04-23
 

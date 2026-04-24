@@ -88,6 +88,10 @@
     display: block;
 }
 
+.album-art-video-trigger {
+    display: block;
+}
+
 .album-art-card img,
 .album-art-card video {
     display: block;
@@ -98,6 +102,13 @@
 }
 
 .album-art-card img.is-contain {
+    object-fit: contain;
+    object-position: center;
+    padding: 0.65rem;
+    background: #050505;
+}
+
+.album-art-card video.is-contain {
     object-fit: contain;
     object-position: center;
     padding: 0.65rem;
@@ -177,6 +188,24 @@
     border-radius: 0.45rem;
     border: 1px solid rgba(255, 255, 255, 0.22);
     box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
+}
+
+.art-lightbox-video {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 8.5rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
+    background: #050505;
+}
+
+.art-lightbox-image[hidden],
+.art-lightbox-video[hidden] {
+    display: none;
 }
 
 .art-lightbox-caption {
