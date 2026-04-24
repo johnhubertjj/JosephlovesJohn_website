@@ -175,6 +175,7 @@ def test_get_gig_photo_items_prefers_active_database_rows(create_static_asset) -
     GigPhoto.objects.all().delete()
     create_static_asset("images/gallery/live-1.jpg")
     create_static_asset("images/gallery/live-1-thumb.jpg")
+    create_static_asset("images/gallery/live-1-thumb.webp")
     create_static_asset("images/gallery/live-2.jpg")
 
     GigPhoto.objects.create(
@@ -207,6 +208,7 @@ def test_get_gig_photo_items_prefers_active_database_rows(create_static_asset) -
     assert [item["title"] for item in items] == ["Earlier", "Later"]
     assert items[0]["thumbnail_path"] == "images/gallery/live-1-thumb.jpg"
     assert items[0]["thumbnail_url"] == "/static/images/gallery/live-1-thumb.jpg"
+    assert items[0]["thumbnail_webp_url"] == "/static/images/gallery/live-1-thumb.webp"
     assert items[1]["thumbnail_path"] == "images/gallery/live-2.jpg"
     assert items[1]["thumbnail_url"] == "/static/images/gallery/live-2.jpg"
 
@@ -318,6 +320,23 @@ def test_build_gig_photo_item_falls_back_to_source_image_when_thumb_missing(crea
     }
 
 
+def test_build_gig_photo_item_prefers_webp_thumbnail_when_available(create_static_asset) -> None:
+    """Static gig-photo thumbnails should expose sibling WebP variants for the grid."""
+    create_static_asset("images/gig_photos/test-photo.jpg")
+    create_static_asset("images/gig_photos/thumbs/test-photo-thumb.jpg")
+    create_static_asset("images/gig_photos/thumbs/test-photo-thumb.webp")
+
+    item = views._build_gig_photo_item(
+        title="Test Photo",
+        image_path="images/gig_photos/test-photo.jpg",
+        thumbnail_path="images/gig_photos/thumbs/test-photo-thumb.jpg",
+    )
+
+    assert item["image_url"] == "/static/images/gig_photos/test-photo.jpg"
+    assert item["thumbnail_url"] == "/static/images/gig_photos/thumbs/test-photo-thumb.jpg"
+    assert item["thumbnail_webp_url"] == "/static/images/gig_photos/thumbs/test-photo-thumb.webp"
+
+
 def test_resolve_asset_source_supports_external_urls() -> None:
     """Absolute asset URLs should be returned directly without static lookup."""
     url = "https://assets.example.com/images/gig_photos/live.jpg"
@@ -345,6 +364,7 @@ def test_get_album_art_items_combines_album_art_and_animations(create_static_ass
     AlbumArt.objects.all().delete()
     AnimationAsset.objects.all().delete()
     create_static_asset("images/album_art/cover.jpg")
+    create_static_asset("images/album_art/cover.webp")
     create_static_asset("images/album_art/animation.mp4")
     create_static_asset("images/album_art/poster.jpg")
 
@@ -367,6 +387,7 @@ def test_get_album_art_items_combines_album_art_and_animations(create_static_ass
 
     assert [item["caption"] for item in items] == ["Cover", "Animation"]
     assert items[0]["url"] == "/static/images/album_art/cover.jpg"
+    assert items[0]["thumbnail_webp_url"] == "/static/images/album_art/cover.webp"
     assert items[1]["mime_type"] == "video/mp4"
     assert items[1]["poster_url"] == "/static/images/album_art/poster.jpg"
 

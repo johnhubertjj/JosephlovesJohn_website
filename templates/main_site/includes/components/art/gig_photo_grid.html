@@ -1,7 +1,10 @@
 <div class="gig-photo-grid">
     {% for photo in gig_photo_items %}
         <a class="gig-photo-card" href="{{ photo.image_url }}" data-art-lightbox="image" data-art-caption="{{ photo.title }}">
-            <img src="{{ photo.thumbnail_url }}" alt="{{ photo.alt_text|default:photo.title }}" loading="lazy" decoding="async" fetchpriority="low" />
+            <picture>
+                {% if photo.thumbnail_webp_url %}<source srcset="{{ photo.thumbnail_webp_url }}" type="image/webp" />{% endif %}
+                <img src="{{ photo.thumbnail_url }}" alt="{{ photo.alt_text|default:photo.title }}" loading="lazy" decoding="async" fetchpriority="low" />
+            </picture>
         </a>
     {% empty %}
         <p class="art-empty-note">Gig photos are being refreshed. Check back soon.</p>

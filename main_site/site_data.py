@@ -7,7 +7,7 @@ from typing import cast
 from django.conf import settings
 from django.db import OperationalError, ProgrammingError
 from django.urls import reverse
-from josephlovesjohn_site.assets import resolve_public_asset_source
+from josephlovesjohn_site.assets import normalize_asset_path, public_asset_url, resolve_public_asset_source
 from shop.models import Product
 
 from .cache import cache_shared_content
@@ -53,6 +53,31 @@ def _resolve_asset_source(static_path="", uploaded_file=None):
     return resolve_public_asset_source(static_path, file_exists=_static_file_exists)
 
 
+def _resolve_static_webp_variant(asset):
+    """Return a sibling WebP asset for a static source when one exists."""
+    if not asset or not asset.get("is_static"):
+        return None
+
+    normalized_path = normalize_asset_path(cast(str, asset.get("path") or ""))
+    if not normalized_path:
+        return None
+
+    if normalized_path.lower().endswith(".webp"):
+        return {
+            "path": normalized_path,
+            "url": public_asset_url(normalized_path),
+        }
+
+    webp_path = str(Path(normalized_path).with_suffix(".webp"))
+    if not _static_file_exists(webp_path):
+        return None
+
+    return {
+        "path": webp_path,
+        "url": public_asset_url(webp_path),
+    }
+
+
 def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path="", thumbnail_file=None, alt_text=""):
     """Build a gallery item dictionary when the referenced files exist."""
     image_asset = _resolve_asset_source(static_path=image_path, uploaded_file=image_file)
@@ -60,7 +85,7 @@ def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path=
         return None
 
     thumbnail_asset = _resolve_asset_source(static_path=thumbnail_path, uploaded_file=thumbnail_file) or image_asset
-    return {
+    item = {
         "title": title,
         "image_path": image_asset["path"],
         "thumbnail_path": thumbnail_asset["path"],
@@ -68,6 +93,11 @@ def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path=
         "thumbnail_url": thumbnail_asset["url"],
         "alt_text": alt_text or title,
     }
+    thumbnail_webp_asset = _resolve_static_webp_variant(thumbnail_asset)
+    if thumbnail_webp_asset:
+        item["thumbnail_webp_path"] = thumbnail_webp_asset["path"]
+        item["thumbnail_webp_url"] = thumbnail_webp_asset["url"]
+    return item
 
 
 def _build_album_art_item(
@@ -96,6 +126,12 @@ def _build_album_art_item(
         "featured": featured,
         "fit_contain": fit_contain,
     }
+    if kind == "image":
+        item["thumbnail_url"] = asset["url"]
+        thumbnail_webp_asset = _resolve_static_webp_variant(asset)
+        if thumbnail_webp_asset:
+            item["thumbnail_webp_path"] = thumbnail_webp_asset["path"]
+            item["thumbnail_webp_url"] = thumbnail_webp_asset["url"]
     if kind == "video":
         item["mime_type"] = mimetypes.guess_type(asset["path"])[0] or "video/mp4"
         poster = _resolve_asset_source(static_path=poster_path, uploaded_file=poster_file)

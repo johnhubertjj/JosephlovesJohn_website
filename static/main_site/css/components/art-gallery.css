@@ -53,6 +53,10 @@
     box-shadow: 0 0.55rem 1.45rem rgba(0, 0, 0, 0.35);
 }
 
+.gig-photo-card picture {
+    display: block;
+}
+
 .gig-photo-card img {
     display: block;
     width: 100%;
@@ -78,6 +82,10 @@
 
 .album-art-card.is-featured {
     grid-column: span 6;
+}
+
+.album-art-card picture {
+    display: block;
 }
 
 .album-art-card img,
@@ -120,7 +128,7 @@
 .art-lightbox {
     position: fixed;
     inset: 0;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     overflow: auto;
@@ -128,10 +136,25 @@
     background: rgba(0, 0, 0, 0.9);
     z-index: 9999;
     overscroll-behavior: contain;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+    will-change: opacity;
 }
 
 .art-lightbox.is-visible {
-    display: flex;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.18s ease;
+}
+
+.art-lightbox.is-closing {
+    opacity: 0;
+    visibility: visible;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
 }
 
 .art-lightbox-inner {
