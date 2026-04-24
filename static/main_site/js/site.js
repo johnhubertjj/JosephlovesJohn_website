@@ -547,6 +547,23 @@
         return;
     }
 
+    function playArtPreviewVideos() {
+        artArticle.querySelectorAll(".album-art-card video[data-art-preview-video]").forEach(function (video) {
+            var playAttempt;
+
+            if (!video.paused) {
+                return;
+            }
+
+            playAttempt = video.play();
+            if (playAttempt && typeof playAttempt.catch === "function") {
+                playAttempt.catch(function () {
+                    // Ignore autoplay rejections on stricter browsers.
+                });
+            }
+        });
+    }
+
     function pauseArtVideos() {
         artArticle.querySelectorAll(".album-art-card video").forEach(function (video) {
             if (!video.paused) {
@@ -558,7 +575,10 @@
     function syncArtMediaState() {
         if (!artArticle.classList.contains("active")) {
             pauseArtVideos();
+            return;
         }
+
+        playArtPreviewVideos();
     }
 
     new MutationObserver(function () {
@@ -570,6 +590,14 @@
 
     window.addEventListener("hashchange", function () {
         window.setTimeout(syncArtMediaState, 0);
+    });
+
+    artArticle.querySelectorAll(".album-art-card video[data-art-preview-video]").forEach(function (video) {
+        video.addEventListener("loadeddata", function () {
+            if (artArticle.classList.contains("active")) {
+                playArtPreviewVideos();
+            }
+        });
     });
 
     syncArtMediaState();
@@ -762,18 +790,363 @@
 })();
 
 (function () {
+    var artSection = document.getElementById("art");
+    if (!artSection || !window.performance) {
+        return;
+    }
+
+    function isArtPerfEnabled() {
+        var params;
+        var toggleValue = null;
+
+        try {
+            params = new URLSearchParams(window.location.search || "");
+            toggleValue = params.get("art_perf");
+        } catch (error) {
+            toggleValue = null;
+        }
+
+        if (toggleValue === "1" || toggleValue === "true") {
+            try {
+                window.localStorage.setItem("jlj:art-perf", "1");
+            } catch (error) {
+                // Ignore storage errors in private browsing modes.
+            }
+            return true;
+        }
+
+        if (toggleValue === "0" || toggleValue === "false") {
+            try {
+                window.localStorage.removeItem("jlj:art-perf");
+            } catch (error) {
+                // Ignore storage errors in private browsing modes.
+            }
+            return false;
+        }
+
+        try {
+            return window.localStorage.getItem("jlj:art-perf") === "1";
+        } catch (error) {
+            return false;
+        }
+    }
+
+    if (!isArtPerfEnabled()) {
+        return;
+    }
+
+    function roundMetric(value) {
+        return Math.round(value * 100) / 100;
+    }
+
+    function normaliseResourceUrl(url) {
+        try {
+            return new URL(url, window.location.href).href;
+        } catch (error) {
+            return url;
+        }
+    }
+
+    function formatResourceType(url) {
+        var pathname = "";
+        var extension = "";
+
+        try {
+            pathname = new URL(url, window.location.href).pathname || "";
+        } catch (error) {
+            pathname = url || "";
+        }
+
+        extension = pathname.split(".").pop();
+        return extension ? extension.toLowerCase() : "unknown";
+    }
+
+    function createEmptyResourceBucket() {
+        return {
+            count: 0,
+            transferSize: 0,
+            decodedBodySize: 0
+        };
+    }
+
+    var artPerf = {
+        enabled: true,
+        interactions: [],
+        lastClosedAt: null,
+        nextInteractionId: 1,
+        lcpMs: null,
+        lcpElement: "",
+        beginOpen: function (targetUrl) {
+            var interaction = {
+                id: this.nextInteractionId++,
+                kind: this.lastClosedAt === null ? "open" : "reopen",
+                targetUrl: targetUrl,
+                startedAt: window.performance.now(),
+                sinceCloseMs: this.lastClosedAt === null ? null : roundMetric(window.performance.now() - this.lastClosedAt),
+                visibleMs: null,
+                imageReadyMs: null,
+                cancelled: false
+            };
+
+            this.interactions.push(interaction);
+            return interaction;
+        },
+        finishOpenVisible: function (interaction) {
+            if (!interaction || interaction.cancelled || interaction.visibleMs !== null) {
+                return;
+            }
+
+            interaction.visibleMs = roundMetric(window.performance.now() - interaction.startedAt);
+            console.info("[art perf] lightbox visible", {
+                id: interaction.id,
+                kind: interaction.kind,
+                visibleMs: interaction.visibleMs,
+                sinceCloseMs: interaction.sinceCloseMs,
+                targetUrl: interaction.targetUrl
+            });
+        },
+        finishOpenReady: function (interaction, source) {
+            if (!interaction || interaction.cancelled || interaction.imageReadyMs !== null) {
+                return;
+            }
+
+            interaction.imageReadyMs = roundMetric(window.performance.now() - interaction.startedAt);
+            interaction.readySource = source;
+            console.info("[art perf] lightbox image ready", {
+                id: interaction.id,
+                kind: interaction.kind,
+                imageReadyMs: interaction.imageReadyMs,
+                readySource: source,
+                targetUrl: interaction.targetUrl
+            });
+        },
+        cancelOpen: function (interaction, reason) {
+            if (!interaction || interaction.cancelled) {
+                return;
+            }
+
+            interaction.cancelled = true;
+            interaction.cancelReason = reason;
+        },
+        beginClose: function (reason) {
+            var interaction = {
+                id: this.nextInteractionId++,
+                kind: "close",
+                reason: reason,
+                startedAt: window.performance.now(),
+                durationMs: null
+            };
+
+            this.interactions.push(interaction);
+            return interaction;
+        },
+        finishClose: function (interaction) {
+            if (!interaction || interaction.durationMs !== null) {
+                return;
+            }
+
+            interaction.durationMs = roundMetric(window.performance.now() - interaction.startedAt);
+            this.lastClosedAt = window.performance.now();
+            console.info("[art perf] lightbox closed", {
+                id: interaction.id,
+                reason: interaction.reason,
+                durationMs: interaction.durationMs
+            });
+        },
+        getNavigationSummary: function () {
+            var navigationEntry = null;
+
+            if (window.performance.getEntriesByType) {
+                navigationEntry = window.performance.getEntriesByType("navigation")[0] || null;
+            }
+
+            if (navigationEntry) {
+                return {
+                    ttfbMs: roundMetric(navigationEntry.responseStart),
+                    domContentLoadedMs: roundMetric(navigationEntry.domContentLoadedEventEnd),
+                    loadMs: roundMetric(navigationEntry.loadEventEnd)
+                };
+            }
+
+            return null;
+        },
+        getArtResourceSummary: function () {
+            if (!window.performance.getEntriesByType) {
+                return null;
+            }
+
+            var imageUrls = {};
+            var imageEntries = [];
+            var byType = {};
+
+            artSection.querySelectorAll("img").forEach(function (image) {
+                var currentUrl = image.currentSrc || image.src;
+                if (currentUrl) {
+                    imageUrls[normaliseResourceUrl(currentUrl)] = true;
+                }
+            });
+
+            window.performance.getEntriesByType("resource").forEach(function (entry) {
+                var normalisedName = normaliseResourceUrl(entry.name);
+                var type = formatResourceType(normalisedName);
+                var bucket;
+
+                if (!imageUrls[normalisedName]) {
+                    return;
+                }
+
+                bucket = byType[type];
+                if (!bucket) {
+                    bucket = createEmptyResourceBucket();
+                    byType[type] = bucket;
+                }
+
+                bucket.count += 1;
+                bucket.transferSize += entry.transferSize || 0;
+                bucket.decodedBodySize += entry.decodedBodySize || 0;
+                imageEntries.push({
+                    url: normalisedName,
+                    type: type,
+                    transferSize: entry.transferSize || 0,
+                    decodedBodySize: entry.decodedBodySize || 0,
+                    durationMs: roundMetric(entry.duration || 0)
+                });
+            });
+
+            imageEntries.sort(function (left, right) {
+                return right.transferSize - left.transferSize;
+            });
+
+            return {
+                count: imageEntries.length,
+                transferSize: imageEntries.reduce(function (total, entry) {
+                    return total + entry.transferSize;
+                }, 0),
+                decodedBodySize: imageEntries.reduce(function (total, entry) {
+                    return total + entry.decodedBodySize;
+                }, 0),
+                byType: byType,
+                entries: imageEntries
+            };
+        },
+        getInteractionSummary: function () {
+            return this.interactions
+                .filter(function (interaction) {
+                    return !interaction.cancelled;
+                })
+                .map(function (interaction) {
+                    return {
+                        id: interaction.id,
+                        kind: interaction.kind,
+                        visibleMs: interaction.visibleMs,
+                        imageReadyMs: interaction.imageReadyMs,
+                        durationMs: interaction.durationMs,
+                        sinceCloseMs: interaction.sinceCloseMs,
+                        readySource: interaction.readySource || "",
+                        reason: interaction.reason || ""
+                    };
+                });
+        },
+        report: function () {
+            var navigationSummary = this.getNavigationSummary();
+            var resourceSummary = this.getArtResourceSummary();
+            var interactionSummary = this.getInteractionSummary();
+            var byTypeRows = [];
+
+            console.groupCollapsed("[art perf] summary");
+
+            if (navigationSummary) {
+                console.table([{
+                    ttfbMs: navigationSummary.ttfbMs,
+                    lcpMs: this.lcpMs,
+                    domContentLoadedMs: navigationSummary.domContentLoadedMs,
+                    loadMs: navigationSummary.loadMs
+                }]);
+            }
+
+            if (resourceSummary) {
+                Object.keys(resourceSummary.byType).sort().forEach(function (type) {
+                    var bucket = resourceSummary.byType[type];
+                    byTypeRows.push({
+                        type: type,
+                        count: bucket.count,
+                        transferSize: bucket.transferSize,
+                        decodedBodySize: bucket.decodedBodySize
+                    });
+                });
+
+                console.table([{
+                    imageCount: resourceSummary.count,
+                    transferSize: resourceSummary.transferSize,
+                    decodedBodySize: resourceSummary.decodedBodySize
+                }]);
+
+                if (byTypeRows.length) {
+                    console.table(byTypeRows);
+                }
+
+                if (resourceSummary.entries.length) {
+                    console.table(resourceSummary.entries);
+                }
+            }
+
+            if (interactionSummary.length) {
+                console.table(interactionSummary);
+            }
+
+            console.groupEnd();
+
+            return {
+                navigation: navigationSummary,
+                lcpMs: this.lcpMs,
+                lcpElement: this.lcpElement,
+                resources: resourceSummary,
+                interactions: interactionSummary
+            };
+        }
+    };
+
+    window.__jljArtPerf = artPerf;
+
+    if (window.PerformanceObserver) {
+        try {
+            new window.PerformanceObserver(function (list) {
+                list.getEntries().forEach(function (entry) {
+                    artPerf.lcpMs = roundMetric(entry.startTime);
+                    artPerf.lcpElement = entry.element ? entry.element.tagName : "";
+                });
+            }).observe({ type: "largest-contentful-paint", buffered: true });
+        } catch (error) {
+            // Ignore unsupported PerformanceObserver implementations.
+        }
+    }
+
+    window.addEventListener("load", function () {
+        window.setTimeout(function () {
+            console.info("[art perf] enabled. Use window.__jljArtPerf.report() after loading or interactions.");
+            artPerf.report();
+        }, 0);
+    });
+})();
+
+(function () {
     var lightbox = document.getElementById("art-lightbox");
     if (!lightbox) {
         return;
     }
 
     var lightboxImage = lightbox.querySelector(".art-lightbox-image");
+    var lightboxVideo = lightbox.querySelector(".art-lightbox-video");
     var lightboxCaption = lightbox.querySelector(".art-lightbox-caption");
     var lightboxInner = lightbox.querySelector(".art-lightbox-inner");
     var lightboxCloseButton = lightbox.querySelector("[data-art-close]");
+    var artPerf = window.__jljArtPerf || null;
     var lastTrigger = null;
     var lastWindowScrollY = 0;
     var lastArticleScrollTop = 0;
+    var lightboxCloseCleanupTimer = 0;
+    var pendingOpenInteraction = null;
+    var LIGHTBOX_CLOSE_CLEANUP_DELAY_MS = 180;
 
     function getActiveArticle() {
         return document.querySelector("#main article.active");
@@ -802,30 +1175,151 @@
         );
     }
 
-    function closeLightbox() {
-        lightbox.classList.remove("is-visible");
-        lightbox.setAttribute("aria-hidden", "true");
-        document.body.classList.remove("is-lightbox-visible");
+    function hideLightboxVideo() {
+        if (!lightboxVideo) {
+            return;
+        }
+
+        lightboxVideo.pause();
+        lightboxVideo.setAttribute("hidden", "");
+        lightboxVideo.removeAttribute("src");
+        lightboxVideo.load();
+    }
+
+    function showLightboxImage(targetUrl, altText) {
+        if (lightboxVideo) {
+            hideLightboxVideo();
+        }
+
+        lightboxImage.removeAttribute("hidden");
+        lightboxImage.src = targetUrl;
+        lightboxImage.alt = altText;
+    }
+
+    function showLightboxVideo(targetUrl) {
+        var playAttempt = null;
+
+        lightboxImage.setAttribute("hidden", "");
+        lightboxImage.removeAttribute("src");
+        lightboxImage.alt = "";
+        if (!lightboxVideo) {
+            return;
+        }
+
+        lightboxVideo.removeAttribute("hidden");
+        lightboxVideo.currentTime = 0;
+        lightboxVideo.muted = true;
+        lightboxVideo.loop = true;
+        lightboxVideo.src = targetUrl;
+        lightboxVideo.load();
+        playAttempt = lightboxVideo.play();
+        if (playAttempt && typeof playAttempt.catch === "function") {
+            playAttempt.catch(function () {
+                // Ignore autoplay rejections; the controls remain available.
+            });
+        }
+    }
+
+    function clearLightboxCloseCleanup() {
+        if (!lightboxCloseCleanupTimer) {
+            return;
+        }
+
+        window.clearTimeout(lightboxCloseCleanupTimer);
+        lightboxCloseCleanupTimer = 0;
+    }
+
+    function runLightboxCloseCleanup() {
+        if (lightbox.classList.contains("is-visible")) {
+            return;
+        }
+
+        lightbox.classList.remove("is-closing");
+        hideLightboxVideo();
+        lightboxImage.removeAttribute("hidden");
         lightboxImage.removeAttribute("src");
         lightboxImage.alt = "";
         lightboxCaption.textContent = "";
-        restoreLightboxScrollPosition();
-        if (lastTrigger) {
-            try {
-                lastTrigger.focus({ preventScroll: true });
-            } catch (error) {
-                lastTrigger.focus();
-            }
-        }
-
-        window.requestAnimationFrame(restoreLightboxScrollPosition);
     }
 
-    document.querySelectorAll('[data-art-lightbox="image"]').forEach(function (trigger) {
+    function scheduleLightboxCloseCleanup() {
+        clearLightboxCloseCleanup();
+        lightboxCloseCleanupTimer = window.setTimeout(function () {
+            lightboxCloseCleanupTimer = 0;
+            runLightboxCloseCleanup();
+        }, LIGHTBOX_CLOSE_CLEANUP_DELAY_MS);
+    }
+
+    function restoreTriggerFocus() {
+        if (!lastTrigger) {
+            return;
+        }
+
+        try {
+            lastTrigger.focus({ preventScroll: true });
+        } catch (error) {
+            lastTrigger.focus();
+        }
+    }
+
+    function closeLightbox(reason) {
+        var closeInteraction = null;
+
+        if (!lightbox.classList.contains("is-visible") && !lightbox.classList.contains("is-closing")) {
+            return;
+        }
+
+        closeInteraction = artPerf ? artPerf.beginClose(reason || "dismiss") : null;
+
+        if (artPerf && pendingOpenInteraction) {
+            artPerf.cancelOpen(pendingOpenInteraction, "closed-before-ready");
+            pendingOpenInteraction = null;
+        }
+
+        clearLightboxCloseCleanup();
+        lightbox.classList.remove("is-visible");
+        lightbox.classList.add("is-closing");
+        lightbox.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("is-lightbox-visible");
+        restoreTriggerFocus();
+        scheduleLightboxCloseCleanup();
+        window.requestAnimationFrame(function () {
+            restoreLightboxScrollPosition();
+            if (artPerf && closeInteraction) {
+                artPerf.finishClose(closeInteraction);
+            }
+        });
+    }
+
+    if (lightboxImage && artPerf) {
+        lightboxImage.addEventListener("load", function () {
+            if (!pendingOpenInteraction) {
+                return;
+            }
+
+            artPerf.finishOpenReady(pendingOpenInteraction, "load");
+            pendingOpenInteraction = null;
+        });
+    }
+
+    if (lightboxVideo && artPerf) {
+        lightboxVideo.addEventListener("loadeddata", function () {
+            if (!pendingOpenInteraction) {
+                return;
+            }
+
+            artPerf.finishOpenReady(pendingOpenInteraction, "loadeddata");
+            pendingOpenInteraction = null;
+        });
+    }
+
+    document.querySelectorAll('[data-art-lightbox="image"], [data-art-lightbox="video"]').forEach(function (trigger) {
         trigger.addEventListener("click", function (event) {
             event.preventDefault();
 
             var targetUrl = trigger.getAttribute("href");
+            var lightboxKind = trigger.getAttribute("data-art-lightbox") || "image";
+            var openInteraction = null;
             if (!targetUrl) {
                 return;
             }
@@ -835,8 +1329,15 @@
             var activeArticle = getActiveArticle();
             lastArticleScrollTop = activeArticle ? activeArticle.scrollTop : 0;
             var image = trigger.querySelector("img");
-            lightboxImage.src = targetUrl;
-            lightboxImage.alt = image ? image.alt : "Artwork";
+            openInteraction = artPerf ? artPerf.beginOpen(targetUrl) : null;
+            pendingOpenInteraction = openInteraction;
+            clearLightboxCloseCleanup();
+            lightbox.classList.remove("is-closing");
+            if (lightboxKind === "video") {
+                showLightboxVideo(targetUrl);
+            } else {
+                showLightboxImage(targetUrl, image ? image.alt : "Artwork");
+            }
             lightboxCaption.textContent = trigger.getAttribute("data-art-caption") || "";
 
             lightbox.classList.add("is-visible");
@@ -847,6 +1348,15 @@
                 if (lightboxCloseButton) {
                     lightboxCloseButton.focus();
                 }
+
+                if (artPerf && openInteraction) {
+                    artPerf.finishOpenVisible(openInteraction);
+                }
+
+                if (artPerf && openInteraction && lightboxKind === "image" && lightboxImage.complete) {
+                    artPerf.finishOpenReady(openInteraction, "complete");
+                    pendingOpenInteraction = null;
+                }
             });
         });
     });
@@ -856,7 +1366,7 @@
 
         if (event.target === lightbox || event.target.hasAttribute("data-art-close")) {
             event.preventDefault();
-            closeLightbox();
+            closeLightbox(event.target === lightbox ? "backdrop" : "button");
         }
     });
 
@@ -870,7 +1380,7 @@
         if ((event.key === "Escape" || event.keyCode === 27) && lightbox.classList.contains("is-visible")) {
             event.preventDefault();
             event.stopPropagation();
-            closeLightbox();
+            closeLightbox("escape");
         }
     }, true);
 
@@ -897,7 +1407,7 @@
 
     window.addEventListener("hashchange", function () {
         if (lightbox.classList.contains("is-visible")) {
-            closeLightbox();
+            closeLightbox("hashchange");
         }
     });
 })();

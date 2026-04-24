@@ -196,11 +196,13 @@ def ensure_browser_gallery_assets(request: pytest.FixtureRequest, create_static_
         return
 
     request.getfixturevalue("db")
-    from main_site.models import AlbumArt, GigPhoto
+    from main_site.models import AlbumArt, AnimationAsset, GigPhoto
 
     gig_image = create_static_asset("images/gig_photos/browser-gig-photo.jpg")
     gig_thumbnail = create_static_asset("images/gig_photos/thumbs/browser-gig-thumb.jpg")
     album_image = create_static_asset("images/album_art/browser-album-art.jpg")
+    animation_video = create_static_asset("images/album_art/browser-animation.mp4")
+    animation_poster = create_static_asset("images/album_art/browser-animation-poster.jpg")
 
     GigPhoto.objects.update_or_create(
         title="Browser Gig Photo",
@@ -209,6 +211,19 @@ def ensure_browser_gallery_assets(request: pytest.FixtureRequest, create_static_
             "thumbnail_path": gig_thumbnail,
             "alt_text": "Browser gig photo",
             "sort_order": 0,
+            "is_active": True,
+        },
+    )
+    AnimationAsset.objects.update_or_create(
+        title="Browser Animation",
+        defaults={
+            "media_kind": AnimationAsset.MediaKind.VIDEO,
+            "file_path": animation_video,
+            "poster_path": animation_poster,
+            "alt_text": "Browser animation preview",
+            "featured": False,
+            "fit_contain": False,
+            "sort_order": 1,
             "is_active": True,
         },
     )

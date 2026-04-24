@@ -3,12 +3,36 @@
         <figure class="album-art-card{% if item.featured %} is-featured{% endif %}">
             {% if item.kind == 'image' %}
                 <a href="{{ item.url }}" data-art-lightbox="image" data-art-caption="{{ item.caption }}">
-                    <img{% if item.fit_contain %} class="is-contain"{% endif %} src="{{ item.url }}" alt="{{ item.alt|default:item.caption }}" loading="lazy" decoding="async" />
+                    <picture>
+                        {% if item.thumbnail_webp_url %}<source srcset="{{ item.thumbnail_webp_url }}" type="image/webp" />{% endif %}
+                        <img{% if item.fit_contain %} class="is-contain"{% endif %} src="{{ item.thumbnail_url|default:item.url }}" alt="{{ item.alt|default:item.caption }}" loading="lazy" decoding="async" />
+                    </picture>
                 </a>
             {% elif item.kind == 'video' %}
-                <video controls preload="metadata" playsinline{% if item.poster_url %} poster="{{ item.poster_url }}"{% endif %}>
-                    <source src="{{ item.url }}" type="{{ item.mime_type }}" />
-                </video>
+                <a
+                    href="{{ item.url }}"
+                    class="album-art-video-trigger"
+                    data-art-lightbox="video"
+                    data-art-caption="{{ item.caption }}"
+                    aria-label="{{ item.alt|default:item.caption }}"
+                >
+                    <video
+                        {% if item.fit_contain %}class="is-contain"{% endif %}
+                        {% if item.show_controls %}controls{% endif %}
+                        preload="metadata"
+                        playsinline
+                        webkit-playsinline
+                        {% if item.autoplay %}autoplay{% endif %}
+                        {% if item.loop %}loop{% endif %}
+                        {% if item.muted %}muted{% endif %}
+                        {% if item.autoplay %}data-art-preview-video{% endif %}
+                        aria-hidden="true"
+                        tabindex="-1"
+                        {% if item.poster_url %}poster="{{ item.poster_url }}"{% endif %}
+                    >
+                        <source src="{{ item.url }}" type="{{ item.mime_type }}" />
+                    </video>
+                </a>
             {% endif %}
             <figcaption>{{ item.caption }}</figcaption>
         </figure>

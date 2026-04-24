@@ -15,6 +15,7 @@ def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, cl
     GigPhoto.objects.all().delete()
     create_static_asset("images/gallery/first.jpg")
     create_static_asset("images/gallery/first-thumb.jpg")
+    create_static_asset("images/gallery/first-thumb.webp")
     create_static_asset("images/gallery/second.jpg")
     create_static_asset("images/gallery/inactive.jpg")
 
@@ -50,6 +51,7 @@ def test_art_route_uses_admin_configured_gig_photo_order(create_static_asset, cl
     assert response.context["gig_photo_items"][1]["title"] == "Second Photo"
     assert body.index('data-art-caption="First Photo"') < body.index('data-art-caption="Second Photo"')
     assert 'data-art-caption="Hidden Photo"' not in body
+    assert '/static/images/gallery/first-thumb.webp' in body
     assert '/static/images/gallery/first-thumb.jpg' in body
 
 
@@ -60,7 +62,9 @@ def test_art_route_combines_album_art_and_animation_items(create_static_asset, c
     AlbumArt.objects.all().delete()
     AnimationAsset.objects.all().delete()
     create_static_asset("images/album_art/cover.jpg")
-    create_static_asset("images/album_art/loop.gif")
+    create_static_asset("images/album_art/cover.webp")
+    create_static_asset("images/album_art/loop.gif", b"g" * 1000)
+    create_static_asset("images/album_art/loop.mp4", b"m" * 100)
 
     AnimationAsset.objects.create(
         title="Loop Animation",
@@ -79,8 +83,13 @@ def test_art_route_combines_album_art_and_animation_items(create_static_asset, c
 
     assert [item["caption"] for item in response.context["album_art_items"]] == ["Cover Art", "Loop Animation"]
     assert body.index("Cover Art") < body.index("Loop Animation")
+    assert '/static/images/album_art/cover.webp' in body
     assert '/static/images/album_art/cover.jpg' in body
-    assert '/static/images/album_art/loop.gif' in body
+    assert response.context["album_art_items"][1]["kind"] == "video"
+    assert '/static/images/album_art/loop.mp4' in body
+    assert 'autoplay' in body
+    assert 'loop' in body
+    assert 'muted' in body
 
 
 @pytest.mark.django_db
@@ -214,6 +223,7 @@ def test_gig_photo_grid_component_renders_direct_urls() -> None:
                     "title": "Reusable Photo",
                     "image_url": "/media/gig_photos/uploads/reusable.jpg",
                     "thumbnail_url": "/media/gig_photos/thumbs/uploads/reusable-thumb.jpg",
+                    "thumbnail_webp_url": "/media/gig_photos/thumbs/uploads/reusable-thumb.webp",
                     "alt_text": "Reusable photo",
                 }
             ]
@@ -221,6 +231,7 @@ def test_gig_photo_grid_component_renders_direct_urls() -> None:
     )
 
     assert 'href="/media/gig_photos/uploads/reusable.jpg"' in html
+    assert 'srcset="/media/gig_photos/thumbs/uploads/reusable-thumb.webp"' in html
     assert 'src="/media/gig_photos/thumbs/uploads/reusable-thumb.jpg"' in html
     assert 'loading="lazy"' in html
     assert 'decoding="async"' in html
@@ -256,6 +267,8 @@ def test_album_art_grid_component_renders_featured_and_contain_variants() -> Non
                 {
                     "kind": "image",
                     "url": "/static/images/album_art/buddlea_animation.gif",
+                    "thumbnail_url": "/static/images/album_art/buddlea_animation.gif",
+                    "thumbnail_webp_url": "/static/images/album_art/buddlea_animation.webp",
                     "caption": "Buddlea Animation",
                     "alt": "Buddlea animation artwork",
                     "featured": True,
@@ -267,7 +280,47 @@ def test_album_art_grid_component_renders_featured_and_contain_variants() -> Non
 
     assert 'class="album-art-card is-featured"' in html
     assert 'class="is-contain"' in html
+    assert 'srcset="/static/images/album_art/buddlea_animation.webp"' in html
     assert "Buddlea Animation" in html
+
+
+@pytest.mark.integration
+def test_album_art_grid_component_renders_looping_animation_video_without_controls() -> None:
+    """Auto-upgraded animation videos should loop inline without player chrome."""
+    html = render_to_string(
+        "main_site/includes/components/art/album_art_grid.html",
+        {
+            "album_art_items": [
+                {
+                    "kind": "video",
+                    "url": "/static/images/album_art/symbol_animation.mp4",
+                    "mime_type": "video/mp4",
+                    "caption": "Symbol Animation",
+                    "alt": "Symbol animation artwork",
+                    "featured": False,
+                    "fit_contain": True,
+                    "autoplay": True,
+                    "loop": True,
+                    "muted": True,
+                    "show_controls": False,
+                    "poster_url": "",
+                }
+            ]
+        },
+    )
+
+    assert 'href="/static/images/album_art/symbol_animation.mp4"' in html
+    assert 'data-art-lightbox="video"' in html
+    assert 'source src="/static/images/album_art/symbol_animation.mp4"' in html
+    assert "autoplay" in html
+    assert "loop" in html
+    assert "muted" in html
+    assert 'class="is-contain"' in html
+    assert 'data-art-preview-video' in html
+    assert 'webkit-playsinline' in html
+    assert 'preload="metadata"' in html
+    assert "controls" not in html
+    assert 'aria-label="Symbol animation artwork"' in html
 
 
 @pytest.mark.integration
