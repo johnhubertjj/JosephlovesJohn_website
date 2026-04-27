@@ -140,6 +140,15 @@
     border-color: rgba(255, 120, 120, 0.7);
 }
 
+.shop-form-field--trap {
+    height: 1px;
+    left: -10000px;
+    overflow: hidden;
+    position: absolute;
+    top: auto;
+    width: 1px;
+}
+
 .shop-form-field--checkbox {
     align-items: flex-start;
     display: flex;

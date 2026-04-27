@@ -9,7 +9,7 @@
         <form method="post" class="shop-form" novalidate>
             {% csrf_token %}
             {% for field in form %}
-                <div class="shop-form-field{% if field.errors %} has-errors{% endif %}">
+                <div class="shop-form-field{% if field.name == 'website' %} shop-form-field--trap{% endif %}{% if field.errors %} has-errors{% endif %}"{% if field.name == 'website' %} aria-hidden="true"{% endif %}>
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {{ field }}
                     {% for error in field.errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
