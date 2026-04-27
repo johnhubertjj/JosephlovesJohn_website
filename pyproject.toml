@@ -1,6 +1,6 @@
 [project]
 name = "josephlovesjohn-website"
-version = "1.1.1"
+version = "1.2.0"
 description = "Production Django codebase for the JosephlovesJohn artist site, digital-download shop, and mastering microsite."
 requires-python = ">=3.14"
 dependencies = [

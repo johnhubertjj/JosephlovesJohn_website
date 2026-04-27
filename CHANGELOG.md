@@ -5,6 +5,15 @@ This project follows simple semantic versioning for production releases:
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
 - the latest tagged release is `v1.1.1`
 
+## v1.2.0 - 2026-04-27
+
+- Hardened shop account privacy by adding no-store cache headers to login, registration, checkout, account, success, download, and cart endpoints
+- Added a Safari back-forward cache guard so stale authenticated shop pages revalidate after logout instead of remaining visible when using the browser Back button
+- Reduced bot account creation with registration rate limiting and an invisible honeypot field on the signup form
+- Simplified customer accounts by removing the visible full-name signup field and dropping stored profile names from customer profiles, admin, and account pages
+- Added a migration to remove the old customer profile name column while keeping usernames, emails, order history, and downloads working normally
+- Updated shop tests to cover no-store headers, registration bot protections, profile-name removal, and browser-history revalidation behavior
+
 ## v1.1.1 - 2026-04-24
 
 - Improved `/art/` gallery performance with WebP thumbnail delivery for static art assets and lighter animation preview media
