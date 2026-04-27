@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
@@ -146,14 +147,11 @@ def _ensure_download_access(request, item):
 
 
 def _sync_customer_profile_from_order(order):
-    """Save confirmed Stripe customer details back to the logged-in profile."""
+    """Save confirmed Stripe customer contact details back to the logged-in account."""
     if not order.user_id:
         return
 
-    profile, _ = CustomerProfile.objects.get_or_create(user=order.user)
-    profile.full_name = order.full_name
-    profile.marketing_opt_in = profile.marketing_opt_in
-    profile.save(update_fields=["full_name", "marketing_opt_in", "updated_at"])
+    CustomerProfile.objects.get_or_create(user=order.user)
 
     if order.email and order.email != order.user.email:
         order.user.email = order.email
@@ -239,6 +237,7 @@ def _already_owned_error_for_products(products):
     )
 
 
+@method_decorator(never_cache, name="dispatch")
 class ShopLoginView(LoginView):
     """Render the login page for returning listeners."""
 
@@ -270,6 +269,7 @@ class ShopLoginView(LoginView):
         return self.get_redirect_url() or reverse("shop:account")
 
 
+@method_decorator(never_cache, name="dispatch")
 class ShopLogoutView(View):
     """Log the user out and return them to the main music page."""
 
@@ -288,6 +288,7 @@ class ShopLogoutView(View):
         return redirect("main_site:music")
 
 
+@method_decorator(never_cache, name="dispatch")
 class ShopPasswordResetView(PasswordResetView):
     """Send password reset emails using the canonical public site URL."""
 
@@ -323,6 +324,7 @@ class ShopPasswordResetView(PasswordResetView):
         return redirect(self.get_success_url())
 
 
+@method_decorator(never_cache, name="dispatch")
 class RegisterView(FormView):
     """Create a reusable storefront account."""
 
@@ -338,6 +340,22 @@ class RegisterView(FormView):
         """
         return self.request.GET.get("next") or super().get_success_url()
 
+    def post(self, request, *args, **kwargs):
+        """Apply bot-resistant limits before creating a customer account."""
+        email = (request.POST.get("email") or "").strip().lower()
+        if is_rate_limited(
+            request,
+            scope="shop-register",
+            limit=settings.REGISTER_RATE_LIMIT_ATTEMPTS,
+            window_seconds=settings.REGISTER_RATE_LIMIT_WINDOW,
+            extra_identifier=email,
+        ):
+            form = self.get_form()
+            messages.error(request, "Too many account creation attempts. Please wait a while and try again.")
+            return self.form_invalid(form)
+
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
         """Persist the new account and profile.
 
@@ -349,15 +367,13 @@ class RegisterView(FormView):
         user = form.save(commit=False)
         user.email = form.cleaned_data["email"]
         user.save()
-        CustomerProfile.objects.update_or_create(
-            user=user,
-            defaults={"full_name": form.cleaned_data["full_name"]},
-        )
+        CustomerProfile.objects.get_or_create(user=user)
         login(self.request, user)
         messages.success(self.request, "Your account is ready. You can now keep track of your purchases here.")
         return super().form_valid(form)
 
 
+@method_decorator(never_cache, name="dispatch")
 class AccountView(LoginRequiredMixin, TemplateView):
     """Show saved customer details and previous orders."""
 
@@ -387,6 +403,7 @@ class AccountView(LoginRequiredMixin, TemplateView):
         return context
 
 
+@method_decorator(never_cache, name="dispatch")
 class CheckoutView(View):
     """Launch Stripe Checkout for the current cart."""
 
@@ -602,9 +619,8 @@ class CheckoutView(View):
         if not user.is_authenticated:
             return "Guest checkout", ""
 
-        profile, _ = CustomerProfile.objects.get_or_create(user=user)
-        full_name = profile.full_name or user.get_full_name() or user.username
-        return full_name, user.email
+        CustomerProfile.objects.get_or_create(user=user)
+        return user.username, user.email
 
     def _create_checkout_session(self, request, order):
         """Create the hosted Stripe Checkout session for the pending order."""
@@ -678,6 +694,7 @@ class CheckoutView(View):
         }
 
 
+@method_decorator(never_cache, name="dispatch")
 class OrderSuccessView(TemplateView):
     """Show the completed order and digital downloads."""
 
@@ -740,6 +757,7 @@ class OrderSuccessView(TemplateView):
             messages.success(self.request, success_message)
 
 
+@method_decorator(never_cache, name="dispatch")
 class OrderDownloadView(View):
     """Deliver a purchased file to an authorized customer."""
 
@@ -801,6 +819,7 @@ class StripeWebhookView(View):
 
 
 @require_POST
+@never_cache
 def cart_add(request, slug):
     """Add the requested product to the session cart.
 
@@ -826,6 +845,7 @@ def cart_add(request, slug):
 
 
 @require_POST
+@never_cache
 def cart_remove(request, slug):
     """Remove the requested product from the session cart.
 

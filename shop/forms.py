@@ -71,13 +71,21 @@ class RegisterForm(UserCreationForm):
     """Create a storefront account for returning listeners."""
 
     email = forms.EmailField()
-    full_name = forms.CharField(max_length=180)
+    website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "off",
+                "tabindex": "-1",
+            }
+        ),
+    )
 
     class Meta(UserCreationForm.Meta):
         """Registration fields shown to the shopper."""
 
         model = User
-        fields = ("username", "email", "full_name")
+        fields = ("username", "email")
 
     def clean_email(self):
         """Reject duplicate storefront email addresses to simplify recovery flows."""
@@ -85,3 +93,10 @@ class RegisterForm(UserCreationForm):
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("An account with that email address already exists.")
         return email
+
+    def clean_website(self):
+        """Reject automated signups that fill the hidden honeypot field."""
+        value = (self.cleaned_data.get("website") or "").strip()
+        if value:
+            raise forms.ValidationError("Please leave this field blank.")
+        return ""

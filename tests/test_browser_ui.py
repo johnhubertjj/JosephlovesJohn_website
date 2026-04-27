@@ -318,14 +318,13 @@ def test_shop_register_and_login_flows(browser_page, live_server) -> None:
     browser_page.goto(_route_url(live_server, "shop:register"), wait_until="load")
     browser_page.locator('input[name="username"]').fill("browserlistener")
     browser_page.locator('input[name="email"]').fill("browserlistener@example.com")
-    browser_page.locator('input[name="full_name"]').fill("Browser Listener")
     browser_page.locator('input[name="password1"]').fill("SuperSafePass123")
     browser_page.locator('input[name="password2"]').fill("SuperSafePass123")
     browser_page.locator('button[type="submit"]').click()
     browser_page.wait_for_url("**/shop/account/")
 
     assert browser_page.locator("h1").inner_text().strip().lower() == "your account"
-    assert "Browser Listener" in browser_page.content()
+    assert "browserlistener" in browser_page.content()
 
     browser_page.locator('form[action="/shop/logout/"] button[type="submit"]').click()
     browser_page.wait_for_url("**/music/**")
@@ -339,7 +338,7 @@ def test_shop_register_and_login_flows(browser_page, live_server) -> None:
     browser_page.locator('input[name="password"]').fill("SuperSafePass123")
     browser_page.locator('button[type="submit"]').click()
     browser_page.wait_for_url("**/shop/account/")
-    assert "Browser Listener" in browser_page.content()
+    assert "browserlistener" in browser_page.content()
 
 
 @override_settings(

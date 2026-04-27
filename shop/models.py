@@ -127,7 +127,6 @@ class CustomerProfile(models.Model):
     """Persist optional saved customer details for logged-in shoppers."""
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shop_profile")
-    full_name = models.CharField(max_length=180, blank=True)
     marketing_opt_in = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -137,7 +136,7 @@ class CustomerProfile(models.Model):
         :returns: Profile label.
         :rtype: str
         """
-        return self.full_name or self.user.get_username()
+        return self.user.get_username()
 
 
 class Order(models.Model):

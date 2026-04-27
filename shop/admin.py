@@ -57,5 +57,5 @@ class OrderAdmin(admin.ModelAdmin):
 class CustomerProfileAdmin(admin.ModelAdmin):
     """Manage saved customer details."""
 
-    list_display = ("user", "full_name", "marketing_opt_in", "updated_at")
-    search_fields = ("user__username", "user__email", "full_name")
+    list_display = ("user", "marketing_opt_in", "updated_at")
+    search_fields = ("user__username", "user__email")

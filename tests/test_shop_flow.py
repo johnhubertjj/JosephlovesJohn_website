@@ -25,6 +25,11 @@ VALID_CHECKOUT_CONSENTS = {
 }
 
 
+def assert_response_is_not_cacheable(response) -> None:
+    """Assert that a response tells browsers/proxies not to retain private shop pages."""
+    assert "no-store" in response.headers.get("Cache-Control", "")
+
+
 @pytest.fixture
 def seeded_product() -> Product:
     """Return the first seeded shop product.
@@ -241,14 +246,14 @@ def test_apply_paid_checkout_session_supports_nested_stripe_sdk_objects() -> Non
     assert order.is_paid is True
 
 
-def test_sync_customer_profile_from_order_updates_profile_and_email(django_user_model) -> None:
-    """Confirmed orders should refresh the saved profile name and login email."""
+def test_sync_customer_profile_from_order_updates_email_without_storing_profile_name(django_user_model) -> None:
+    """Confirmed orders should refresh the login email without storing profile names."""
     user = django_user_model.objects.create_user(
         username="shopper",
         email="old@example.com",
         password="secret123",
     )
-    profile = CustomerProfile.objects.create(user=user, full_name="Old Name", marketing_opt_in=True)
+    profile = CustomerProfile.objects.create(user=user, marketing_opt_in=True)
     order = Order.objects.create(
         user=user,
         full_name="Updated Name",
@@ -261,7 +266,6 @@ def test_sync_customer_profile_from_order_updates_profile_and_email(django_user_
 
     profile.refresh_from_db()
     user.refresh_from_db()
-    assert profile.full_name == "Updated Name"
     assert profile.marketing_opt_in is True
     assert user.email == "new@example.com"
 
@@ -316,6 +320,7 @@ def test_login_page_links_to_password_reset(client) -> None:
 
     assert response.status_code == 200
     assert reverse("shop:password_reset") in response.content.decode()
+    assert_response_is_not_cacheable(response)
 
 
 def test_login_shows_username_error_when_account_is_unknown(client) -> None:
@@ -399,6 +404,23 @@ def test_logout_requires_post_and_redirects_back_to_music_page(client, django_us
     assert get_response.status_code == 405
     assert response.status_code == 302
     assert response.headers["Location"] == reverse("main_site:music")
+
+
+def test_authenticated_shop_pages_revalidate_when_restored_from_browser_history(client, django_user_model) -> None:
+    """Authenticated shop pages should reload after browser back-forward cache restores them."""
+    user = django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+    client.force_login(user)
+
+    response = client.get(reverse("shop:account"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "back_forward" in body
+    assert "window.location.reload()" in body
 
 
 @override_settings(
@@ -526,7 +548,7 @@ def test_checkout_get_redirects_authenticated_user_to_stripe_with_saved_email(
         email="listener@example.com",
         password="secret123",
     )
-    CustomerProfile.objects.create(user=user, full_name="Jayne Listener")
+    CustomerProfile.objects.create(user=user)
     client.force_login(user)
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
 
@@ -538,7 +560,7 @@ def test_checkout_get_redirects_authenticated_user_to_stripe_with_saved_email(
     assert review_response.status_code == 200
     assert response.status_code == 302
     assert response.headers["Location"] == "https://checkout.stripe.test/cs_test_1"
-    assert order.full_name == "Jayne Listener"
+    assert order.full_name == "listener"
     assert order.email == "listener@example.com"
     assert fake_stripe_checkout["created_payloads"][0]["customer_email"] == "listener@example.com"
 
@@ -740,7 +762,6 @@ def test_register_rejects_duplicate_email_addresses(client, django_user_model) -
         {
             "username": "new-listener",
             "email": "listener@example.com",
-            "full_name": "New Listener",
             "password1": "EvenSaferPass123",
             "password2": "EvenSaferPass123",
         },
@@ -753,13 +774,13 @@ def test_register_rejects_duplicate_email_addresses(client, django_user_model) -
 def test_success_page_syncs_authenticated_customer_profile_from_verified_stripe_session(
     client, django_user_model, seeded_product: Product, fake_stripe_checkout
 ) -> None:
-    """Verified Stripe returns should refresh the signed-in buyer's saved details."""
+    """Verified Stripe returns should refresh email without saving a profile name."""
     user = django_user_model.objects.create_user(
         username="listener",
         email="listener@example.com",
         password="secret123",
     )
-    CustomerProfile.objects.create(user=user, full_name="Old Profile Name")
+    CustomerProfile.objects.create(user=user)
     client.force_login(user)
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
     client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
@@ -784,7 +805,7 @@ def test_success_page_syncs_authenticated_customer_profile_from_verified_stripe_
     profile = CustomerProfile.objects.get(user=user)
     assert response.status_code == 200
     assert order.status == Order.Status.CONFIRMED
-    assert profile.full_name == "Updated Listener"
+    assert str(profile) == "listener"
     assert user.email == "updated@example.com"
 
 
@@ -1474,13 +1495,12 @@ def test_stripe_webhook_tolerates_checkout_events_that_fail_final_verification(
 
 
 def test_register_view_creates_profile_and_logs_user_in(client) -> None:
-    """Registering should create the account, attach a profile, and sign the user in."""
+    """Registering should create the account, attach a blank profile, and sign the user in."""
     response = client.post(
         reverse("shop:register"),
         data={
             "username": "newlistener",
             "email": "newlistener@example.com",
-            "full_name": "New Listener",
             "password1": "SuperSafePass123",
             "password2": "SuperSafePass123",
         },
@@ -1491,8 +1511,69 @@ def test_register_view_creates_profile_and_logs_user_in(client) -> None:
 
     assert response.status_code == 302
     assert response.headers["Location"] == reverse("shop:account")
-    assert CustomerProfile.objects.get(user=user).full_name == "New Listener"
+    assert CustomerProfile.objects.filter(user=user).exists()
     assert client.session.get("_auth_user_id") == str(user.pk)
+
+
+def test_register_page_includes_hidden_honeypot(client) -> None:
+    """The signup form should include a visually hidden trap field for simple bots."""
+    response = client.get(reverse("shop:register"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'name="website"' in body
+    assert "shop-form-field--trap" in body
+    assert_response_is_not_cacheable(response)
+
+
+def test_register_honeypot_blocks_bot_signup(client) -> None:
+    """Submissions that fill the hidden website field should not create an account."""
+    response = client.post(
+        reverse("shop:register"),
+        data={
+            "username": "spambot",
+            "email": "spambot@example.com",
+            "password1": "SuperSafePass123",
+            "password2": "SuperSafePass123",
+            "website": "https://spam.example",
+        },
+    )
+
+    user_model = get_user_model()
+    assert response.status_code == 200
+    assert not user_model.objects.filter(username="spambot").exists()
+    assert "Please leave this field blank." in response.content.decode()
+
+
+def test_register_rate_limit_blocks_repeated_attempts(client) -> None:
+    """Repeated account creation attempts from one caller should be rate limited."""
+    with override_settings(REGISTER_RATE_LIMIT_ATTEMPTS=1, REGISTER_RATE_LIMIT_WINDOW=300):
+        first_response = client.post(
+            reverse("shop:register"),
+            data={
+                "username": "firstlistener",
+                "email": "same@example.com",
+                "password1": "SuperSafePass123",
+                "password2": "SuperSafePass123",
+            },
+        )
+        client.logout()
+        second_response = client.post(
+            reverse("shop:register"),
+            data={
+                "username": "secondlistener",
+                "email": "same@example.com",
+                "password1": "SuperSafePass123",
+                "password2": "SuperSafePass123",
+            },
+        )
+
+    user_model = get_user_model()
+    assert first_response.status_code == 302
+    assert second_response.status_code == 200
+    assert user_model.objects.filter(username="firstlistener").exists()
+    assert not user_model.objects.filter(username="secondlistener").exists()
+    assert "Too many account creation attempts" in second_response.content.decode()
 
 
 def test_account_requires_authentication(client) -> None:
@@ -1510,7 +1591,7 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
         email="collector@example.com",
         password="secret123",
     )
-    CustomerProfile.objects.create(user=user, full_name="Collector")
+    CustomerProfile.objects.create(user=user)
     order = Order.objects.create(
         user=user,
         full_name="Collector",
@@ -1541,6 +1622,56 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
     assert seeded_product.title in body
     assert reverse("shop:download", args=[order.items.get().pk]) in body
     assert "Download WAV" in body
+    assert_response_is_not_cacheable(response)
+
+
+def test_private_shop_pages_are_not_cacheable(
+    client,
+    django_user_model,
+    seeded_product: Product,
+    create_private_download_asset,
+) -> None:
+    """Browsers should not retain authenticated checkout, account, success, or download responses."""
+    create_private_download_asset(seeded_product.download_file_path, content=b"private bytes")
+    user = django_user_model.objects.create_user(
+        username="collector",
+        email="collector@example.com",
+        password="secret123",
+    )
+    CustomerProfile.objects.create(user=user)
+    order = Order.objects.create(
+        user=user,
+        full_name="Collector",
+        email="collector@example.com",
+        subtotal=seeded_product.price,
+        total=seeded_product.price,
+    )
+    item = OrderItem.objects.create(
+        order=order,
+        product=seeded_product,
+        title_snapshot=seeded_product.title,
+        artist_snapshot=seeded_product.artist_name,
+        meta_snapshot=seeded_product.meta,
+        price_snapshot=seeded_product.price,
+        art_path_snapshot=seeded_product.art_path,
+        art_alt_snapshot=seeded_product.art_alt,
+        download_file_path=seeded_product.download_file_path,
+    )
+    client.force_login(user)
+    session = client.session
+    session["shop_cart"] = [seeded_product.slug]
+    session.save()
+
+    responses = [
+        client.get(reverse("shop:checkout")),
+        client.get(reverse("shop:account")),
+        client.get(reverse("shop:success", args=[order.pk])),
+        client.get(reverse("shop:download", args=[item.pk])),
+    ]
+
+    assert [response.status_code for response in responses] == [200, 200, 200, 200]
+    for response in responses:
+        assert_response_is_not_cacheable(response)
 
 
 def test_guest_download_requires_recent_session_order(
