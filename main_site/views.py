@@ -34,6 +34,14 @@ GigPhoto = _site_data.GigPhoto
 AlbumArt = _site_data.AlbumArt
 Product = _site_data.Product
 
+CANONICAL_ROUTES = {
+    "main": "main_site:main",
+    "intro": "main_site:intro",
+    "music": "main_site:music",
+    "art": "main_site:art",
+    "contact": "main_site:contact",
+}
+
 
 def _site_context(active_section, *, contact_form=None, request=None):
     """Build the shared rendering context for the one-page site.
@@ -52,13 +60,6 @@ def _site_context(active_section, *, contact_form=None, request=None):
     owned_music_slugs = sorted(
         get_owned_product_slugs(getattr(request, "user", None), slugs=owned_slug_candidates)
     )
-    canonical_routes = {
-        "main": "main_site:main",
-        "intro": "main_site:intro",
-        "music": "main_site:music",
-        "art": "main_site:art",
-        "contact": "main_site:contact",
-    }
     return {
         "active_section": active_section,
         "header_social_links": header_social_links,
@@ -70,7 +71,7 @@ def _site_context(active_section, *, contact_form=None, request=None):
         "contact_form": contact_form or ContactForm(),
         "seo": build_site_seo(
             section_key,
-            canonical_url=absolute_site_url(reverse(canonical_routes[section_key])),
+            canonical_url=absolute_site_url(reverse(CANONICAL_ROUTES[section_key])),
             header_social_links=cast(list[dict[str, str]], header_social_links),
             music_items=music_items,
         ),

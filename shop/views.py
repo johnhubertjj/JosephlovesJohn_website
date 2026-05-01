@@ -654,6 +654,10 @@ class CheckoutView(View):
             "metadata": {"order_id": str(order.pk)},
             "payment_intent_data": {"metadata": {"order_id": str(order.pk)}},
             "line_items": line_items,
+            "billing_address_collection": "required",
+            "shipping_address_collection": {
+                "allowed_countries": settings.SHOP_ALLOWED_COUNTRIES,
+            },
         }
         if order.email:
             session_kwargs["customer_email"] = order.email

@@ -413,12 +413,15 @@
 
 			});
 
-		// Events.
-			$body.on('click', function(event) {
+			// Events.
+				$body.on('click', function(event) {
 
-				// Article visible? Hide.
-					if ($body.hasClass('is-article-visible'))
-						$main._hide(true);
+					if ($(event.target).closest('[data-cookie-banner]').length > 0)
+						return;
+	
+					// Article visible? Hide.
+						if ($body.hasClass('is-article-visible'))
+							$main._hide(true);
 
 			});
 

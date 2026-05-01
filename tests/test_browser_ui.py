@@ -451,6 +451,7 @@ def test_paid_checkout_success_page_sends_email_and_allows_download_via_signed_l
     browser_page.wait_for_url("**/shop/checkout/")
 
     browser_page.locator("#id_accept_terms").check()
+    browser_page.locator("#id_confirm_uk_customer").check()
     browser_page.locator("[data-checkout-submit]").click()
     browser_page.wait_for_function("window.location.pathname.includes('/shop/success/')")
     browser_page.wait_for_load_state("load")

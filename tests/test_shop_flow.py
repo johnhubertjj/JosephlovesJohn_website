@@ -22,6 +22,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 VALID_CHECKOUT_CONSENTS = {
     "accept_terms": "on",
+    "confirm_uk_customer": "on",
 }
 
 
@@ -579,6 +580,9 @@ def test_checkout_get_renders_review_page_before_redirect_to_stripe(
     assert "shop/css/shop.css" in body
     assert 'id="id_accept_terms"' in body
     assert 'for="id_accept_terms"' in body
+    assert 'id="id_confirm_uk_customer"' in body
+    assert "UK-based customers only" in body
+    assert "customers with a UK address" in body
     assert 'class="shop-checkbox-indicator"' in body
     assert "Continue to Stripe Checkout" in body
 
@@ -608,6 +612,8 @@ def test_checkout_post_redirects_to_stripe_checkout(client, seeded_product: Prod
     assert checkout_payload["mode"] == "payment"
     assert checkout_payload["metadata"] == {"order_id": str(order.pk)}
     assert checkout_payload["line_items"][0]["price_data"]["currency"] == "gbp"
+    assert checkout_payload["billing_address_collection"] == "required"
+    assert checkout_payload["shipping_address_collection"] == {"allowed_countries": ["GB"]}
     assert "customer_email" not in checkout_payload
 
 
@@ -635,6 +641,29 @@ def test_checkout_post_requires_digital_download_acknowledgements(client, seeded
     assert response.status_code == 200
     assert "This field is required." in body
     assert Order.objects.count() == 0
+
+
+def test_checkout_post_requires_uk_customer_acknowledgement(client, seeded_product: Product) -> None:
+    """Checkout should not start until the shopper confirms UK availability."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    response = client.post(reverse("shop:checkout"), {"accept_terms": "on"})
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "This field is required." in body
+    assert Order.objects.count() == 0
+
+
+def test_checkout_uses_configured_allowed_countries(client, seeded_product: Product, fake_stripe_checkout) -> None:
+    """Stripe Checkout should receive the configured list of allowed customer countries."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    with override_settings(SHOP_ALLOWED_COUNTRIES=["GB", "IM", "JE", "GG"]):
+        client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+
+    checkout_payload = fake_stripe_checkout["created_payloads"][0]
+    assert checkout_payload["shipping_address_collection"] == {"allowed_countries": ["GB", "IM", "JE", "GG"]}
 
 
 def test_checkout_post_blocks_payment_when_a_download_is_unavailable(client, seeded_product: Product) -> None:

@@ -98,6 +98,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "josephlovesjohn_site.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "main_site.cache.SharedContentCacheContextMiddleware",
@@ -275,11 +276,14 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_CURRENCY = os.environ.get("STRIPE_CURRENCY", "gbp")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+SHOP_ALLOWED_COUNTRIES = _env_list("SHOP_ALLOWED_COUNTRIES", default=["GB"])
 PLAUSIBLE_DOMAIN = os.environ.get("PLAUSIBLE_DOMAIN", "").strip()
 PLAUSIBLE_SCRIPT_SRC = os.environ.get(
     "PLAUSIBLE_SCRIPT_SRC",
     "https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js",
 ).strip()
+CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", default=False)
+CONTENT_SECURITY_POLICY_EXTRA_SOURCES = _env_list("CONTENT_SECURITY_POLICY_EXTRA_SOURCES")
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
@@ -296,7 +300,7 @@ VAT_NUMBER = os.environ.get("VAT_NUMBER", "")
 
 LOGIN_RATE_LIMIT_ATTEMPTS = _env_int("LOGIN_RATE_LIMIT_ATTEMPTS", default=5)
 LOGIN_RATE_LIMIT_WINDOW = _env_int("LOGIN_RATE_LIMIT_WINDOW", default=300)
-REGISTER_RATE_LIMIT_ATTEMPTS = _env_int("REGISTER_RATE_LIMIT_ATTEMPTS", default=3)
+REGISTER_RATE_LIMIT_ATTEMPTS = _env_int("REGISTER_RATE_LIMIT_ATTEMPTS", default=5)
 REGISTER_RATE_LIMIT_WINDOW = _env_int("REGISTER_RATE_LIMIT_WINDOW", default=3600)
 PASSWORD_RESET_RATE_LIMIT_ATTEMPTS = _env_int("PASSWORD_RESET_RATE_LIMIT_ATTEMPTS", default=5)
 PASSWORD_RESET_RATE_LIMIT_WINDOW = _env_int("PASSWORD_RESET_RATE_LIMIT_WINDOW", default=3600)
