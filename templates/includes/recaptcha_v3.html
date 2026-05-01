@@ -1,0 +1,46 @@
+{% if recaptcha.enabled %}
+    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha.site_key }}" async defer></script>
+    <script>
+        (function () {
+            var siteKey = "{{ recaptcha.site_key|escapejs }}";
+
+            function bindForm(form) {
+                if (form.dataset.recaptchaBound === "true") {
+                    return;
+                }
+                form.dataset.recaptchaBound = "true";
+
+                form.addEventListener("submit", function (event) {
+                    if (form.dataset.recaptchaReady === "true") {
+                        form.dataset.recaptchaReady = "";
+                        return;
+                    }
+                    if (!window.grecaptcha || !window.grecaptcha.execute) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    window.grecaptcha.ready(function () {
+                        window.grecaptcha.execute(siteKey, {
+                            action: form.getAttribute("data-recaptcha-action") || "submit",
+                        }).then(function (token) {
+                            var tokenInput = form.querySelector('input[name="g-recaptcha-response"]');
+                            if (tokenInput) {
+                                tokenInput.value = token;
+                            }
+                            form.dataset.recaptchaReady = "true";
+                            form.submit();
+                        }).catch(function () {
+                            form.submit();
+                        });
+                    });
+                });
+            }
+
+            Array.prototype.forEach.call(
+                document.querySelectorAll("form[data-recaptcha-action]"),
+                bindForm
+            );
+        })();
+    </script>
+{% endif %}

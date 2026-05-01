@@ -31,6 +31,17 @@ def _env_int(name: str, default: int = 0) -> int:
         return default
 
 
+def _env_float(name: str, default: float = 0.0) -> float:
+    """Parse a float environment variable with a fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return float(value.strip())
+    except ValueError:
+        return default
+
+
 def _env_list(name: str, default: list[str] | None = None) -> list[str]:
     """Parse a comma-separated list environment variable."""
     value = os.environ.get(name)
@@ -121,6 +132,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "josephlovesjohn_site.context_processors.recaptcha",
                 "main_site.context_processors.analytics",
                 "shop.context_processors.cart_summary",
             ],
@@ -284,6 +296,15 @@ PLAUSIBLE_SCRIPT_SRC = os.environ.get(
 ).strip()
 CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", default=False)
 CONTENT_SECURITY_POLICY_EXTRA_SOURCES = _env_list("CONTENT_SECURITY_POLICY_EXTRA_SOURCES")
+RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "").strip()
+RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "").strip()
+RECAPTCHA_MIN_SCORE = _env_float("RECAPTCHA_MIN_SCORE", default=0.5)
+RECAPTCHA_VERIFY_URL = os.environ.get(
+    "RECAPTCHA_VERIFY_URL",
+    "https://www.google.com/recaptcha/api/siteverify",
+).strip()
+RECAPTCHA_VERIFY_TIMEOUT = _env_int("RECAPTCHA_VERIFY_TIMEOUT", default=3)
+RECAPTCHA_ALLOWED_HOSTNAMES = _env_list("RECAPTCHA_ALLOWED_HOSTNAMES")
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")

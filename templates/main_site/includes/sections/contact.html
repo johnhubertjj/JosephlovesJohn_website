@@ -10,8 +10,9 @@
             {% endfor %}
         </ul>
     {% endif %}
-    <form method="post" action="{% url 'main_site:contact' %}" data-analytics-contact-form>
+    <form method="post" action="{% url 'main_site:contact' %}" data-analytics-contact-form data-recaptcha-action="contact">
         {% csrf_token %}
+        <input type="hidden" name="g-recaptcha-response" value="" />
         <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
             <label for="{{ contact_form.website.id_for_label }}">Website</label>
             {{ contact_form.website }}

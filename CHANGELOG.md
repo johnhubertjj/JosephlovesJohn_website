@@ -10,6 +10,7 @@ This project follows simple semantic versioning for production releases:
 - Hardened shop account privacy by adding no-store cache headers to login, registration, checkout, account, success, download, and cart endpoints
 - Added a Safari back-forward cache guard so stale authenticated shop pages revalidate after logout instead of remaining visible when using the browser Back button
 - Reduced bot account creation with registration rate limiting and an invisible honeypot field on the signup form
+- Added optional invisible reCAPTCHA v3 verification for contact, account creation, and login submissions
 - Simplified customer accounts by removing the visible full-name signup field and dropping stored profile names from customer profiles, admin, and account pages
 - Added a migration to remove the old customer profile name column while keeping usernames, emails, order history, and downloads working normally
 - Updated shop tests to cover no-store headers, registration bot protections, profile-name removal, and browser-history revalidation behavior

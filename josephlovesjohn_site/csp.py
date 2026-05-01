@@ -39,6 +39,8 @@ def build_content_security_policy() -> str:
     kit_runtime_origin = "https://f.convertkit.com"
     kit_form_origin = "https://app.kit.com"
     stripe_origin = "https://checkout.stripe.com"
+    recaptcha_origin = "https://www.google.com"
+    recaptcha_static_origin = "https://www.gstatic.com"
     extra_sources = list(getattr(settings, "CONTENT_SECURITY_POLICY_EXTRA_SOURCES", []))
 
     directives = [
@@ -56,6 +58,8 @@ def build_content_security_policy() -> str:
                 plausible_origin,
                 kit_origin,
                 kit_runtime_origin,
+                recaptcha_origin,
+                recaptcha_static_origin,
                 *extra_sources,
             ],
         ),
@@ -92,10 +96,11 @@ def build_content_security_policy() -> str:
                 kit_origin,
                 kit_runtime_origin,
                 kit_form_origin,
+                recaptcha_origin,
                 *extra_sources,
             ],
         ),
-        _directive("frame-src", [kit_origin, stripe_origin]),
+        _directive("frame-src", [kit_origin, stripe_origin, recaptcha_origin]),
     ]
 
     if not settings.DEBUG:

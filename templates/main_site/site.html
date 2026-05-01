@@ -61,4 +61,5 @@
 {{ block.super }}
 <script src="{% versioned_static 'main_site/js/site.js' %}"></script>
 <script src="{% versioned_static 'main_site/js/cart.js' %}"></script>
+{% include 'includes/recaptcha_v3.html' %}
 {% endblock %}

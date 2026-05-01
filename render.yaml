@@ -144,6 +144,14 @@ services:
         value: "false"
       - key: CONTENT_SECURITY_POLICY_EXTRA_SOURCES
         sync: false
+      - key: RECAPTCHA_SITE_KEY
+        sync: false
+      - key: RECAPTCHA_SECRET_KEY
+        sync: false
+      - key: RECAPTCHA_MIN_SCORE
+        value: "0.5"
+      - key: RECAPTCHA_ALLOWED_HOSTNAMES
+        value: josephlovesjohn.com
       - key: SENTRY_DSN
         sync: false
       - key: SENTRY_ENVIRONMENT

@@ -6,8 +6,9 @@
 
 {% block shop_content %}
     <section class="shop-card shop-auth-card">
-        <form method="post" class="shop-form" novalidate>
+        <form method="post" class="shop-form" data-recaptcha-action="login" novalidate>
             {% csrf_token %}
+            <input type="hidden" name="g-recaptcha-response" value="" />
             {% for error in form.non_field_errors %}<p class="shop-field-error">{{ error }}</p>{% endfor %}
             {% for field in form %}
                 <div class="shop-form-field{% if field.errors %} has-errors{% endif %}">
@@ -21,4 +22,9 @@
         <p class="shop-inline-note"><a href="{% url 'shop:password_reset' %}">Forgot your password?</a></p>
         <p class="shop-inline-note">No account yet? <a href="{% url 'shop:register' %}">Create one here</a>.</p>
     </section>
+{% endblock %}
+
+{% block scripts %}
+    {{ block.super }}
+    {% include 'includes/recaptcha_v3.html' %}
 {% endblock %}

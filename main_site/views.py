@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from josephlovesjohn_site.rate_limits import is_rate_limited
+from josephlovesjohn_site.recaptcha import verify_recaptcha_request
 from josephlovesjohn_site.site_urls import absolute_site_url
 from shop.ownership import get_owned_product_slugs
 
@@ -179,6 +180,12 @@ def contact(request):
             if cleaned.get("website"):
                 messages.success(request, "Thanks, your message has been sent.")
                 return redirect("main_site:contact")
+            if not verify_recaptcha_request(request, expected_action="contact"):
+                messages.error(
+                    request,
+                    "We could not verify this message. Please refresh the page and try again.",
+                )
+                return _render_site_section(request, "contact", contact_form=form)
             if is_rate_limited(
                 request,
                 scope="contact-form",
