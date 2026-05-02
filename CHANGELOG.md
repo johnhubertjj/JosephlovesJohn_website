@@ -3,8 +3,15 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
-- the current package version is `v1.3.0`
+- the current package version is `v1.3.1`
 - the latest tagged release is `v1.1.1`
+
+## v1.3.1 - 2026-05-02
+
+- Added individual music track routes to the public sitemap so search engines can discover the Dark and Light track pages directly
+- Updated music-page structured data so track entries point at the dedicated track pages instead of hash fragments on `/music/`
+- Added permanent redirects from legacy product-slug track URLs to the shorter canonical public track URLs
+- Scoped contact-form flash messages so shop and cart notices no longer leak into the Contact section after moving between pages
 
 ## v1.3.0 - 2026-05-02
 

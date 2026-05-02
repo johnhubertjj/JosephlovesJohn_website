@@ -40,6 +40,17 @@ def test_music_route_exposes_share_modal_and_player_markup(client) -> None:
     assert body.count("music-buy-trigger") >= 2
 
 
+def test_music_route_structured_data_points_to_track_pages(client) -> None:
+    """The music-page JSON-LD should reference the dedicated public track routes."""
+    response = client.get(reverse("main_site:music"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "http://127.0.0.1:8000/music/dark-and-light/" in body
+    assert "http://127.0.0.1:8000/music/dark-and-light-instrumental/" in body
+    assert "http://127.0.0.1:8000/music/#dark-and-light-artist-version" not in body
+
+
 def test_music_track_route_renders_clean_service_link_page(client) -> None:
     """A track page should expose only the artwork/title and ordered service links."""
     response = client.get(reverse("main_site:music_track", args=["dark-and-light-instrumental"]))
@@ -82,11 +93,11 @@ def test_music_track_route_supports_canonical_dark_and_light_slug(client) -> Non
 
 
 def test_music_track_route_keeps_old_artist_slug_as_alias(client) -> None:
-    """Existing links using the product slug should still resolve to the canonical page."""
+    """Existing links using the product slug should permanently redirect to the canonical page."""
     response = client.get(reverse("main_site:music_track", args=["dark-and-light-artist-version"]))
 
-    assert response.status_code == 200
-    assert response.context["seo"]["canonical_url"].endswith("/music/dark-and-light/")
+    assert response.status_code == 301
+    assert response["Location"] == "/music/dark-and-light/"
 
 
 def test_unknown_music_track_route_404s(client) -> None:

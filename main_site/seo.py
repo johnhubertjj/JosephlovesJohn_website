@@ -118,7 +118,8 @@ def build_site_seo(
             art_url = str(item.get("art_url") or item.get("art_path") or "")
             price = str(item.get("price") or "")
             slug = str(item.get("slug") or "")
-            item_url = f"{canonical_url}#{slug}" if slug else canonical_url
+            track_path = str(item.get("track_path") or "")
+            item_url = absolute_site_url(track_path) if track_path else f"{canonical_url}#{slug}"
             item_list.append(
                 {
                     "@type": "ListItem",
@@ -134,7 +135,7 @@ def build_site_seo(
                             "priceCurrency": "GBP",
                             "price": price,
                             "availability": "https://schema.org/InStock",
-                            "url": canonical_url,
+                            "url": item_url,
                         },
                     },
                 }
