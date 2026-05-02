@@ -5,7 +5,7 @@ from typing import cast
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import EmailMessage
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from josephlovesjohn_site.rate_limits import is_rate_limited
@@ -16,7 +16,7 @@ from shop.ownership import get_owned_product_slugs
 from . import site_data as _site_data
 from .content import LEGAL_PAGE_CONTENT
 from .forms import ContactForm
-from .seo import build_legal_page_seo, build_site_seo
+from .seo import build_legal_page_seo, build_music_track_seo, build_site_seo
 
 _static_file_exists = _site_data._static_file_exists
 _uploaded_file_exists = _site_data._uploaded_file_exists
@@ -28,6 +28,7 @@ _get_primary_nav_items = _site_data._get_primary_nav_items
 _get_gig_photo_items = _site_data._get_gig_photo_items
 _get_album_art_items = _site_data._get_album_art_items
 _get_music_library_items = _site_data._get_music_library_items
+_get_music_library_item = _site_data._get_music_library_item
 
 HeaderSocialLink = _site_data.HeaderSocialLink
 PrimaryNavItem = _site_data.PrimaryNavItem
@@ -105,6 +106,21 @@ def _legal_page_context(page_key):
     }
 
 
+def _music_track_context(request, slug):
+    """Build the rendering context for a dedicated music track page."""
+    item = _get_music_library_item(slug)
+    if item is None:
+        raise Http404("Track not found")
+
+    public_slug = str(item.get("public_slug") or item["slug"])
+    canonical_url = absolute_site_url(reverse("main_site:music_track", kwargs={"slug": public_slug}), request)
+    return {
+        "active_section": "music",
+        "item": item,
+        "seo": build_music_track_seo(item, canonical_url=canonical_url),
+    }
+
+
 def _render_site_section(request, active_section, *, contact_form=None):
     """Render the one-page site shell with the requested active section."""
 
@@ -152,6 +168,11 @@ def music(request):
     :rtype: django.http.HttpResponse
     """
     return _render_site_section(request, "music")
+
+
+def music_track(request, slug):
+    """Render a dedicated public page for one music track."""
+    return render(request, "main_site/music_track.html", _music_track_context(request, slug))
 
 
 def art(request):

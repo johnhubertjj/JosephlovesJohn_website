@@ -551,6 +551,8 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
 
     assert [item["title"] for item in items] == ["First Track", "Second Track"]
     assert {item["share_path"] for item in items} == {"/music/"}
+    assert items[0]["track_path"] == "/music/first-track/"
+    assert items[0]["public_slug"] == "first-track"
     assert all(item["buy_path"].startswith("/shop/cart/add/") for item in items)
     assert items[0]["art_url"] == "/static/images/album_art/first.jpg"
     assert items[0]["file_wav_url"] == "/static/audio/first.wav"

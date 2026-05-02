@@ -16,7 +16,7 @@
     <div class="music-library-player-panel">
         <div class="music-library-player-head">
             <div class="music-library-player-copy">
-                <h3>{{ item.title }}</h3>
+                <h3><a href="{{ item.track_path }}" class="music-library-title-link">{{ item.title }}</a></h3>
                 <p class="music-library-player-meta">{{ item.meta }}</p>
             </div>
             <div class="music-library-actions">

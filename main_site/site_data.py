@@ -14,6 +14,119 @@ from .cache import cache_shared_content
 from .content import SPOTIFY_SOCIAL_LINK, HeaderSocialLinkItem
 from .models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 
+MUSIC_STREAMING_LINKS = {
+    "dark-and-light-artist-version": [
+        {
+            "label": "Spotify",
+            "href": "https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=c0ea820a417d4845",
+            "icon_class": "icon brands fa-spotify",
+            "action": "Play",
+        },
+        {
+            "label": "iTunes",
+            "href": "http://itunes.apple.com/album/id1870775878?ls=1&app=itunes",
+            "icon_class": "icon brands fa-itunes-note",
+            "action": "Buy",
+        },
+        {
+            "label": "Apple Music",
+            "href": "https://music.apple.com/us/song/dark-and-light/1870775884",
+            "icon_class": "icon brands fa-apple",
+            "action": "Play",
+        },
+        {
+            "label": "Bandcamp",
+            "href": "https://josephlovesjohn.bandcamp.com/track/dark-and-light",
+            "icon_class": "icon brands fa-bandcamp",
+            "action": "Play",
+        },
+        {
+            "label": "YouTube",
+            "href": "https://youtu.be/FQHSHiUG_gU?si=r2wMfmQy1e7b86oh",
+            "icon_class": "icon brands fa-youtube",
+            "action": "Play",
+        },
+        {
+            "label": "Amazon Music",
+            "href": "https://music.amazon.co.uk/albums/B0GHXN25VG?marketplaceId=A1F83G8C2ARO7P&musicTerritory=GB&ref=dm_sh_yoh0Fbd0gQDddAFmgQemh3OPO&trackAsin=B0GHXQCHZ9",
+            "icon_class": "icon brands fa-amazon",
+            "action": "Play",
+        },
+        {
+            "label": "Deezer",
+            "href": "https://link.deezer.com/s/339jOD96TC9KXp5iQM3d1",
+            "icon_class": "icon fas fa-music",
+            "action": "Play",
+        },
+        {
+            "label": "TIDAL",
+            "href": "https://tidal.com/track/491362438/u",
+            "icon_class": "icon fas fa-water",
+            "action": "Play",
+        },
+    ],
+    "dark-and-light-instrumental": [
+        {
+            "label": "Spotify",
+            "href": "https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7",
+            "icon_class": "icon brands fa-spotify",
+            "action": "Play",
+        },
+        {
+            "label": "iTunes",
+            "href": "http://itunes.apple.com/album/id1882279580?ls=1&app=itunes",
+            "icon_class": "icon brands fa-itunes-note",
+            "action": "Buy",
+        },
+        {
+            "label": "Apple Music",
+            "href": "http://itunes.apple.com/album/id/1882279580",
+            "icon_class": "icon brands fa-apple",
+            "action": "Play",
+        },
+        {
+            "label": "Bandcamp",
+            "href": "https://josephlovesjohn.bandcamp.com",
+            "icon_class": "icon brands fa-bandcamp",
+            "action": "Play",
+        },
+        {
+            "label": "YouTube",
+            "href": "https://youtu.be/KedziCK2Ct0?si=42uMnyZpIANmINH-",
+            "icon_class": "icon brands fa-youtube",
+            "action": "Play",
+        },
+        {
+            "label": "Amazon Music",
+            "href": "https://music.amazon.co.uk/albums/B0GR12KXQN?marketplaceId=A1F83G8C2ARO7P&musicTerritory=GB&ref=dm_sh_BEyLRZz4AMtLG6vjGTnyufJ2J&trackAsin=B0GQZM5P5P",
+            "icon_class": "icon brands fa-amazon",
+            "action": "Play",
+        },
+        {
+            "label": "Deezer",
+            "href": "https://link.deezer.com/s/339jNY0PN3084QcnTPMfA",
+            "icon_class": "icon fas fa-music",
+            "action": "Play",
+        },
+        {
+            "label": "TIDAL",
+            "href": "https://tidal.com/track/503829268/u",
+            "icon_class": "icon fas fa-water",
+            "action": "Play",
+        },
+    ],
+}
+
+MUSIC_TRACK_PUBLIC_SLUGS = {
+    "dark-and-light-artist-version": "dark-and-light",
+}
+
+MUSIC_TRACK_SLUG_ALIASES = {
+    "original": "dark-and-light-artist-version",
+    "dark-and-light": "dark-and-light-artist-version",
+    "instrumental": "dark-and-light-instrumental",
+}
+
 
 def _static_file_exists(relative_path):
     """Check whether a static asset exists on disk.
@@ -347,11 +460,16 @@ def _get_music_library_items():
 
         items = []
         for product in products:
+            public_slug = MUSIC_TRACK_PUBLIC_SLUGS.get(product.slug, product.slug)
+            track_path = reverse("main_site:music_track", kwargs={"slug": public_slug})
             items.append(
                 {
                     "slug": product.slug,
+                    "public_slug": public_slug,
                     "title": product.title,
+                    "artist_name": product.artist_name,
                     "meta": product.meta,
+                    "description": product.description,
                     "art_path": product.art_path,
                     "art_url": product.art_url,
                     "art_alt": product.art_alt or product.title,
@@ -364,9 +482,24 @@ def _get_music_library_items():
                     "price_display": product.price_display,
                     "is_reversed": product.is_reversed,
                     "share_path": share_path,
+                    "track_path": track_path,
+                    "streaming_links": MUSIC_STREAMING_LINKS.get(product.slug, []),
                     "buy_path": reverse("shop:cart_add", kwargs={"slug": product.slug}),
                 }
             )
         return items
 
     return cache_shared_content("music-library-items", _build, cache_empty=False)
+
+
+def _get_music_library_item(slug):
+    """Return one published music library item by slug."""
+    resolved_slug = MUSIC_TRACK_SLUG_ALIASES.get(slug, slug)
+    return next(
+        (
+            item
+            for item in _get_music_library_items()
+            if item.get("slug") == resolved_slug or item.get("public_slug") == resolved_slug
+        ),
+        None,
+    )

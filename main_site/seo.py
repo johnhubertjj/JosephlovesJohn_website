@@ -159,6 +159,47 @@ def build_site_seo(
     }
 
 
+def build_music_track_seo(
+    item: Mapping[str, object],
+    *,
+    canonical_url: str,
+) -> dict[str, object]:
+    """Return SEO metadata for one public music track route."""
+    title = str(item.get("title") or "Music")
+    artist_name = str(item.get("artist_name") or "JosephlovesJohn")
+    description = str(item.get("description") or item.get("meta") or "")
+    if not description:
+        description = f"Listen to {title} by {artist_name} and buy a direct MP3 or WAV download."
+
+    art_url = absolute_site_url(str(item.get("art_url") or item.get("art_path") or ""))
+    price = str(item.get("price") or "")
+    payload = {
+        "@context": "https://schema.org",
+        "@type": "MusicRecording",
+        "name": title,
+        "byArtist": {"@type": "Person", "name": artist_name},
+        "url": canonical_url,
+        "image": art_url,
+        "description": description,
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "GBP",
+            "price": price,
+            "availability": "https://schema.org/InStock",
+            "url": canonical_url,
+        },
+    }
+
+    return {
+        "title": f"{title} | JosephlovesJohn",
+        "description": description,
+        "canonical_url": canonical_url,
+        "image_url": art_url,
+        "robots": "index,follow",
+        "structured_data": [_structured_data_script(payload)],
+    }
+
+
 def build_legal_page_seo(page_key: str, *, page_title: str, canonical_url: str) -> dict[str, object]:
     """Return SEO metadata for one legal page."""
     config = LEGAL_PAGE_SEO[page_key]

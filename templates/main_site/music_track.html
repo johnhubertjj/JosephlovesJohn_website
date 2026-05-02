@@ -1,0 +1,61 @@
+{% load asset_urls %}
+<!DOCTYPE HTML>
+<html lang="en-GB">
+<head>
+    <title>{{ seo.title }}</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="description" content="{{ seo.description }}" />
+    <meta name="robots" content="{{ seo.robots|default:'index,follow' }}" />
+    <link rel="canonical" href="{{ seo.canonical_url }}" />
+    <meta property="og:title" content="{{ seo.title }}" />
+    <meta property="og:description" content="{{ seo.description }}" />
+    <meta property="og:type" content="music.song" />
+    <meta property="og:url" content="{{ seo.canonical_url }}" />
+    <meta property="og:image" content="{{ seo.image_url }}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ seo.title }}" />
+    <meta name="twitter:description" content="{{ seo.description }}" />
+    <meta name="twitter:image" content="{{ seo.image_url }}" />
+    {% for payload in seo.structured_data %}
+    <script type="application/ld+json">{{ payload|safe }}</script>
+    {% endfor %}
+    <link rel="icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="48x48" />
+    <link rel="icon" type="image/png" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="192x192" />
+    <link rel="apple-touch-icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" />
+    <link rel="stylesheet" href="{% versioned_static 'assets/css/vendor/dimension.css' %}" />
+    <link rel="stylesheet" href="{% versioned_static 'main_site/css/site.css' %}" />
+</head>
+<body class="track-link-page-body">
+    <a class="track-link-home" href="{% url 'main_site:main' %}">Josephlovesjohn.com</a>
+
+    <main class="track-link-page" aria-labelledby="track-title">
+        <figure class="track-link-art">
+            <img
+                src="{{ item.art_url|default:item.art_path|asset_url }}"
+                alt="{{ item.art_alt|default:item.title }}"
+                width="900"
+                height="900"
+                decoding="async"
+                fetchpriority="high"
+            />
+        </figure>
+
+        <h1 id="track-title">{{ item.title }}</h1>
+        <p class="track-link-artist">{{ item.artist_name }}</p>
+
+        <div class="track-link-services" aria-label="Streaming services">
+            {% for link in item.streaming_links %}
+                <a class="track-link-service" href="{{ link.href }}" target="_blank" rel="noopener noreferrer">
+                    <span class="track-link-service-brand">
+                        <span class="{{ link.icon_class }}" aria-hidden="true"></span>
+                        <span>{{ link.label }}</span>
+                    </span>
+                    <span class="track-link-service-action">{{ link.action }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </main>
+    <div id="bg"></div>
+</body>
+</html>
