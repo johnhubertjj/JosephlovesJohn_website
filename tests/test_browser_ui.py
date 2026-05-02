@@ -496,8 +496,8 @@ def test_contact_form_browser_flow_covers_validation_and_success(browser_page, l
     browser_page.locator('input[name="name"]').fill("Browser Tester")
     browser_page.locator('input[name="email"]').fill("not-an-email")
     browser_page.locator('textarea[name="message"]').fill("Hello from the browser test.")
-    browser_page.locator("[data-analytics-contact-form]").evaluate("(form) => form.submit()")
-    browser_page.wait_for_url("**/contact/**")
+    with browser_page.expect_navigation(wait_until="load"):
+        browser_page.locator("[data-analytics-contact-form]").evaluate("(form) => form.submit()")
     browser_page.wait_for_selector("article#contact.active")
 
     assert "Please correct the highlighted fields and try again." in browser_page.content()
@@ -505,8 +505,8 @@ def test_contact_form_browser_flow_covers_validation_and_success(browser_page, l
     assert len(mail.outbox) == 0
 
     browser_page.locator('input[name="email"]').fill("browser@example.com")
-    browser_page.locator("[data-analytics-contact-form]").evaluate("(form) => form.submit()")
-    browser_page.wait_for_url("**/contact/**")
+    with browser_page.expect_navigation(wait_until="load"):
+        browser_page.locator("[data-analytics-contact-form]").evaluate("(form) => form.submit()")
     browser_page.wait_for_selector("article#contact.active")
 
     assert "Thanks, your message has been sent." in browser_page.content()
