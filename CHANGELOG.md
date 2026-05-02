@@ -3,13 +3,21 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
+- the current package version is `v1.3.0`
 - the latest tagged release is `v1.1.1`
+
+## v1.3.0 - 2026-05-02
+
+- Added standalone per-track smart-link pages for Dark and Light and Dark and Light - Instrumental, with track artwork, platform links, canonical SEO URLs, and homepage title links
+- Updated the track pages with the correct Spotify, iTunes, Apple Music, Bandcamp, YouTube, Amazon Music, Deezer, and TIDAL destinations
+- Refined the track-page button styling, responsive home link, cover-art sizing, and click layering so the pages stay clear and usable across viewport sizes
 
 ## v1.2.0 - 2026-04-27
 
 - Hardened shop account privacy by adding no-store cache headers to login, registration, checkout, account, success, download, and cart endpoints
 - Added a Safari back-forward cache guard so stale authenticated shop pages revalidate after logout instead of remaining visible when using the browser Back button
 - Reduced bot account creation with registration rate limiting and an invisible honeypot field on the signup form
+- Added optional invisible reCAPTCHA v3 verification for contact, account creation, and login submissions
 - Simplified customer accounts by removing the visible full-name signup field and dropping stored profile names from customer profiles, admin, and account pages
 - Added a migration to remove the old customer profile name column while keeping usernames, emails, order history, and downloads working normally
 - Updated shop tests to cover no-store headers, registration bot protections, profile-name removal, and browser-history revalidation behavior

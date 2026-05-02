@@ -4,18 +4,20 @@ from typing import cast
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.messages import get_messages
 from django.core.mail import EmailMessage
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from josephlovesjohn_site.rate_limits import is_rate_limited
+from josephlovesjohn_site.recaptcha import verify_recaptcha_request
 from josephlovesjohn_site.site_urls import absolute_site_url
 from shop.ownership import get_owned_product_slugs
 
 from . import site_data as _site_data
 from .content import LEGAL_PAGE_CONTENT
 from .forms import ContactForm
-from .seo import build_legal_page_seo, build_site_seo
+from .seo import build_legal_page_seo, build_music_track_seo, build_site_seo
 
 _static_file_exists = _site_data._static_file_exists
 _uploaded_file_exists = _site_data._uploaded_file_exists
@@ -27,12 +29,21 @@ _get_primary_nav_items = _site_data._get_primary_nav_items
 _get_gig_photo_items = _site_data._get_gig_photo_items
 _get_album_art_items = _site_data._get_album_art_items
 _get_music_library_items = _site_data._get_music_library_items
+_get_music_library_item = _site_data._get_music_library_item
 
 HeaderSocialLink = _site_data.HeaderSocialLink
 PrimaryNavItem = _site_data.PrimaryNavItem
 GigPhoto = _site_data.GigPhoto
 AlbumArt = _site_data.AlbumArt
 Product = _site_data.Product
+
+CANONICAL_ROUTES = {
+    "main": "main_site:main",
+    "intro": "main_site:intro",
+    "music": "main_site:music",
+    "art": "main_site:art",
+    "contact": "main_site:contact",
+}
 
 
 def _site_context(active_section, *, contact_form=None, request=None):
@@ -48,17 +59,15 @@ def _site_context(active_section, *, contact_form=None, request=None):
     section_key = active_section or "main"
     header_social_links = _get_header_social_links()
     music_items = _get_music_library_items()
+    contact_messages = [
+        message
+        for message in (get_messages(request) if request is not None else [])
+        if "contact" in message.extra_tags.split()
+    ]
     owned_slug_candidates = [item.get("slug") for item in music_items if item.get("slug")]
     owned_music_slugs = sorted(
         get_owned_product_slugs(getattr(request, "user", None), slugs=owned_slug_candidates)
     )
-    canonical_routes = {
-        "main": "main_site:main",
-        "intro": "main_site:intro",
-        "music": "main_site:music",
-        "art": "main_site:art",
-        "contact": "main_site:contact",
-    }
     return {
         "active_section": active_section,
         "header_social_links": header_social_links,
@@ -68,9 +77,10 @@ def _site_context(active_section, *, contact_form=None, request=None):
         "gig_photo_items": _get_gig_photo_items(),
         "album_art_items": _get_album_art_items(),
         "contact_form": contact_form or ContactForm(),
+        "contact_messages": contact_messages,
         "seo": build_site_seo(
             section_key,
-            canonical_url=absolute_site_url(reverse(canonical_routes[section_key])),
+            canonical_url=absolute_site_url(reverse(CANONICAL_ROUTES[section_key])),
             header_social_links=cast(list[dict[str, str]], header_social_links),
             music_items=music_items,
         ),
@@ -100,6 +110,21 @@ def _legal_page_context(page_key):
             page_title=str(page["title"]),
             canonical_url=absolute_site_url(reverse(f"main_site:{page_key}")),
         ),
+    }
+
+
+def _music_track_context(request, slug):
+    """Build the rendering context for a dedicated music track page."""
+    item = _get_music_library_item(slug)
+    if item is None:
+        raise Http404("Track not found")
+
+    public_slug = str(item.get("public_slug") or item["slug"])
+    canonical_url = absolute_site_url(reverse("main_site:music_track", kwargs={"slug": public_slug}), request)
+    return {
+        "active_section": "music",
+        "item": item,
+        "seo": build_music_track_seo(item, canonical_url=canonical_url),
     }
 
 
@@ -152,6 +177,11 @@ def music(request):
     return _render_site_section(request, "music")
 
 
+def music_track(request, slug):
+    """Render a dedicated public page for one music track."""
+    return render(request, "main_site/music_track.html", _music_track_context(request, slug))
+
+
 def art(request):
     """Render the one-page site with the art section activated.
 
@@ -176,8 +206,15 @@ def contact(request):
         if form.is_valid():
             cleaned = form.cleaned_data
             if cleaned.get("website"):
-                messages.success(request, "Thanks, your message has been sent.")
+                messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
                 return redirect("main_site:contact")
+            if not verify_recaptcha_request(request, expected_action="contact"):
+                messages.error(
+                    request,
+                    "We could not verify this message. Please refresh the page and try again.",
+                    extra_tags="contact",
+                )
+                return _render_site_section(request, "contact", contact_form=form)
             if is_rate_limited(
                 request,
                 scope="contact-form",
@@ -188,6 +225,7 @@ def contact(request):
                 messages.error(
                     request,
                     "Too many messages have been sent from this connection. Please try again later.",
+                    extra_tags="contact",
                 )
                 return _render_site_section(request, "contact", contact_form=form)
             message_body = (
@@ -209,13 +247,18 @@ def contact(request):
                 messages.error(
                     request,
                     "Your message could not be sent right now. Please try again in a moment.",
+                    extra_tags="contact",
                 )
                 return _render_site_section(request, "contact", contact_form=form)
 
-            messages.success(request, "Thanks, your message has been sent.")
+            messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
             return redirect("main_site:contact")
 
-        messages.error(request, "Please correct the highlighted fields and try again.")
+        messages.error(
+            request,
+            "Please correct the highlighted fields and try again.",
+            extra_tags="contact",
+        )
         return _render_site_section(request, "contact", contact_form=form)
 
     return _render_site_section(request, "contact")

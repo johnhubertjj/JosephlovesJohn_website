@@ -31,6 +31,17 @@ def _env_int(name: str, default: int = 0) -> int:
         return default
 
 
+def _env_float(name: str, default: float = 0.0) -> float:
+    """Parse a float environment variable with a fallback."""
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return float(value.strip())
+    except ValueError:
+        return default
+
+
 def _env_list(name: str, default: list[str] | None = None) -> list[str]:
     """Parse a comma-separated list environment variable."""
     value = os.environ.get(name)
@@ -98,6 +109,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "josephlovesjohn_site.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "main_site.cache.SharedContentCacheContextMiddleware",
@@ -120,6 +132,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "josephlovesjohn_site.context_processors.recaptcha",
                 "main_site.context_processors.analytics",
                 "shop.context_processors.cart_summary",
             ],
@@ -256,6 +269,10 @@ WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_USE_FINDERS = DEBUG
 WHITENOISE_MAX_AGE = 60 if DEBUG else 31536000
 VERIFY_STATIC_ASSET_FILES = _env_bool("VERIFY_STATIC_ASSET_FILES", default=DEBUG)
+CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = _env_bool(
+    "CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS",
+    default=not DEBUG,
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -275,11 +292,23 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_API_VERSION = os.environ.get("STRIPE_API_VERSION", "2026-02-25.clover")
 STRIPE_CURRENCY = os.environ.get("STRIPE_CURRENCY", "gbp")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+SHOP_ALLOWED_COUNTRIES = _env_list("SHOP_ALLOWED_COUNTRIES", default=["GB"])
 PLAUSIBLE_DOMAIN = os.environ.get("PLAUSIBLE_DOMAIN", "").strip()
 PLAUSIBLE_SCRIPT_SRC = os.environ.get(
     "PLAUSIBLE_SCRIPT_SRC",
     "https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js",
 ).strip()
+CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", default=False)
+CONTENT_SECURITY_POLICY_EXTRA_SOURCES = _env_list("CONTENT_SECURITY_POLICY_EXTRA_SOURCES")
+RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "").strip()
+RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "").strip()
+RECAPTCHA_MIN_SCORE = _env_float("RECAPTCHA_MIN_SCORE", default=0.5)
+RECAPTCHA_VERIFY_URL = os.environ.get(
+    "RECAPTCHA_VERIFY_URL",
+    "https://www.google.com/recaptcha/api/siteverify",
+).strip()
+RECAPTCHA_VERIFY_TIMEOUT = _env_int("RECAPTCHA_VERIFY_TIMEOUT", default=3)
+RECAPTCHA_ALLOWED_HOSTNAMES = _env_list("RECAPTCHA_ALLOWED_HOSTNAMES")
 
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
@@ -296,7 +325,7 @@ VAT_NUMBER = os.environ.get("VAT_NUMBER", "")
 
 LOGIN_RATE_LIMIT_ATTEMPTS = _env_int("LOGIN_RATE_LIMIT_ATTEMPTS", default=5)
 LOGIN_RATE_LIMIT_WINDOW = _env_int("LOGIN_RATE_LIMIT_WINDOW", default=300)
-REGISTER_RATE_LIMIT_ATTEMPTS = _env_int("REGISTER_RATE_LIMIT_ATTEMPTS", default=3)
+REGISTER_RATE_LIMIT_ATTEMPTS = _env_int("REGISTER_RATE_LIMIT_ATTEMPTS", default=5)
 REGISTER_RATE_LIMIT_WINDOW = _env_int("REGISTER_RATE_LIMIT_WINDOW", default=3600)
 PASSWORD_RESET_RATE_LIMIT_ATTEMPTS = _env_int("PASSWORD_RESET_RATE_LIMIT_ATTEMPTS", default=5)
 PASSWORD_RESET_RATE_LIMIT_WINDOW = _env_int("PASSWORD_RESET_RATE_LIMIT_WINDOW", default=3600)

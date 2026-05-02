@@ -221,6 +221,7 @@ def test_webhook_first_browser_success_flow_sends_one_email_and_unlocks_success_
     browser_page.wait_for_url("**/shop/checkout/")
 
     browser_page.locator("#id_accept_terms").check()
+    browser_page.locator("#id_confirm_uk_customer").check()
     browser_page.locator("[data-checkout-submit]").click()
     browser_page.wait_for_function("window.location.pathname.includes('/shop/success/')")
     browser_page.wait_for_load_state("load")
@@ -300,6 +301,43 @@ def test_cookie_preference_flow_controls_optional_signup_embed(browser_page, liv
         }
         """
     )
+
+
+@pytest.mark.parametrize(
+    ("route_name", "section_id", "expected_path"),
+    (
+        ("main_site:intro", "intro", "/intro/"),
+        ("main_site:music", "music", "/music/"),
+        ("main_site:art", "art", "/art/"),
+        ("main_site:contact", "contact", "/contact/"),
+    ),
+)
+def test_cookie_choice_keeps_section_route_active(
+    browser_page,
+    live_server,
+    route_name,
+    section_id,
+    expected_path,
+) -> None:
+    """Choosing a cookie option should not close the active section route."""
+    browser_page.set_default_timeout(10_000)
+    browser_page.goto(_route_url(live_server, route_name), wait_until="load")
+    browser_page.wait_for_selector(f"article#{section_id}.active")
+
+    browser_page.locator("[data-cookie-essential-only]").click()
+    browser_page.wait_for_function(
+        """
+        (sectionId) => {
+            const banner = document.querySelector('[data-cookie-banner]');
+            const section = document.querySelector(`article#${sectionId}`);
+            return !!banner && banner.hidden === true && !!section && section.classList.contains('active');
+        }
+        """,
+        arg=section_id,
+    )
+
+    assert browser_page.url.endswith(expected_path)
+    assert browser_page.locator("html").get_attribute("data-cookie-preference") == "essential"
 
 
 def test_keyboard_focus_accessibility_across_share_cart_and_lightbox(browser_page, live_server) -> None:
@@ -475,6 +513,7 @@ def test_real_hosted_stripe_page_round_trip_in_browser(browser_page, live_server
     browser_page.wait_for_url("**/shop/checkout/")
 
     browser_page.locator("#id_accept_terms").check()
+    browser_page.locator("#id_confirm_uk_customer").check()
     browser_page.locator("[data-checkout-submit]").click()
     browser_page.wait_for_url(re.compile(r"https://checkout\.stripe\.com/.*"))
 

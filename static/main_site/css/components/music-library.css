@@ -73,6 +73,20 @@
     font-size: 0.9rem;
 }
 
+.music-library-title-link {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.music-library-title-link:hover,
+.music-library-title-link:focus-visible {
+    color: #ffffff;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25rem;
+}
+
 .music-library-player-panel p {
     margin: 0 0 0.9rem;
     font-size: 0.72rem;
@@ -240,5 +254,195 @@
     .music-owned-note {
         justify-content: center;
         width: 100%;
+    }
+}
+
+.track-link-page-body {
+    overflow-y: auto;
+}
+
+.track-link-page-body #bg::after {
+    opacity: 0.72;
+}
+
+.track-link-page-body #bg {
+    pointer-events: none;
+}
+
+.track-link-home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.55rem;
+    padding: 0.72rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    left: 1rem;
+    letter-spacing: 0.18rem;
+    line-height: 1;
+    position: fixed;
+    text-decoration: none;
+    text-transform: uppercase;
+    top: 1rem;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
+    z-index: 4;
+}
+
+.track-link-home:hover,
+.track-link-home:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+.track-link-page {
+    display: grid;
+    gap: 1rem;
+    width: min(100% - 2rem, 31rem);
+    margin: 0 auto;
+    padding: clamp(2rem, 6vh, 4rem) 0;
+    position: relative;
+    text-align: center;
+    z-index: 3;
+}
+
+.track-link-art {
+    margin: 0 auto 0.1rem;
+    width: min(100%, 21.5rem);
+}
+
+.track-link-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 0.35rem;
+    object-fit: cover;
+    box-shadow: 0 1.1rem 2.8rem rgba(0, 0, 0, 0.36);
+}
+
+.track-link-page h1 {
+    margin: 0.35rem 0 0;
+    font-size: clamp(1.25rem, 5vw, 1.65rem);
+    letter-spacing: 0;
+    line-height: 1.2;
+    text-transform: none;
+}
+
+.track-link-artist {
+    margin: -0.35rem 0 0.75rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.72rem;
+    letter-spacing: 0.08rem;
+    text-transform: uppercase;
+}
+
+.track-link-services {
+    display: grid;
+    gap: 0.82rem;
+    width: 100%;
+}
+
+.track-link-service {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(6.4rem, auto);
+    gap: 0.9rem;
+    align-items: center;
+    padding: 0.82rem 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.56);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.035);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 0.55rem 1.25rem rgba(0, 0, 0, 0.16);
+    color: #ffffff;
+    position: relative;
+    text-decoration: none;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.track-link-service:hover,
+.track-link-service:focus-visible {
+    background: rgba(255, 255, 255, 0.11);
+    border-color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.track-link-service-brand {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.06rem;
+    text-align: left;
+}
+
+.track-link-service-brand .icon {
+    width: 1.2rem;
+    color: #ffffff;
+    text-align: center;
+}
+
+.track-link-service-action {
+    display: inline-flex;
+    justify-content: center;
+    min-width: 6.4rem;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14rem;
+    text-transform: uppercase;
+}
+
+@media screen and (max-width: 900px) {
+    .track-link-home {
+        display: flex;
+        margin: 1rem auto 0;
+        position: relative;
+        left: auto;
+        top: auto;
+        width: fit-content;
+    }
+
+    .track-link-page {
+        padding-top: 1rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .track-link-home {
+        margin-top: 0.75rem;
+        max-width: calc(100% - 1.2rem);
+    }
+
+    .track-link-page {
+        width: min(100% - 1.2rem, 31rem);
+        padding-top: 0.9rem;
+    }
+
+    .track-link-service {
+        grid-template-columns: minmax(0, 1fr) minmax(5.6rem, auto);
+        gap: 0.65rem;
+    }
+
+    .track-link-service-action {
+        min-width: 5.6rem;
+        padding-inline: 0.55rem;
     }
 }

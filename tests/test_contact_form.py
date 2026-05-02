@@ -21,6 +21,8 @@ def clear_contact_rate_limits() -> None:
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="josephlovesjohn@gmail.com",
     CONTACT_RECIPIENT_EMAIL="josephlovesjohn@gmail.com",
+    RECAPTCHA_SITE_KEY="",
+    RECAPTCHA_SECRET_KEY="",
 )
 def test_contact_form_sends_email_and_redirects(client) -> None:
     """A valid contact submission should email the configured inbox."""
@@ -98,6 +100,8 @@ def test_contact_form_honeypot_discards_spam_without_sending_email(client) -> No
     CONTACT_RECIPIENT_EMAIL="josephlovesjohn@gmail.com",
     CONTACT_RATE_LIMIT_ATTEMPTS=1,
     CONTACT_RATE_LIMIT_WINDOW=3600,
+    RECAPTCHA_SITE_KEY="",
+    RECAPTCHA_SECRET_KEY="",
 )
 def test_contact_form_rate_limit_blocks_repeated_messages(client) -> None:
     """Repeated valid contact submissions should be rate limited."""
@@ -123,6 +127,57 @@ def test_contact_form_rate_limit_blocks_repeated_messages(client) -> None:
     assert second_response.status_code == 200
     assert "Too many messages have been sent" in second_response.content.decode()
     assert len(mail.outbox) == 1
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="josephlovesjohn@gmail.com",
+    CONTACT_RECIPIENT_EMAIL="josephlovesjohn@gmail.com",
+    RECAPTCHA_SITE_KEY="site-key",
+    RECAPTCHA_SECRET_KEY="secret-key",
+)
+def test_contact_form_blocks_failed_recaptcha(client, monkeypatch) -> None:
+    """Protected contact submissions should stop when reCAPTCHA verification fails."""
+    monkeypatch.setattr("main_site.views.verify_recaptcha_request", lambda request, expected_action: False)
+
+    response = client.post(
+        reverse("main_site:contact"),
+        {
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "message": "Hello from the website.",
+            "g-recaptcha-response": "bad-token",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "We could not verify this message." in response.content.decode()
+    assert len(mail.outbox) == 0
+
+
+@override_settings(RECAPTCHA_SITE_KEY="site-key", RECAPTCHA_SECRET_KEY="secret-key")
+def test_contact_page_renders_recaptcha_v3_hook(client) -> None:
+    """The contact form should include the invisible reCAPTCHA v3 client hook when enabled."""
+    response = client.get(reverse("main_site:contact"))
+    body = response.content.decode()
+
+    assert 'data-recaptcha-action="contact"' in body
+    assert 'name="g-recaptcha-response"' in body
+    assert "https://www.google.com/recaptcha/api.js?render=site-key" in body
+
+
+def test_contact_page_does_not_render_shop_cart_messages(client) -> None:
+    """Shop checkout notices should not leak into the contact article."""
+    checkout_response = client.get(reverse("shop:checkout"))
+
+    assert checkout_response.status_code == 302
+
+    response = client.get(reverse("main_site:contact"))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Your cart is empty. Add a track from the music page to continue." not in body
+    assert "contact-form-messages" not in body
 
 
 def test_contact_page_renders_only_instagram_and_tiktok_icons(client) -> None:

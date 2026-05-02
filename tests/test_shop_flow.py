@@ -22,6 +22,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 VALID_CHECKOUT_CONSENTS = {
     "accept_terms": "on",
+    "confirm_uk_customer": "on",
 }
 
 
@@ -323,6 +324,17 @@ def test_login_page_links_to_password_reset(client) -> None:
     assert_response_is_not_cacheable(response)
 
 
+@override_settings(RECAPTCHA_SITE_KEY="site-key", RECAPTCHA_SECRET_KEY="secret-key")
+def test_login_page_renders_recaptcha_v3_hook(client) -> None:
+    """The login form should include the invisible reCAPTCHA v3 client hook when enabled."""
+    response = client.get(reverse("shop:login"))
+    body = response.content.decode()
+
+    assert 'data-recaptcha-action="login"' in body
+    assert 'name="g-recaptcha-response"' in body
+    assert "https://www.google.com/recaptcha/api.js?render=site-key" in body
+
+
 def test_login_shows_username_error_when_account_is_unknown(client) -> None:
     """Unknown usernames should show a field-level error below the username input."""
     response = client.post(
@@ -387,6 +399,26 @@ def test_login_rate_limit_blocks_repeated_attempts(client, django_user_model) ->
     assert first_response.status_code == 200
     assert second_response.status_code == 200
     assert "Too many login attempts" in second_response.content.decode()
+
+
+@override_settings(RECAPTCHA_SITE_KEY="site-key", RECAPTCHA_SECRET_KEY="secret-key")
+def test_login_blocks_failed_recaptcha(client, django_user_model, monkeypatch) -> None:
+    """Login should stop before authentication when reCAPTCHA verification fails."""
+    django_user_model.objects.create_user(
+        username="listener",
+        email="listener@example.com",
+        password="secret123",
+    )
+    monkeypatch.setattr("shop.views.verify_recaptcha_request", lambda request, expected_action: False)
+
+    response = client.post(
+        reverse("shop:login"),
+        {"username": "listener", "password": "secret123", "g-recaptcha-response": "bad-token"},
+    )
+
+    assert response.status_code == 200
+    assert "We could not verify this login attempt." in response.content.decode()
+    assert client.session.get("_auth_user_id") is None
 
 
 def test_logout_requires_post_and_redirects_back_to_music_page(client, django_user_model) -> None:
@@ -579,6 +611,9 @@ def test_checkout_get_renders_review_page_before_redirect_to_stripe(
     assert "shop/css/shop.css" in body
     assert 'id="id_accept_terms"' in body
     assert 'for="id_accept_terms"' in body
+    assert 'id="id_confirm_uk_customer"' in body
+    assert "UK-based customers only" in body
+    assert "customers with a UK address" in body
     assert 'class="shop-checkbox-indicator"' in body
     assert "Continue to Stripe Checkout" in body
 
@@ -608,6 +643,8 @@ def test_checkout_post_redirects_to_stripe_checkout(client, seeded_product: Prod
     assert checkout_payload["mode"] == "payment"
     assert checkout_payload["metadata"] == {"order_id": str(order.pk)}
     assert checkout_payload["line_items"][0]["price_data"]["currency"] == "gbp"
+    assert checkout_payload["billing_address_collection"] == "required"
+    assert checkout_payload["shipping_address_collection"] == {"allowed_countries": ["GB"]}
     assert "customer_email" not in checkout_payload
 
 
@@ -635,6 +672,29 @@ def test_checkout_post_requires_digital_download_acknowledgements(client, seeded
     assert response.status_code == 200
     assert "This field is required." in body
     assert Order.objects.count() == 0
+
+
+def test_checkout_post_requires_uk_customer_acknowledgement(client, seeded_product: Product) -> None:
+    """Checkout should not start until the shopper confirms UK availability."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    response = client.post(reverse("shop:checkout"), {"accept_terms": "on"})
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "This field is required." in body
+    assert Order.objects.count() == 0
+
+
+def test_checkout_uses_configured_allowed_countries(client, seeded_product: Product, fake_stripe_checkout) -> None:
+    """Stripe Checkout should receive the configured list of allowed customer countries."""
+    client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
+
+    with override_settings(SHOP_ALLOWED_COUNTRIES=["GB", "IM", "JE", "GG"]):
+        client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
+
+    checkout_payload = fake_stripe_checkout["created_payloads"][0]
+    assert checkout_payload["shipping_address_collection"] == {"allowed_countries": ["GB", "IM", "JE", "GG"]}
 
 
 def test_checkout_post_blocks_payment_when_a_download_is_unavailable(client, seeded_product: Product) -> None:
@@ -1526,6 +1586,17 @@ def test_register_page_includes_hidden_honeypot(client) -> None:
     assert_response_is_not_cacheable(response)
 
 
+@override_settings(RECAPTCHA_SITE_KEY="site-key", RECAPTCHA_SECRET_KEY="secret-key")
+def test_register_page_renders_recaptcha_v3_hook(client) -> None:
+    """The registration form should include the invisible reCAPTCHA v3 client hook when enabled."""
+    response = client.get(reverse("shop:register"))
+    body = response.content.decode()
+
+    assert 'data-recaptcha-action="register"' in body
+    assert 'name="g-recaptcha-response"' in body
+    assert "https://www.google.com/recaptcha/api.js?render=site-key" in body
+
+
 def test_register_honeypot_blocks_bot_signup(client) -> None:
     """Submissions that fill the hidden website field should not create an account."""
     response = client.post(
@@ -1574,6 +1645,27 @@ def test_register_rate_limit_blocks_repeated_attempts(client) -> None:
     assert user_model.objects.filter(username="firstlistener").exists()
     assert not user_model.objects.filter(username="secondlistener").exists()
     assert "Too many account creation attempts" in second_response.content.decode()
+
+
+@override_settings(RECAPTCHA_SITE_KEY="site-key", RECAPTCHA_SECRET_KEY="secret-key")
+def test_register_blocks_failed_recaptcha(client, django_user_model, monkeypatch) -> None:
+    """Registration should not create accounts when reCAPTCHA verification fails."""
+    monkeypatch.setattr("shop.views.verify_recaptcha_request", lambda request, expected_action: False)
+
+    response = client.post(
+        reverse("shop:register"),
+        data={
+            "username": "blockedlistener",
+            "email": "blockedlistener@example.com",
+            "password1": "SuperSafePass123",
+            "password2": "SuperSafePass123",
+            "g-recaptcha-response": "bad-token",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "We could not verify this account creation attempt." in response.content.decode()
+    assert not django_user_model.objects.filter(username="blockedlistener").exists()
 
 
 def test_account_requires_authentication(client) -> None:

@@ -190,6 +190,13 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
 
 
 @pytest.fixture(autouse=True)
+def disable_csp_upgrade_for_browser_live_server(request: pytest.FixtureRequest, settings) -> None:
+    """Keep HTTP-only Playwright live-server assets loadable in WebKit."""
+    if request.node.get_closest_marker("browser"):
+        settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = False
+
+
+@pytest.fixture(autouse=True)
 def ensure_browser_gallery_assets(request: pytest.FixtureRequest, create_static_asset) -> None:
     """Keep at least one art-gallery lightbox item available for browser tests."""
     if not request.node.get_closest_marker("browser"):

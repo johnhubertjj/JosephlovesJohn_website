@@ -22,6 +22,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import FormView, TemplateView
 from josephlovesjohn_site.rate_limits import is_rate_limited
+from josephlovesjohn_site.recaptcha import verify_recaptcha_request
 from josephlovesjohn_site.site_urls import absolute_site_url, site_context
 
 from .cart import add_product, build_cart_summary, clear_cart, get_cart_products, remove_product
@@ -257,6 +258,10 @@ class ShopLoginView(LoginView):
             form = self.get_form()
             messages.error(request, "Too many login attempts. Please wait a few minutes and try again.")
             return self.form_invalid(form)
+        if not verify_recaptcha_request(request, expected_action="login"):
+            form = self.get_form()
+            messages.error(request, "We could not verify this login attempt. Please refresh the page and try again.")
+            return self.form_invalid(form)
 
         return super().post(request, *args, **kwargs)
 
@@ -352,6 +357,13 @@ class RegisterView(FormView):
         ):
             form = self.get_form()
             messages.error(request, "Too many account creation attempts. Please wait a while and try again.")
+            return self.form_invalid(form)
+        if not verify_recaptcha_request(request, expected_action="register"):
+            form = self.get_form()
+            messages.error(
+                request,
+                "We could not verify this account creation attempt. Please refresh the page and try again.",
+            )
             return self.form_invalid(form)
 
         return super().post(request, *args, **kwargs)
@@ -654,6 +666,10 @@ class CheckoutView(View):
             "metadata": {"order_id": str(order.pk)},
             "payment_intent_data": {"metadata": {"order_id": str(order.pk)}},
             "line_items": line_items,
+            "billing_address_collection": "required",
+            "shipping_address_collection": {
+                "allowed_countries": settings.SHOP_ALLOWED_COUNTRIES,
+            },
         }
         if order.email:
             session_kwargs["customer_email"] = order.email

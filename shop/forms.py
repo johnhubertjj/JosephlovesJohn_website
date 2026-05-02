@@ -12,6 +12,9 @@ class CheckoutConsentForm(forms.Form):
     accept_terms = forms.BooleanField(
         label="I have read the privacy, cookies, terms, and refunds information for this purchase."
     )
+    confirm_uk_customer = forms.BooleanField(
+        label="I confirm I am a UK-based customer and can provide a UK address in Stripe Checkout."
+    )
 
 
 class ShopAuthenticationForm(AuthenticationForm):

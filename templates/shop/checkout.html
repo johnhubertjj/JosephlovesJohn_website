@@ -29,13 +29,14 @@
             {% elif checkout_canceled %}
                 <p class="shop-inline-note">Your cart is still here. When you're ready, try Stripe Checkout again.</p>
             {% else %}
-                <p class="shop-inline-note">Review the digital-download details below, confirm the required acknowledgements, and then continue to Stripe.</p>
+                <p class="shop-inline-note">Review the digital-download details below, confirm the required acknowledgements, and then continue to Stripe. This shop is currently available to UK-based customers only.</p>
             {% endif %}
 
             <div class="shop-policy-summary">
                 <p><strong>Delivery:</strong> Digital download only. No physical shipping applies.</p>
                 <p><strong>Payment:</strong> Card details are handled on Stripe-hosted checkout pages.</p>
                 <p><strong>Currency:</strong> Prices are shown in GBP.</p>
+                <p><strong>Availability:</strong> Checkout is limited to customers with a UK address.</p>
             </div>
 
             {% if checkout_owned_products %}
@@ -67,7 +68,7 @@
                         type="submit"
                         class="button primary shop-primary-button"
                         data-checkout-submit
-                        {% if not form.accept_terms.value %}disabled{% endif %}
+                        {% if not form.accept_terms.value or not form.confirm_uk_customer.value %}disabled{% endif %}
                     >
                         Continue to Stripe Checkout
                     </button>
@@ -83,17 +84,21 @@
     {{ block.super }}
     <script>
         (function () {
-            var checkbox = document.getElementById("id_accept_terms");
+            var checkboxes = document.querySelectorAll(".shop-form input[type='checkbox'][required]");
             var submitButton = document.querySelector("[data-checkout-submit]");
-            if (!checkbox || !submitButton) {
+            if (!checkboxes.length || !submitButton) {
                 return;
             }
 
             function syncButtonState() {
-                submitButton.disabled = !checkbox.checked;
+                submitButton.disabled = Array.prototype.some.call(checkboxes, function (checkbox) {
+                    return !checkbox.checked;
+                });
             }
 
-            checkbox.addEventListener("change", syncButtonState);
+            Array.prototype.forEach.call(checkboxes, function (checkbox) {
+                checkbox.addEventListener("change", syncButtonState);
+            });
             syncButtonState();
         })();
     </script>

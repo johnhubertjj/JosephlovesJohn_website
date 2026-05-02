@@ -130,6 +130,19 @@ PLAUSIBLE_SCRIPT_SRC=https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js
 
 With `PLAUSIBLE_DOMAIN` set, the site will track pageviews plus custom events for add-to-cart, checkout starts, order confirmations, signup opens, and successful contact-form submissions.
 
+### Optional reCAPTCHA v3
+
+To enable invisible reCAPTCHA checks on the contact, account creation, and login forms, create reCAPTCHA v3 keys for the production domain and set:
+
+```env
+RECAPTCHA_SITE_KEY=...
+RECAPTCHA_SECRET_KEY=...
+RECAPTCHA_MIN_SCORE=0.5
+RECAPTCHA_ALLOWED_HOSTNAMES=josephlovesjohn.com
+```
+
+The checks stay disabled unless both reCAPTCHA keys are present.
+
 ### Optional public asset CDN
 
 If you move large audio/image assets to Cloudflare R2 or another public bucket,

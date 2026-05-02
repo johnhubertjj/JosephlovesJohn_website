@@ -58,6 +58,8 @@ services:
         value: gbp
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: SHOP_ALLOWED_COUNTRIES
+        value: GB
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
@@ -126,6 +128,10 @@ services:
         sync: false
       - key: PRIVATE_PREVIEWS_URL_EXPIRY
         value: "900"
+      - key: REGISTER_RATE_LIMIT_ATTEMPTS
+        value: "5"
+      - key: REGISTER_RATE_LIMIT_WINDOW
+        value: "3600"
       - key: SITE_CONTENT_CACHE_TTL
         value: "300"
       - key: CART_SUMMARY_CACHE_TTL
@@ -134,6 +140,18 @@ services:
         value: josephlovesjohn.com
       - key: PLAUSIBLE_SCRIPT_SRC
         value: https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js
+      - key: CONTENT_SECURITY_POLICY_REPORT_ONLY
+        value: "false"
+      - key: CONTENT_SECURITY_POLICY_EXTRA_SOURCES
+        sync: false
+      - key: RECAPTCHA_SITE_KEY
+        sync: false
+      - key: RECAPTCHA_SECRET_KEY
+        sync: false
+      - key: RECAPTCHA_MIN_SCORE
+        value: "0.5"
+      - key: RECAPTCHA_ALLOWED_HOSTNAMES
+        value: josephlovesjohn.com
       - key: SENTRY_DSN
         sync: false
       - key: SENTRY_ENVIRONMENT

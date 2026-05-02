@@ -147,6 +147,14 @@
 		var	delay = 325,
 			locked = false;
 
+		var getArticleById = function(id) {
+
+			return $main_articles.filter(function() {
+				return this.id === id;
+			});
+
+		};
+
 		var shouldKeepFooterVisible = function($article) {
 
 			return !!($article && $article.length > 0 && $article.is('[data-keep-footer="true"]'));
@@ -171,7 +179,7 @@
 		// Methods.
 			$main._show = function(id, initial) {
 
-				var $article = $main_articles.filter('#' + id);
+				var $article = getArticleById(id);
 
 				// No such article? Bail.
 					if ($article.length == 0)
@@ -413,12 +421,15 @@
 
 			});
 
-		// Events.
-			$body.on('click', function(event) {
+			// Events.
+				$body.on('click', function(event) {
 
-				// Article visible? Hide.
-					if ($body.hasClass('is-article-visible'))
-						$main._hide(true);
+					if ($(event.target).closest('[data-cookie-banner]').length > 0)
+						return;
+
+					// Article visible? Hide.
+						if ($body.hasClass('is-article-visible'))
+							$main._hide(true);
 
 			});
 
@@ -457,7 +468,7 @@
 					}
 
 				// Otherwise, check for a matching article.
-					else if ($main_articles.filter(location.hash).length > 0) {
+					else if (getArticleById(location.hash.substr(1)).length > 0) {
 
 						// Prevent default.
 							event.preventDefault();
@@ -501,16 +512,39 @@
 				$main_articles.hide();
 
 			// Initial article.
-				if (location.hash != ''
-				&&	location.hash != '#')
-					$window.on('load', function() {
-						$main._show(location.hash.substr(1), true);
-					});
-				else if (routeSection != ''
-				&& routeSection != 'main'
-				&& $main_articles.filter('#' + routeSection).length > 0)
-					$window.on('load', function() {
-						$main._show(routeSection, true);
-					});
+				var getInitialArticleId = function() {
+
+					var id = '';
+
+					if (location.hash != ''
+					&&	location.hash != '#')
+						id = location.hash.substr(1);
+					else if (routeSection != ''
+					&& routeSection != 'main')
+						id = routeSection;
+
+					if (id != ''
+					&& getArticleById(id).length > 0)
+						return id;
+
+					return '';
+
+				};
+
+				var showInitialArticle = function() {
+
+					var id;
+
+					if ($body.hasClass('is-article-visible'))
+						return;
+
+					id = getInitialArticleId();
+					if (id != '')
+						$main._show(id, true);
+
+				};
+
+				$(showInitialArticle);
+				$window.on('load pageshow', showInitialArticle);
 
 })(jQuery);
