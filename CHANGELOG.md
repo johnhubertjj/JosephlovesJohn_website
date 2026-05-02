@@ -3,8 +3,15 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
-- the current package version is `v1.3.1`
+- the current package version is `v1.3.2`
 - the latest tagged release is `v1.1.1`
+
+## v1.3.2 - 2026-05-02
+
+- Added consent-gated Meta Pixel support for individual track pages via the `META_PIXEL_ID` environment variable
+- Updated the content security policy to allow Meta Pixel script and event endpoints when the Pixel is configured
+- Hardened cookie preference events for WebKit by adding a legacy `CustomEvent` fallback
+- Disabled reCAPTCHA during browser-test runs so local or CI environment keys do not trigger external Google calls and WebKit access-control failures
 
 ## v1.3.1 - 2026-05-02
 

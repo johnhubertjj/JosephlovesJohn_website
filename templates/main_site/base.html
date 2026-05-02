@@ -53,21 +53,7 @@
 >
 {% block content %}{% endblock %}
 
-<aside class="cookie-banner" data-cookie-banner hidden aria-live="polite">
-    <div class="cookie-banner__content">
-        <p class="cookie-banner__title">Cookies on JosephlovesJohn</p>
-        <p class="cookie-banner__copy">
-            We use essential cookies to keep the shop, cart, login, and security features working.
-            Optional third-party signup embeds can be allowed separately, and cookie settings remember
-            your choice.
-        </p>
-    </div>
-    <div class="cookie-banner__actions">
-        <button type="button" class="button" data-cookie-essential-only>Essential only</button>
-        <button type="button" class="button primary" data-cookie-accept-all>Allow optional</button>
-        <a class="cookie-banner__policy-link" href="{% url 'main_site:cookies' %}">Read cookie policy</a>
-    </div>
-</aside>
+{% include 'includes/cookie_banner.html' %}
 
 <div id="bg"></div>
 

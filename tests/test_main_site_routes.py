@@ -70,6 +70,8 @@ def test_music_track_route_renders_clean_service_link_page(client) -> None:
     assert "data-cart-add-url" not in body
     assert "music-player-frame" not in body
     assert "/shop/" not in body
+    assert "data-cookie-banner" in body
+    assert "/static/main_site/js/cookies.js" in body
     expected_order = ["Spotify", "iTunes", "Apple Music", "Bandcamp", "YouTube", "Amazon Music", "Deezer", "TIDAL"]
     positions = [body.index(f"<span>{label}</span>") for label in expected_order]
     assert positions == sorted(positions)
@@ -95,6 +97,7 @@ def test_music_track_route_renders_consent_gated_meta_pixel(client, settings) ->
     assert response.status_code == 200
     assert 'var pixelId = "123456789";' in body
     assert 'getCookie("site_cookie_preference") !== "all"' in body
+    assert 'document.addEventListener("site:cookie-preference-changed", loadPixel);' in body
     assert "https://connect.facebook.net/en_US/fbevents.js" in body
     assert 'fbq("init", pixelId);' in body
     assert 'fbq("track", "PageView");' in body

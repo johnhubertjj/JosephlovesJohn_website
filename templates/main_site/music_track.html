@@ -57,6 +57,9 @@
             {% endfor %}
         </div>
     </main>
+    {% include 'includes/cookie_banner.html' %}
     <div id="bg"></div>
+    <script src="{% versioned_static 'main_site/js/dom_utils.js' %}"></script>
+    <script src="{% versioned_static 'main_site/js/cookies.js' %}"></script>
 </body>
 </html>
