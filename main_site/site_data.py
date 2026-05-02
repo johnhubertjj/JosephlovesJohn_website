@@ -117,6 +117,8 @@ MUSIC_STREAMING_LINKS = {
     ],
 }
 
+MUSIC_LIBRARY_CACHE_KEY = "music-library-items-v2"
+
 MUSIC_TRACK_PUBLIC_SLUGS = {
     "dark-and-light-artist-version": "dark-and-light",
 }
@@ -489,7 +491,7 @@ def _get_music_library_items():
             )
         return items
 
-    return cache_shared_content("music-library-items", _build, cache_empty=False)
+    return cache_shared_content(MUSIC_LIBRARY_CACHE_KEY, _build, cache_empty=False)
 
 
 def _get_music_library_item(slug):
