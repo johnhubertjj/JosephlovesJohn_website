@@ -19,6 +19,8 @@ def test_content_security_policy_header_is_sent(client) -> None:
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://plausible.io "
         "https://josephlovesjohn.kit.com https://f.convertkit.com"
     ) in policy
+    assert "https://connect.facebook.net" in policy
+    assert "https://www.facebook.com" in policy
     assert (
         "form-action 'self' https://josephlovesjohn.kit.com "
         "https://app.kit.com https://checkout.stripe.com"

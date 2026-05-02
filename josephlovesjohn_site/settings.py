@@ -298,6 +298,7 @@ PLAUSIBLE_SCRIPT_SRC = os.environ.get(
     "PLAUSIBLE_SCRIPT_SRC",
     "https://plausible.io/js/pa-J6bhmMJeOSd44Xkxjn7p2.js",
 ).strip()
+META_PIXEL_ID = os.environ.get("META_PIXEL_ID", "").strip()
 CONTENT_SECURITY_POLICY_REPORT_ONLY = _env_bool("CONTENT_SECURITY_POLICY_REPORT_ONLY", default=False)
 CONTENT_SECURITY_POLICY_EXTRA_SOURCES = _env_list("CONTENT_SECURITY_POLICY_EXTRA_SOURCES")
 RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "").strip()
