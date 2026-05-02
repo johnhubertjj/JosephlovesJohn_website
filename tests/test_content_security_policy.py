@@ -23,6 +23,8 @@ def test_content_security_policy_header_is_sent(client) -> None:
         "form-action 'self' https://josephlovesjohn.kit.com "
         "https://app.kit.com https://checkout.stripe.com"
     ) in policy
+    assert "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" in policy
+    assert "font-src 'self' data: https://fonts.gstatic.com" in policy
 
 
 def test_content_security_policy_can_run_in_report_only_mode(client, settings) -> None:
@@ -46,3 +48,12 @@ def test_content_security_policy_includes_configured_asset_origins(settings) -> 
     assert "https://pub.example.com" in policy
     assert "https://media.example.com" in policy
     assert "https://extra.example.com" in policy
+
+
+def test_content_security_policy_upgrade_insecure_requests_is_configurable(settings) -> None:
+    """The HTTPS upgrade directive should be optional for HTTP-only browser test servers."""
+    settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = True
+    assert "upgrade-insecure-requests" in build_content_security_policy()
+
+    settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = False
+    assert "upgrade-insecure-requests" not in build_content_security_policy()

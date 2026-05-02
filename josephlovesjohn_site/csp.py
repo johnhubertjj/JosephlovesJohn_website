@@ -41,6 +41,8 @@ def build_content_security_policy() -> str:
     stripe_origin = "https://checkout.stripe.com"
     recaptcha_origin = "https://www.google.com"
     recaptcha_static_origin = "https://www.gstatic.com"
+    google_fonts_styles_origin = "https://fonts.googleapis.com"
+    google_fonts_files_origin = "https://fonts.gstatic.com"
     extra_sources = list(getattr(settings, "CONTENT_SECURITY_POLICY_EXTRA_SOURCES", []))
 
     directives = [
@@ -63,7 +65,7 @@ def build_content_security_policy() -> str:
                 *extra_sources,
             ],
         ),
-        _directive("style-src", ["'self'", "'unsafe-inline'"]),
+        _directive("style-src", ["'self'", "'unsafe-inline'", google_fonts_styles_origin]),
         _directive(
             "img-src",
             [
@@ -87,7 +89,7 @@ def build_content_security_policy() -> str:
                 *extra_sources,
             ],
         ),
-        _directive("font-src", ["'self'", "data:"]),
+        _directive("font-src", ["'self'", "data:", google_fonts_files_origin]),
         _directive(
             "connect-src",
             [
@@ -103,7 +105,7 @@ def build_content_security_policy() -> str:
         _directive("frame-src", [kit_origin, stripe_origin, recaptcha_origin]),
     ]
 
-    if not settings.DEBUG:
+    if settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS:
         directives.append("upgrade-insecure-requests")
 
     return "; ".join(directives)
