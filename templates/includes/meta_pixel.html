@@ -2,6 +2,7 @@
     <script>
         (function () {
             var pixelId = "{{ analytics.meta_pixel_id|escapejs }}";
+            var isLoaded = false;
 
             function getCookie(name) {
                 var prefix = name + "=";
@@ -17,33 +18,40 @@
                 return "";
             }
 
-            if (getCookie("site_cookie_preference") !== "all") {
-                return;
-            }
-
-            !function (f, b, e, v, n, t, s) {
-                if (f.fbq) {
+            function loadPixel() {
+                if (isLoaded || getCookie("site_cookie_preference") !== "all") {
                     return;
                 }
-                n = f.fbq = function () {
-                    n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
-                };
-                if (!f._fbq) {
-                    f._fbq = n;
-                }
-                n.push = n;
-                n.loaded = true;
-                n.version = "2.0";
-                n.queue = [];
-                t = b.createElement(e);
-                t.async = true;
-                t.src = v;
-                s = b.getElementsByTagName(e)[0];
-                s.parentNode.insertBefore(t, s);
-            }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
 
-            fbq("init", pixelId);
-            fbq("track", "PageView");
+                isLoaded = true;
+
+                !function (f, b, e, v, n, t, s) {
+                    if (f.fbq) {
+                        return;
+                    }
+                    n = f.fbq = function () {
+                        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+                    };
+                    if (!f._fbq) {
+                        f._fbq = n;
+                    }
+                    n.push = n;
+                    n.loaded = true;
+                    n.version = "2.0";
+                    n.queue = [];
+                    t = b.createElement(e);
+                    t.async = true;
+                    t.src = v;
+                    s = b.getElementsByTagName(e)[0];
+                    s.parentNode.insertBefore(t, s);
+                }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+
+                fbq("init", pixelId);
+                fbq("track", "PageView");
+            }
+
+            document.addEventListener("site:cookie-preference-changed", loadPixel);
+            loadPixel();
         })();
     </script>
     {% if analytics.meta_pixel_noscript_enabled %}
