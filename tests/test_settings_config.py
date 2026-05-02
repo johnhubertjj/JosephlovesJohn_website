@@ -201,6 +201,20 @@ def test_settings_expose_plausible_configuration(monkeypatch: pytest.MonkeyPatch
         importlib.reload(settings)
 
 
+def test_settings_expose_meta_pixel_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Meta Pixel should be configurable without hard-coding the account ID."""
+    monkeypatch.setenv("META_PIXEL_ID", "123456789")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.META_PIXEL_ID == "123456789"
+    finally:
+        monkeypatch.delenv("META_PIXEL_ID", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
 def test_settings_expose_site_url_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     """Canonical site URLs should be configurable from the environment."""
     monkeypatch.setenv("SITE_URL", "https://josephlovesjohn.com/")

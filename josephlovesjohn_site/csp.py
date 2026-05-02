@@ -43,6 +43,8 @@ def build_content_security_policy() -> str:
     recaptcha_static_origin = "https://www.gstatic.com"
     google_fonts_styles_origin = "https://fonts.googleapis.com"
     google_fonts_files_origin = "https://fonts.gstatic.com"
+    meta_pixel_script_origin = "https://connect.facebook.net"
+    meta_pixel_event_origin = "https://www.facebook.com"
     extra_sources = list(getattr(settings, "CONTENT_SECURITY_POLICY_EXTRA_SOURCES", []))
 
     directives = [
@@ -62,6 +64,7 @@ def build_content_security_policy() -> str:
                 kit_runtime_origin,
                 recaptcha_origin,
                 recaptcha_static_origin,
+                meta_pixel_script_origin,
                 *extra_sources,
             ],
         ),
@@ -99,6 +102,7 @@ def build_content_security_policy() -> str:
                 kit_runtime_origin,
                 kit_form_origin,
                 recaptcha_origin,
+                meta_pixel_event_origin,
                 *extra_sources,
             ],
         ),

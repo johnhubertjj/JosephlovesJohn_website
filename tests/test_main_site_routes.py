@@ -75,6 +75,44 @@ def test_music_track_route_renders_clean_service_link_page(client) -> None:
     assert positions == sorted(positions)
 
 
+def test_music_track_route_omits_meta_pixel_without_configuration(client) -> None:
+    """Track pages should not render Meta Pixel markup until a pixel ID is configured."""
+    response = client.get(reverse("main_site:music_track", args=["dark-and-light"]))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "connect.facebook.net/en_US/fbevents.js" not in body
+    assert "fbq(\"track\", \"PageView\")" not in body
+
+
+def test_music_track_route_renders_consent_gated_meta_pixel(client, settings) -> None:
+    """Configured track pages should include the Pixel script without firing it before consent."""
+    settings.META_PIXEL_ID = "123456789"
+
+    response = client.get(reverse("main_site:music_track", args=["dark-and-light"]))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'var pixelId = "123456789";' in body
+    assert 'getCookie("site_cookie_preference") !== "all"' in body
+    assert "https://connect.facebook.net/en_US/fbevents.js" in body
+    assert 'fbq("init", pixelId);' in body
+    assert 'fbq("track", "PageView");' in body
+    assert "https://www.facebook.com/tr?id=123456789" not in body
+
+
+def test_music_track_route_renders_meta_pixel_noscript_after_optional_cookie_consent(client, settings) -> None:
+    """The noscript Pixel fallback should only render after optional-cookie consent."""
+    settings.META_PIXEL_ID = "123456789"
+    client.cookies["site_cookie_preference"] = "all"
+
+    response = client.get(reverse("main_site:music_track", args=["dark-and-light"]))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "https://www.facebook.com/tr?id=123456789&amp;ev=PageView&amp;noscript=1" in body
+
+
 def test_music_track_route_supports_canonical_dark_and_light_slug(client) -> None:
     """The public artist-version route should use the shorter SEO-friendly track slug."""
     response = client.get(reverse("main_site:music_track", args=["dark-and-light"]))

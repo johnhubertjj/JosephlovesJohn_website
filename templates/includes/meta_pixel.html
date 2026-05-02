@@ -1,0 +1,60 @@
+{% if analytics.meta_pixel_enabled %}
+    <script>
+        (function () {
+            var pixelId = "{{ analytics.meta_pixel_id|escapejs }}";
+
+            function getCookie(name) {
+                var prefix = name + "=";
+                var cookies = document.cookie ? document.cookie.split(";") : [];
+
+                for (var i = 0; i < cookies.length; i += 1) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.indexOf(prefix) === 0) {
+                        return decodeURIComponent(cookie.slice(prefix.length));
+                    }
+                }
+
+                return "";
+            }
+
+            if (getCookie("site_cookie_preference") !== "all") {
+                return;
+            }
+
+            !function (f, b, e, v, n, t, s) {
+                if (f.fbq) {
+                    return;
+                }
+                n = f.fbq = function () {
+                    n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+                };
+                if (!f._fbq) {
+                    f._fbq = n;
+                }
+                n.push = n;
+                n.loaded = true;
+                n.version = "2.0";
+                n.queue = [];
+                t = b.createElement(e);
+                t.async = true;
+                t.src = v;
+                s = b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t, s);
+            }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+
+            fbq("init", pixelId);
+            fbq("track", "PageView");
+        })();
+    </script>
+    {% if analytics.meta_pixel_noscript_enabled %}
+        <noscript>
+            <img
+                height="1"
+                width="1"
+                style="display:none"
+                alt=""
+                src="https://www.facebook.com/tr?id={{ analytics.meta_pixel_id|urlencode }}&amp;ev=PageView&amp;noscript=1"
+            />
+        </noscript>
+    {% endif %}
+{% endif %}
