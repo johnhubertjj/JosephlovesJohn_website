@@ -113,12 +113,8 @@ def _legal_page_context(page_key):
     }
 
 
-def _music_track_context(request, slug):
+def _music_track_context(request, item):
     """Build the rendering context for a dedicated music track page."""
-    item = _get_music_library_item(slug)
-    if item is None:
-        raise Http404("Track not found")
-
     public_slug = str(item.get("public_slug") or item["slug"])
     canonical_url = absolute_site_url(reverse("main_site:music_track", kwargs={"slug": public_slug}), request)
     return {
@@ -179,7 +175,15 @@ def music(request):
 
 def music_track(request, slug):
     """Render a dedicated public page for one music track."""
-    return render(request, "main_site/music_track.html", _music_track_context(request, slug))
+    item = _get_music_library_item(slug)
+    if item is None:
+        raise Http404("Track not found")
+
+    public_slug = str(item.get("public_slug") or item["slug"])
+    if slug != public_slug:
+        return redirect("main_site:music_track", slug=public_slug, permanent=True)
+
+    return render(request, "main_site/music_track.html", _music_track_context(request, item))
 
 
 def art(request):
