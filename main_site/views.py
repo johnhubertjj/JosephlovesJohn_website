@@ -4,6 +4,7 @@ from typing import cast
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.messages import get_messages
 from django.core.mail import EmailMessage
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
@@ -58,6 +59,11 @@ def _site_context(active_section, *, contact_form=None, request=None):
     section_key = active_section or "main"
     header_social_links = _get_header_social_links()
     music_items = _get_music_library_items()
+    contact_messages = [
+        message
+        for message in (get_messages(request) if request is not None else [])
+        if "contact" in message.extra_tags.split()
+    ]
     owned_slug_candidates = [item.get("slug") for item in music_items if item.get("slug")]
     owned_music_slugs = sorted(
         get_owned_product_slugs(getattr(request, "user", None), slugs=owned_slug_candidates)
@@ -71,6 +77,7 @@ def _site_context(active_section, *, contact_form=None, request=None):
         "gig_photo_items": _get_gig_photo_items(),
         "album_art_items": _get_album_art_items(),
         "contact_form": contact_form or ContactForm(),
+        "contact_messages": contact_messages,
         "seo": build_site_seo(
             section_key,
             canonical_url=absolute_site_url(reverse(CANONICAL_ROUTES[section_key])),
@@ -199,12 +206,13 @@ def contact(request):
         if form.is_valid():
             cleaned = form.cleaned_data
             if cleaned.get("website"):
-                messages.success(request, "Thanks, your message has been sent.")
+                messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
                 return redirect("main_site:contact")
             if not verify_recaptcha_request(request, expected_action="contact"):
                 messages.error(
                     request,
                     "We could not verify this message. Please refresh the page and try again.",
+                    extra_tags="contact",
                 )
                 return _render_site_section(request, "contact", contact_form=form)
             if is_rate_limited(
@@ -217,6 +225,7 @@ def contact(request):
                 messages.error(
                     request,
                     "Too many messages have been sent from this connection. Please try again later.",
+                    extra_tags="contact",
                 )
                 return _render_site_section(request, "contact", contact_form=form)
             message_body = (
@@ -238,13 +247,18 @@ def contact(request):
                 messages.error(
                     request,
                     "Your message could not be sent right now. Please try again in a moment.",
+                    extra_tags="contact",
                 )
                 return _render_site_section(request, "contact", contact_form=form)
 
-            messages.success(request, "Thanks, your message has been sent.")
+            messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
             return redirect("main_site:contact")
 
-        messages.error(request, "Please correct the highlighted fields and try again.")
+        messages.error(
+            request,
+            "Please correct the highlighted fields and try again.",
+            extra_tags="contact",
+        )
         return _render_site_section(request, "contact", contact_form=form)
 
     return _render_site_section(request, "contact")

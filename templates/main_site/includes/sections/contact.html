@@ -1,8 +1,8 @@
 <article id="contact">
     <h2 class="major">Contact</h2>
-    {% if messages %}
+    {% if contact_messages %}
         <ul class="contact-form-messages">
-            {% for message in messages %}
+            {% for message in contact_messages %}
                 <li
                     class="contact-form-message {{ message.tags }}"
                     {% if 'success' in message.tags %}data-analytics-contact-success{% endif %}
