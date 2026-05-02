@@ -194,6 +194,8 @@ def disable_csp_upgrade_for_browser_live_server(request: pytest.FixtureRequest, 
     """Keep HTTP-only Playwright live-server assets loadable in WebKit."""
     if request.node.get_closest_marker("browser"):
         settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = False
+        settings.RECAPTCHA_SITE_KEY = ""
+        settings.RECAPTCHA_SECRET_KEY = ""
 
 
 @pytest.fixture(autouse=True)
