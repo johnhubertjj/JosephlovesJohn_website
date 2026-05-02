@@ -13,15 +13,27 @@
     }
 
     function emitPreferenceChange(preference) {
-        if (typeof CustomEvent !== "function") {
+        var event;
+
+        if (typeof CustomEvent === "function") {
+            event = new CustomEvent("site:cookie-preference-changed", {
+                detail: { preference: preference || "" }
+            });
+        } else if (typeof document.createEvent === "function") {
+            event = document.createEvent("CustomEvent");
+            event.initCustomEvent(
+                "site:cookie-preference-changed",
+                false,
+                false,
+                { preference: preference || "" }
+            );
+        }
+
+        if (!event) {
             return;
         }
 
-        document.dispatchEvent(
-            new CustomEvent("site:cookie-preference-changed", {
-                detail: { preference: preference || "" }
-            })
-        );
+        document.dispatchEvent(event);
     }
 
     function applyPreferenceState(preference) {
