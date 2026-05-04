@@ -33,18 +33,7 @@
     <link rel="stylesheet" href="{% versioned_static 'assets/css/layout/footer.css' %}" />
     <noscript><link rel="stylesheet" href="{% versioned_static 'assets/css/vendor/noscript.css' %}" /></noscript>
     {% endblock %}
-    {% if analytics.plausible_enabled %}
-    <script>
-        window.plausible = window.plausible || function () {
-            (window.plausible.q = window.plausible.q || []).push(arguments);
-        };
-        window.plausible.init = window.plausible.init || function (options) {
-            window.plausible.o = options || {};
-        };
-        window.plausible.init();
-    </script>
-    <script async src="{{ analytics.plausible_script_src }}"></script>
-    {% endif %}
+    {% include 'includes/plausible.html' %}
     {% block head %}{% endblock %}
 </head>
 <body
