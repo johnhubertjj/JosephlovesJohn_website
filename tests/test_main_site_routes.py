@@ -77,6 +77,19 @@ def test_music_track_route_renders_clean_service_link_page(client) -> None:
     assert positions == sorted(positions)
 
 
+def test_music_track_route_renders_plausible_pageview_script(client, settings) -> None:
+    """Track pages should load Plausible so their paths appear in page reports."""
+    settings.PLAUSIBLE_DOMAIN = "josephlovesjohn.com"
+    settings.PLAUSIBLE_SCRIPT_SRC = "https://plausible.io/js/script.js"
+
+    response = client.get(reverse("main_site:music_track", args=["dark-and-light-instrumental"]))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert "window.plausible" in body
+    assert '<script async src="https://plausible.io/js/script.js"></script>' in body
+
+
 def test_music_track_route_omits_meta_pixel_without_configuration(client) -> None:
     """Track pages should not render Meta Pixel markup until a pixel ID is configured."""
     response = client.get(reverse("main_site:music_track", args=["dark-and-light"]))
