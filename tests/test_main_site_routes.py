@@ -72,6 +72,10 @@ def test_music_track_route_renders_clean_service_link_page(client) -> None:
     assert "/shop/" not in body
     assert "data-cookie-banner" in body
     assert "/static/main_site/js/cookies.js" in body
+    assert "/static/main_site/js/track_links.js" in body
+    assert 'data-track-link-service' in body
+    assert 'data-track-service="spotify"' in body
+    assert 'data-track-slug="dark-and-light-instrumental"' in body
     expected_order = ["Spotify", "iTunes", "Apple Music", "Bandcamp", "YouTube", "Amazon Music", "Deezer", "TIDAL"]
     positions = [body.index(f"<span>{label}</span>") for label in expected_order]
     assert positions == sorted(positions)

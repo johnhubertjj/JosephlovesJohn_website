@@ -48,7 +48,18 @@
 
         <div class="track-link-services" aria-label="Streaming services">
             {% for link in item.streaming_links %}
-                <a class="track-link-service" href="{{ link.href }}" target="_blank" rel="noopener noreferrer">
+                <a
+                    class="track-link-service"
+                    href="{{ link.href }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-track-link-service
+                    data-track-service="{{ link.label|slugify }}"
+                    data-track-service-label="{{ link.label }}"
+                    data-track-slug="{{ item.public_slug|default:item.slug }}"
+                    data-track-title="{{ item.title }}"
+                    data-track-destination="{{ link.href }}"
+                >
                     <span class="track-link-service-brand">
                         <span class="{{ link.icon_class }}" aria-hidden="true"></span>
                         <span>{{ link.label }}</span>
@@ -62,5 +73,6 @@
     <div id="bg"></div>
     <script src="{% versioned_static 'main_site/js/dom_utils.js' %}"></script>
     <script src="{% versioned_static 'main_site/js/cookies.js' %}"></script>
+    <script src="{% versioned_static 'main_site/js/track_links.js' %}"></script>
 </body>
 </html>
