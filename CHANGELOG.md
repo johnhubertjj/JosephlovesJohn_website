@@ -3,8 +3,16 @@
 This project follows simple semantic versioning for production releases:
 
 - `v1.0.0` was the first live public release of `josephlovesjohn.com`
-- the current package version is `v1.3.2`
+- the current package version is `v1.3.3`
 - the latest tagged release is `v1.1.1`
+
+## v1.3.3 - 2026-05-11
+
+- Added Plausible pageview tracking to the standalone track-link pages so `/music/dark-and-light/` and `/music/dark-and-light-instrumental/` appear as normal page paths in Plausible reports
+- Moved the Plausible bootstrap into a shared include so the main site and track pages use the same analytics setup
+- Added explicit `StreamingClick` Meta Pixel events for track-page streaming-service clicks, with track, service, destination, and page-path parameters for cleaner custom conversions
+- Added matching Plausible `Streaming Click` custom events for streaming-service clicks so Meta conversion data can be compared against first-party analytics
+- Added route coverage for the new track-link analytics attributes and scripts
 
 ## v1.3.2 - 2026-05-02
 
