@@ -12,15 +12,45 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
 
     assert response.status_code == 200
     for text in (
-        "Mastering Services",
+        "John Joseph Mastering",
         "Single, EP, and Album Mastering",
         "A Thoughtful, Song-First Process",
+        "Mastering Examples",
+        "Dark and Light (Instrumental)",
+        "Super Dungeon",
+        "Fumebreather",
+        'aria-label="Listen to on Spotify"',
+        'aria-label="Listen to on Bandcamp"',
+        "fa-spotify",
+        "fa-bandcamp",
         "What You Receive",
         "Get in touch",
-        "Contact via Main Site",
-        "Future Subfolder Placeholder",
+        "Pricing",
+        "First Single Master",
+        "Free!",
+        "If you are a new client, the first single track master is on me.",
+        "Master + Release Consultation/Walkthrough",
+        "Further Release Consultations",
+        "Send Message",
     ):
         assert text in body
+    assert "£50" in body
+    assert "£90" in body
+    assert "mastering-example-dark-and-light.jpg" in body
+    assert "mastering-example-super-dungeon.jpg" in body
+    assert body.count('class="mastering-example-player"') == 2
+    assert "https://w.soundcloud.com/player/" in body
+    assert "url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949" in body
+    assert "url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel" in body
+    assert "https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7" in body
+    assert "https://fumebreather.bandcamp.com/album/super-dungeon" in body
+    assert 'href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"' in body
+    assert ">Listen<" not in body
+    assert body.index('id="examples"') < body.index('id="contact"')
+    assert body.index('id="contact"') < body.index('id="pricing"')
+    assert body.index('id="pricing"') < body.index('id="services"')
+    assert 'action="/mastering-services/#contact"' in body
+    assert 'data-recaptcha-action="contact"' in body
     assert '<meta name="description"' in body
     assert 'href="http://127.0.0.1:8000/mastering-services/"' in body
 

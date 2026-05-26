@@ -41,6 +41,7 @@ def build_content_security_policy() -> str:
     stripe_origin = "https://checkout.stripe.com"
     recaptcha_origin = "https://www.google.com"
     recaptcha_static_origin = "https://www.gstatic.com"
+    soundcloud_widget_origin = "https://w.soundcloud.com"
     google_fonts_styles_origin = "https://fonts.googleapis.com"
     google_fonts_files_origin = "https://fonts.gstatic.com"
     meta_pixel_script_origin = "https://connect.facebook.net"
@@ -106,7 +107,7 @@ def build_content_security_policy() -> str:
                 *extra_sources,
             ],
         ),
-        _directive("frame-src", [kit_origin, stripe_origin, recaptcha_origin]),
+        _directive("frame-src", [kit_origin, stripe_origin, recaptcha_origin, soundcloud_widget_origin]),
     ]
 
     if settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS:

@@ -82,6 +82,451 @@
                 transform: translateY(0) scale(1);
             }
         }
+
+        body {
+            background-color: #151821;
+            background-image:
+                linear-gradient(to top, rgba(21, 24, 33, 0.86), rgba(21, 24, 33, 0.72)),
+                url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+            background-size: auto, cover;
+            background-position: center, center;
+        }
+
+        #banner {
+            display: flex;
+            align-items: flex-end;
+            min-height: 82vh;
+            margin-bottom: -6.5em;
+            padding: 10em 0 9em;
+            background-color: #151821;
+            background-image:
+                linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
+                url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+            background-size: auto, cover;
+            background-position: center, center;
+        }
+
+        #menu .inner {
+            background: #5c1828;
+        }
+
+        #menu .links li a:hover {
+            background: rgba(105, 177, 116, 0.16);
+        }
+
+        body,
+        body input,
+        body select,
+        body textarea,
+        body h1,
+        body h2,
+        body h3,
+        body h4,
+        body h5,
+        body h6,
+        body p,
+        body a,
+        body li,
+        body label,
+        body strong,
+        body b {
+            color: #ffffff;
+        }
+
+        #banner .logo {
+            display: none;
+        }
+
+        #banner .mastering-profile {
+            display: block;
+            width: 7.5rem;
+            height: 7.5rem;
+            margin: 0 0 1.1rem;
+            border: solid 2px rgba(255, 255, 255, 0.78);
+            border-radius: 50%;
+            box-shadow: 0 0.75rem 1.8rem rgba(0, 0, 0, 0.42);
+            object-fit: cover;
+            object-position: center;
+        }
+
+        #banner h2,
+        #banner p {
+            text-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.55);
+        }
+
+        #banner .inner {
+            position: relative;
+            z-index: 1;
+            transform: translateY(-1rem);
+        }
+
+        .wrapper.spotlight .image img,
+        .features article .image img {
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .features article .image img {
+            aspect-ratio: 16 / 9;
+        }
+
+        .wrapper.spotlight.style1 {
+            background-color: #185d22;
+            color: #ffffff;
+        }
+
+        .wrapper.spotlight.style1:before,
+        .wrapper.spotlight.style1:after {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,100 100,0 100,100' style='fill:%23185D22%3B' /%3E%3C/svg%3E");
+        }
+
+        .wrapper.spotlight.style1:before,
+        .wrapper.spotlight.style1:after {
+            box-shadow: inset 0 -1px 0 0 #185d22, 0 1px 0 0 #185d22;
+        }
+
+        .wrapper.spotlight.style2 {
+            background-color: #5c1828;
+            color: #ffffff;
+        }
+
+        .wrapper.spotlight.style2:before,
+        .wrapper.spotlight.style2:after {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,100 100,0 100,100' style='fill:%235C1828%3B' /%3E%3C/svg%3E");
+        }
+
+        .wrapper.spotlight.style2:before,
+        .wrapper.spotlight.style2:after {
+            box-shadow: inset 0 -1px 0 0 #5c1828, 0 1px 0 0 #5c1828;
+        }
+
+        .wrapper.style2 {
+            background-color: #5c1828;
+            color: #ffffff;
+        }
+
+        .wrapper.style2:before,
+        .wrapper.style2:after {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,100 100,0 100,100' style='fill:%235C1828%3B' /%3E%3C/svg%3E");
+        }
+
+        .wrapper.style2:before,
+        .wrapper.style2:after {
+            box-shadow: inset 0 -1px 0 0 #5c1828, 0 1px 0 0 #5c1828;
+        }
+
+        .wrapper.style3 {
+            background-color: #5c4a18;
+            color: #ffffff;
+        }
+
+        .wrapper.style3:before,
+        .wrapper.style3:after {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,100 100,0 100,100' style='fill:%235C4A18%3B' /%3E%3C/svg%3E");
+        }
+
+        .wrapper.style3:after {
+            background-color: #5c4a18;
+        }
+
+        #examples:before {
+            -moz-transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            -ms-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+        .wrapper.style3:before,
+        .wrapper.style3:after {
+            box-shadow: inset 0 -1px 0 0 #5c4a18, 0 1px 0 0 #5c4a18;
+        }
+
+        .wrapper.style4 {
+            background-color: #18265c;
+            color: #ffffff;
+        }
+
+        .wrapper.style4 .major {
+            border-bottom-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .wrapper.style4:before,
+        .wrapper.style4:after {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,100 100,0 100,100' style='fill:%2318265C%3B' /%3E%3C/svg%3E");
+        }
+
+        .wrapper.style4:before,
+        .wrapper.style4:after {
+            box-shadow: inset 0 -1px 0 0 #18265c, 0 1px 0 0 #18265c;
+        }
+
+        #pricing:before {
+            -moz-transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            -ms-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+        #pricing:after {
+            -moz-transform: scaleY(-1) scaleX(-1);
+            -webkit-transform: scaleY(-1) scaleX(-1);
+            -ms-transform: scaleY(-1) scaleX(-1);
+            transform: scaleY(-1) scaleX(-1);
+        }
+
+        .wrapper.spotlight.style1 h2,
+        .wrapper.spotlight.style1 h3,
+        .wrapper.spotlight.style1 p,
+        .wrapper.style2 h2,
+        .wrapper.style2 h3,
+        .wrapper.style2 p,
+        .wrapper.spotlight.style2 h2,
+        .wrapper.spotlight.style2 h3,
+        .wrapper.spotlight.style2 p,
+        .wrapper.style3 h2,
+        .wrapper.style3 h3,
+        .wrapper.style3 p,
+        .wrapper.style4 h2,
+        .wrapper.style4 h3,
+        .wrapper.style4 p {
+            color: inherit;
+        }
+
+        .mastering-example-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        #examples {
+            scroll-margin-top: 4.5rem;
+        }
+
+        .mastering-example {
+            padding: 1.5rem;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.045);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+        }
+
+        .mastering-example-cover {
+            display: block;
+            border: 0;
+        }
+
+        .mastering-example-cover img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+
+        .mastering-example h3 {
+            margin-top: 1.4rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .mastering-example-listen-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0 0 1rem;
+            border-bottom: dotted 1px rgba(255, 255, 255, 0.45);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+        }
+
+        .mastering-example-listen-icon {
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .mastering-example p {
+            margin-bottom: 1.25rem;
+        }
+
+        .mastering-example-player {
+            width: 100%;
+            height: 166px;
+            margin: 0 0 1.25rem;
+            border: 0;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.28);
+        }
+
+        .mastering-example .actions {
+            margin-bottom: 0;
+        }
+
+        .mastering-contact-form-messages {
+            margin: 0 0 2rem;
+            padding: 0;
+            list-style: none;
+        }
+
+        .mastering-contact-form-message {
+            margin-bottom: 0.75rem;
+            padding: 0.85rem 1rem;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+
+        .mastering-contact-form-message.error {
+            background: rgba(92, 24, 40, 0.48);
+        }
+
+        .mastering-contact-form-message.success {
+            background: rgba(24, 93, 34, 0.56);
+        }
+
+        .mastering-contact-form-error {
+            margin-top: 0.35rem;
+            font-size: 0.85rem;
+            color: #ffffff;
+        }
+
+        .mastering-pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .mastering-price-card {
+            min-height: 12rem;
+            padding: 1.6rem;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.055);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11);
+        }
+
+        .mastering-price {
+            display: block;
+            margin: 0.45rem 0 1rem;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.06rem;
+            line-height: 1;
+        }
+
+        @media screen and (max-width: 1680px) {
+            #banner .inner {
+                transform: translateY(-4.1rem);
+            }
+        }
+
+        @media screen and (max-width: 1280px) {
+            #banner {
+                background-image:
+                    linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
+                    url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+                background-size: auto, cover;
+                background-position: center, center;
+            }
+        }
+
+        @media screen and (max-width: 736px) {
+            #banner {
+                align-items: flex-end;
+                min-height: 34rem;
+                padding: 8em 2em 5em;
+                background-position: 58% center;
+            }
+
+            #banner .inner {
+                transform: translateY(-4.5rem);
+            }
+
+            #banner .mastering-profile {
+                width: 5.7rem;
+                height: 5.7rem;
+                margin-bottom: 0.85rem;
+            }
+
+            .mastering-example-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .mastering-pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mastering-example-cover {
+                max-width: 18rem;
+            }
+        }
+
+        @media screen and (max-width: 676px) {
+            #banner .inner {
+                transform: translateY(-4.8rem);
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            #banner .inner {
+                transform: translateY(-3rem);
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            #banner .inner {
+                transform: translateY(-3rem);
+            }
+
+            #header h1 {
+                display: none;
+            }
+
+            #header nav {
+                gap: 0.45rem;
+                right: 0.5rem;
+            }
+
+            #header nav a.mastering-home-trigger,
+            #header nav a.mastering-menu-trigger {
+                height: 2.45rem;
+                min-width: 0;
+                padding: 0 0.75rem;
+                font-size: 0.7rem;
+                letter-spacing: 0.12rem;
+            }
+
+            #header nav a.mastering-menu-trigger {
+                position: static;
+                width: auto;
+                text-indent: 0;
+            }
+
+            #header nav a.mastering-menu-trigger:before {
+                position: static;
+                width: auto;
+                margin-left: 0.5rem;
+                padding-right: 0;
+                text-align: inherit;
+            }
+
+            #header nav a.mastering-home-trigger {
+                flex: 1 1 auto;
+                max-width: calc(100vw - 7rem);
+                font-size: 0.56rem;
+                letter-spacing: 0.04rem;
+                line-height: 1.15;
+                white-space: normal;
+            }
+
+        }
+
+        @media screen and (max-width: 360px) {
+            #banner .inner {
+                transform: translateY(-1rem);
+            }
+        }
     </style>
 </head>
 <body class="is-preload{% if entered_from_home %} is-from-home{% endif %}">
@@ -89,22 +534,23 @@
 <div id="page-wrapper">
 
     <header id="header" class="alt">
-        <h1><a href="{% url 'main_site:main' %}">JosephlovesJohn</a></h1>
+        <h1><a href="{% url 'main_site:main' %}">John Joseph Mastering</a></h1>
         <nav>
-            <a href="{% url 'main_site:main' %}" class="mastering-home-trigger">Homepage</a>
+            <a href="{% url 'main_site:main' %}" class="mastering-home-trigger">Josephlovesjohn - Artist page</a>
             <a href="#menu" class="mastering-menu-trigger">Menu</a>
         </nav>
     </header>
 
     <nav id="menu">
         <div class="inner">
-            <h2>Mastering Services</h2>
+            <h2>John Joseph Mastering</h2>
             <ul class="links">
                 <li><a href="{% url 'main_site:main' %}">Home</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#services">Services</a></li>
                 <li><a href="#process">Process</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="{% url 'mastering:subfolder' 'future-folder' %}">Future Subfolder Placeholder</a></li>
             </ul>
             <a href="#" class="close">Close</a>
         </div>
@@ -113,58 +559,216 @@
     <section id="banner">
         <div class="inner">
             <div class="logo"><span class="icon fa-gem"></span></div>
-            <h2>Mastering Services</h2>
-            <p>Independent, taste-first mastering focused on depth, clarity, and emotional translation without flattening the character out of the mix.</p>
+            <img
+                src="{% static 'mastering/images/john-joseph-profile.jpg' %}"
+                alt="John Joseph"
+                class="mastering-profile"
+            />
+            <h2>John Joseph Mastering</h2>
+            <p>Taste-first mastering focused on depth, clarity, and emotional translation without flattening the character out of the mix.</p>
         </div>
     </section>
 
     <section id="wrapper">
+        <section id="examples" class="wrapper style3">
+            <div class="inner">
+                <h2 class="major">Mastering Examples</h2>
+                <p>A small selection of finished work, linked for listening reference.</p>
+                <div class="mastering-example-grid">
+                    <article class="mastering-example">
+                        <a
+                            href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"
+                            class="mastering-example-cover"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            <img
+                                src="{% static 'mastering/images/mastering-example-dark-and-light.jpg' %}"
+                                alt="Dark and Light instrumental cover art"
+                            />
+                        </a>
+                        <div>
+                            <h3 class="major">Dark and Light (Instrumental)</h3>
+                            <a
+                                href="https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7"
+                                class="mastering-example-listen-link"
+                                target="_blank"
+                                rel="noopener"
+                                aria-label="Listen to on Spotify"
+                            >Listen to on <span class="icon brands fa-spotify mastering-example-listen-icon" aria-hidden="true"></span>Spotify</a>
+                            <p>Mastering example with a spacious, atmospheric instrumental focus.</p>
+                            <iframe
+                                class="mastering-example-player"
+                                title="SoundCloud player for Dark and Light instrumental"
+                                scrolling="no"
+                                allow="autoplay; encrypted-media"
+                                loading="lazy"
+                                src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949&color=%235c1828&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"
+                            ></iframe>
+                        </div>
+                    </article>
+                    <article class="mastering-example">
+                        <a
+                            href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"
+                            class="mastering-example-cover"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            <img
+                                src="{% static 'mastering/images/mastering-example-super-dungeon.jpg' %}"
+                                alt="Super Dungeon by Fumebreather cover art"
+                            />
+                        </a>
+                        <div>
+                            <h3 class="major">Super Dungeon</h3>
+                            <a
+                                href="https://fumebreather.bandcamp.com/album/super-dungeon"
+                                class="mastering-example-listen-link"
+                                target="_blank"
+                                rel="noopener"
+                                aria-label="Listen to on Bandcamp"
+                            >Listen to on <span class="icon brands fa-bandcamp mastering-example-listen-icon" aria-hidden="true"></span>Bandcamp</a>
+                            <p>By Fumebreather. A heavier, high-energy mastering reference with bold artwork.</p>
+                            <iframe
+                                class="mastering-example-player"
+                                title="SoundCloud player for Super Dungeon by Fumebreather"
+                                scrolling="no"
+                                allow="autoplay"
+                                loading="lazy"
+                                src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel&color=%235c1828&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false"
+                            ></iframe>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="wrapper style4">
+            <div class="inner">
+                <h2 class="major">Get in touch</h2>
+                <p>If you want to discuss a project, send over your mix status, target release format, rough timeline, and any reference tracks or notes about feel and tone.</p>
+                {% if contact_messages %}
+                    <ul class="mastering-contact-form-messages">
+                        {% for message in contact_messages %}
+                            <li
+                                class="mastering-contact-form-message {{ message.tags }}"
+                                {% if 'success' in message.tags %}data-analytics-contact-success{% endif %}
+                            >{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <form method="post" action="{% url 'mastering:home' %}#contact" data-analytics-contact-form data-recaptcha-action="contact">
+                    {% csrf_token %}
+                    <input type="hidden" name="g-recaptcha-response" value="" />
+                    <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+                        <label for="{{ contact_form.website.id_for_label }}">Website</label>
+                        {{ contact_form.website }}
+                    </div>
+                    <div class="fields">
+                        <div class="field half">
+                            <label for="{{ contact_form.name.id_for_label }}">Name</label>
+                            {{ contact_form.name }}
+                            {% if contact_form.name.errors %}
+                                <p class="mastering-contact-form-error">{{ contact_form.name.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ contact_form.email.id_for_label }}">Email</label>
+                            {{ contact_form.email }}
+                            {% if contact_form.email.errors %}
+                                <p class="mastering-contact-form-error">{{ contact_form.email.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="field">
+                            <label for="{{ contact_form.message.id_for_label }}">Message</label>
+                            {{ contact_form.message }}
+                            {% if contact_form.message.errors %}
+                                <p class="mastering-contact-form-error">{{ contact_form.message.errors|join:", " }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <ul class="actions">
+                        <li><input type="submit" value="Send Message" class="primary" /></li>
+                        <li><input type="reset" value="Reset" /></li>
+                    </ul>
+                </form>
+            </div>
+        </section>
+
+        <section id="pricing" class="wrapper style2">
+            <div class="inner">
+                <h2 class="major">Pricing</h2>
+                <div class="mastering-pricing-grid">
+                    <article class="mastering-price-card">
+                        <h3 class="major">First Single Master</h3>
+                        <span class="mastering-price">Free!</span>
+                        <p>If you are a new client, the first single track master is on me.</p>
+                    </article>
+                    <article class="mastering-price-card">
+                        <h3 class="major">Master</h3>
+                        <span class="mastering-price">£50</span>
+                        <p>A finished master prepared for release with unlimited revisions.</p>
+                    </article>
+                    <article class="mastering-price-card">
+                        <h3 class="major">Master + Release Consultation/Walkthrough</h3>
+                        <span class="mastering-price">£90</span>
+                        <p>A finished master plus guidance on release strategy, advertising and DIY artwork/photos.</p>
+                    </article>
+                    <article class="mastering-price-card">
+                        <h3 class="major">Further Release Consultations</h3>
+                        <span class="mastering-price">£50</span>
+                        <p>Additional release support for strategy, artwork, distribution, adverts, or website planning.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
         <section id="services" class="wrapper spotlight style1">
             <div class="inner">
-                <a href="#" class="image"><img src="{% static 'mastering/images/pic01.jpg' %}" alt="Studio console detail" /></a>
+                <span class="image"><img src="{% static 'mastering/images/mastering-gear-rack.jpg' %}" alt="Mastering rack and studio monitor" /></span>
                 <div class="content">
                     <h2 class="major">Single, EP, and Album Mastering</h2>
-                    <p>Mastering is approached as the final musical decision, not just a loudness pass. The goal is to keep the emotion, weight, and movement of the mix intact while improving balance, focus, and playback consistency.</p>
-                    <p>Whether you are releasing one track or a full body of work, the result is shaped to feel finished, confident, and coherent across streaming, headphones, speakers, and real-world listening environments.</p>
+                    <p>Mastering should be personalised and perfected to your tastes and vision, not just a loudness pass. I believe open communication across the entire process is vital to get your mixes sounding professional.</p>
+                    <p>Whether you are releasing one track or a full body of work, I aim to produce a result that is shaped to feel finished, confident, and coherent across streaming, headphones, speakers, and real-world listening environments.</p>
                 </div>
             </div>
         </section>
 
         <section id="process" class="wrapper alt spotlight style2">
             <div class="inner">
-                <a href="#" class="image"><img src="{% static 'mastering/images/pic02.jpg' %}" alt="Outboard rack equipment" /></a>
+                <span class="image"><img src="{% static 'mastering/images/mastering-fader-detail.jpg' %}" alt="Mixing desk faders" /></span>
                 <div class="content">
                     <h2 class="major">A Thoughtful, Song-First Process</h2>
-                    <p>Each master is checked for tonal balance, low-end control, dynamic contour, stereo image, and sequencing continuity where needed. The emphasis is always on what serves the song rather than chasing generic brightness or level.</p>
-                    <p>Reference tracks, release notes, and format requirements can all be folded into the process so the final master supports the exact context in which the music will be heard.</p>
+                    <p>Each master is checked for tonal balance, low-end control, clarity, space and depth. The emphasis is always on what serves the song, rather than chasing generic brightness or level.</p>
+                    <p>An input form is provided so that reference tracks, release notes, and format requirements can all be folded into the process so the final master supports the exact context in which the music will be heard.</p>
                 </div>
             </div>
         </section>
 
-        <section class="wrapper style3">
+        <section class="wrapper style4">
             <div class="inner">
                 <h2 class="major">What You Receive</h2>
                 <p>Every project is delivered with practical release use in mind, so you have files that are immediately usable and a result that still feels like your record.</p>
                 <section class="features">
                     <article>
-                        <a href="#" class="image"><img src="{% static 'mastering/images/pic04.jpg' %}" alt="Waveform display" /></a>
+                        <span class="image"><img src="{% static 'mastering/images/mastering-pad-controller.jpg' %}" alt="Colourful pad controller on a studio desk" /></span>
                         <h3 class="major">Release-Ready Masters</h3>
                         <p>Polished stereo masters prepared for digital release, with careful level and tonal decisions that hold up without sounding crushed or overworked.</p>
                     </article>
                     <article>
-                        <a href="#" class="image"><img src="{% static 'mastering/images/pic05.jpg' %}" alt="Studio speakers" /></a>
-                        <h3 class="major">Clear Revision Passes</h3>
-                        <p>If a small adjustment is needed after review, revisions can be used to fine-tune tone, level, or feel without losing the original direction.</p>
+                        <span class="image"><img src="{% static 'mastering/images/mastering-drum-kit.jpg' %}" alt="Drum kit in a rehearsal room" /></span>
+                        <h3 class="major">Unlimited Revision Passes</h3>
+                        <p>Your music should sound how you want it to sound. I will not stop a project until it is perfected to your vision.</p>
                     </article>
                     <article>
-                        <a href="#" class="image"><img src="{% static 'mastering/images/pic06.jpg' %}" alt="Metering detail" /></a>
+                        <span class="image"><img src="{% static 'mastering/images/mastering-keyboard-controller.jpg' %}" alt="Keyboard controller with illuminated display" /></span>
                         <h3 class="major">Context-Aware Delivery</h3>
-                        <p>Delivery can be tailored to your release path, whether that means streaming-first output, sequence-aware project work, or multiple versions for different uses.</p>
+                        <p>Delivery can be tailored to your release path, whether that means streaming-first output, CD or vinyl.</p>
                     </article>
                     <article>
-                        <a href="#" class="image"><img src="{% static 'mastering/images/pic07.jpg' %}" alt="Studio room ambience" /></a>
-                        <h3 class="major">Collaborative Notes</h3>
-                        <p>Reference notes, artistic intent, and release goals are welcomed so the mastering decisions stay aligned with the record you actually want to put out.</p>
+                        <span class="image"><img src="{% static 'mastering/images/mastering-guitars.jpg' %}" alt="Electric guitars against a textured wall" /></span>
+                        <h3 class="major">Release Strategy Advice</h3>
+                        <p>Music doesn't stop at the master, advice on website design, adverts, distribution and artwork can be added on if you are stuck on how to get your music heard.</p>
                     </article>
                 </section>
             </div>
@@ -172,12 +776,7 @@
     </section>
 
     <section id="footer">
-        <div class="inner" id="contact">
-            <h2 class="major">Get in touch</h2>
-            <p>If you want to discuss a project, send over your mix status, target release format, rough timeline, and any reference tracks or notes about feel and tone.</p>
-            <ul class="actions">
-                <li><a href="{% url 'main_site:contact' %}" class="button">Contact via Main Site</a></li>
-            </ul>
+        <div class="inner">
             <ul class="copyright">
                 <li>&copy; JosephlovesJohn. All rights reserved.</li>
                 <li>Design base: <a href="https://html5up.net">HTML5 UP</a></li>
@@ -193,5 +792,6 @@
 <script src="{% static 'mastering/assets/js/breakpoints.min.js' %}"></script>
 <script src="{% static 'mastering/assets/js/util.js' %}"></script>
 <script src="{% static 'mastering/assets/js/main.js' %}"></script>
+{% include 'includes/recaptcha_v3.html' %}
 </body>
 </html>

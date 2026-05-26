@@ -10,8 +10,13 @@
 {% endblock %}
 
 {% block content %}
+    {% if active_section|default:'main' == 'main' %}
+        {% include 'main_site/includes/layout/top_nav.html' %}
+    {% endif %}
+
     <div
         id="wrapper"
+        {% if active_section|default:'main' == 'main' %}class="has-top-nav"{% endif %}
         data-playerjs-src="{% versioned_static 'assets/js/playerjs_v4.js' %}"
         data-route-section="{{ active_section|default:'main' }}"
     >

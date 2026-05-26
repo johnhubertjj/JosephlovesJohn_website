@@ -16,6 +16,7 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
     assert response.status_code == 200
     for fragment in (
+        'id="top-nav"',
         'id="header"',
         'id="main"',
         'id="footer"',
@@ -55,18 +56,30 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
-    """The intro route should expose the delayed signup form gate and mastering CTA."""
+    """The intro route should expose the delayed signup form gate without the homepage mastering button."""
     response = client.get(reverse("main_site:intro"))
     body = response.content.decode()
 
     assert response.status_code == 200
+    assert 'id="top-nav"' not in body
+    assert 'data-mastering-link="true"' not in body
     assert 'aria-label="Sign up for updates"' in body
     assert 'data-signup-root' in body
     assert 'data-kit-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in body
     assert 'data-signup-gate' in body
     assert "Open signup form" in body
     assert 'href="https://josephlovesjohn.kit.com/408ee57c19"' in body
-    assert f'href="{reverse("mastering:home")}"' in body
+
+
+@pytest.mark.parametrize("route_name", ("main_site:music", "main_site:art", "main_site:contact"))
+def test_section_routes_do_not_render_homepage_mastering_button(client, route_name) -> None:
+    """The mastering top-nav button should only render on the main screen."""
+    response = client.get(reverse(route_name))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'id="top-nav"' not in body
+    assert 'data-mastering-link="true"' not in body
 
 
 def test_music_page_smoke_renders_all_published_tracks_and_share_controls(client) -> None:

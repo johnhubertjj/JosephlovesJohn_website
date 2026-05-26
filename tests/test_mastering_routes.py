@@ -12,7 +12,7 @@ def test_mastering_home_renders_default_context(client) -> None:
 
     assert response.status_code == 200
     assert response.context["entered_from_home"] is False
-    assert "Mastering Services" in response.content.decode()
+    assert "John Joseph Mastering" in response.content.decode()
 
 
 def test_mastering_home_marks_requests_arriving_from_main_site(client) -> None:
