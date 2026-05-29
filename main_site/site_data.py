@@ -130,7 +130,7 @@ MUSIC_TRACK_SLUG_ALIASES = {
 }
 
 
-def _static_file_exists(relative_path):
+def static_file_exists(relative_path):
     """Check whether a static asset exists on disk.
 
     :param relative_path: Path relative to the ``static`` directory.
@@ -150,7 +150,7 @@ def _static_file_size(relative_path):
     return static_path.stat().st_size
 
 
-def _uploaded_file_exists(file_field):
+def uploaded_file_exists(file_field):
     """Check whether an uploaded media file exists in storage."""
     if not file_field:
         return False
@@ -165,24 +165,29 @@ def _uploaded_file_exists(file_field):
         return False
 
 
-def _resolve_asset_source(static_path="", uploaded_file=None):
+def resolve_asset_source(static_path="", uploaded_file=None):
     """Resolve a gallery asset to a URL, preferring uploaded files."""
-    if uploaded_file and _uploaded_file_exists(uploaded_file):
+    if uploaded_file and uploaded_file_exists(uploaded_file):
         return {
             "path": uploaded_file.name,
             "url": uploaded_file.url,
             "is_static": False,
         }
 
-    return resolve_public_asset_source(static_path, file_exists=_static_file_exists)
+    return resolve_public_asset_source(static_path, file_exists=static_file_exists)
+
+
+def _normalized_static_asset_path(asset):
+    """Return a normalized path for a static asset, otherwise None."""
+    if not asset or not asset.get("is_static"):
+        return None
+
+    return normalize_asset_path(cast(str, asset.get("path") or "")) or None
 
 
 def _resolve_static_webp_variant(asset):
     """Return a sibling WebP asset for a static source when one exists."""
-    if not asset or not asset.get("is_static"):
-        return None
-
-    normalized_path = normalize_asset_path(cast(str, asset.get("path") or ""))
+    normalized_path = _normalized_static_asset_path(asset)
     if not normalized_path:
         return None
 
@@ -193,7 +198,7 @@ def _resolve_static_webp_variant(asset):
         }
 
     webp_path = str(Path(normalized_path).with_suffix(".webp"))
-    if not settings.PUBLIC_ASSET_BASE_URL and not _static_file_exists(webp_path):
+    if not settings.PUBLIC_ASSET_BASE_URL and not static_file_exists(webp_path):
         return None
 
     return {
@@ -204,10 +209,7 @@ def _resolve_static_webp_variant(asset):
 
 def _resolve_smaller_static_video_variant(asset):
     """Return a smaller sibling MP4 for a static GIF source when available."""
-    if not asset or not asset.get("is_static"):
-        return None
-
-    normalized_path = normalize_asset_path(cast(str, asset.get("path") or ""))
+    normalized_path = _normalized_static_asset_path(asset)
     if not normalized_path or not normalized_path.lower().endswith(".gif"):
         return None
 
@@ -233,13 +235,13 @@ def _resolve_smaller_static_video_variant(asset):
     }
 
 
-def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path="", thumbnail_file=None, alt_text=""):
+def build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path="", thumbnail_file=None, alt_text=""):
     """Build a gallery item dictionary when the referenced files exist."""
-    image_asset = _resolve_asset_source(static_path=image_path, uploaded_file=image_file)
+    image_asset = resolve_asset_source(static_path=image_path, uploaded_file=image_file)
     if not image_asset:
         return None
 
-    thumbnail_asset = _resolve_asset_source(static_path=thumbnail_path, uploaded_file=thumbnail_file) or image_asset
+    thumbnail_asset = resolve_asset_source(static_path=thumbnail_path, uploaded_file=thumbnail_file) or image_asset
     item = {
         "title": title,
         "image_path": image_asset["path"],
@@ -255,7 +257,7 @@ def _build_gig_photo_item(title, image_path="", image_file=None, thumbnail_path=
     return item
 
 
-def _build_album_art_item(
+def build_album_art_item(
     *,
     kind,
     title,
@@ -268,7 +270,7 @@ def _build_album_art_item(
     poster_file=None,
 ):
     """Build an album art or animation item when the referenced files exist."""
-    asset = _resolve_asset_source(static_path=asset_path, uploaded_file=asset_file)
+    asset = resolve_asset_source(static_path=asset_path, uploaded_file=asset_file)
     if not asset:
         return None
 
@@ -303,14 +305,14 @@ def _build_album_art_item(
             item["thumbnail_webp_url"] = thumbnail_webp_asset["url"]
     if kind == "video":
         item["mime_type"] = mimetypes.guess_type(asset["path"])[0] or "video/mp4"
-        poster = _resolve_asset_source(static_path=poster_path, uploaded_file=poster_file)
+        poster = resolve_asset_source(static_path=poster_path, uploaded_file=poster_file)
         item["poster"] = poster["path"] if poster else ""
         item["poster_url"] = poster["url"] if poster else ""
         item["show_controls"] = True
     return item
 
 
-def _get_header_social_links() -> list[HeaderSocialLinkItem]:
+def get_header_social_links() -> list[HeaderSocialLinkItem]:
     """Return active header social links in display order."""
     def _build() -> list[HeaderSocialLinkItem]:
         try:
@@ -351,7 +353,7 @@ def _get_header_social_links() -> list[HeaderSocialLinkItem]:
     return cache_shared_content("header-social-links", _build, cache_empty=False)
 
 
-def _get_primary_nav_items():
+def get_primary_nav_items():
     """Return active primary nav items in display order."""
     def _build():
         try:
@@ -366,7 +368,7 @@ def _get_primary_nav_items():
     return cache_shared_content("primary-nav-items", _build, cache_empty=False)
 
 
-def _get_gig_photo_items():
+def get_gig_photo_items():
     """Return active gig photo items for the art gallery.
 
     The function prefers admin-managed database records and falls back to the
@@ -383,7 +385,7 @@ def _get_gig_photo_items():
 
         items = []
         for photo in configured_gig_photos:
-            item = _build_gig_photo_item(
+            item = build_gig_photo_item(
                 title=photo.title,
                 image_path=photo.image_path,
                 image_file=photo.image_file,
@@ -399,7 +401,7 @@ def _get_gig_photo_items():
     return cache_shared_content("gig-photo-items", _build, cache_empty=False)
 
 
-def _get_album_art_items():
+def get_album_art_items():
     """Return album art entries whose backing static assets still exist.
 
     :returns: A list of album art dictionaries ready for template rendering.
@@ -414,7 +416,7 @@ def _get_album_art_items():
 
         items = []
         for asset in configured_album_art:
-            item = _build_album_art_item(
+            item = build_album_art_item(
                 kind="image",
                 title=asset.title,
                 asset_path=asset.image_path,
@@ -427,7 +429,7 @@ def _get_album_art_items():
                 items.append((asset.sort_order, 0, asset.id, item))
 
         for animation in configured_animations:
-            item = _build_album_art_item(
+            item = build_album_art_item(
                 kind=animation.media_kind,
                 title=animation.title,
                 asset_path=animation.file_path,
@@ -447,7 +449,7 @@ def _get_album_art_items():
     return cache_shared_content("album-art-items", _build, cache_empty=False)
 
 
-def _get_music_library_items():
+def get_music_library_items():
     """Return music library items with a precomputed share route.
 
     :returns: Music library dictionaries enriched for template rendering.
@@ -494,13 +496,13 @@ def _get_music_library_items():
     return cache_shared_content(MUSIC_LIBRARY_CACHE_KEY, _build, cache_empty=False)
 
 
-def _get_music_library_item(slug):
+def get_music_library_item(slug):
     """Return one published music library item by slug."""
     resolved_slug = MUSIC_TRACK_SLUG_ALIASES.get(slug, slug)
     return next(
         (
             item
-            for item in _get_music_library_items()
+            for item in get_music_library_items()
             if item.get("slug") == resolved_slug or item.get("public_slug") == resolved_slug
         ),
         None,

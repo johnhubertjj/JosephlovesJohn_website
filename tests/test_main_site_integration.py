@@ -4,7 +4,7 @@ import pytest
 from django.template.loader import render_to_string
 from django.test import override_settings
 from django.urls import reverse
-from main_site import views
+from main_site import context as site_context
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto
 
 
@@ -96,7 +96,7 @@ def test_art_route_combines_album_art_and_animation_items(create_static_asset, c
 @pytest.mark.integration
 def test_music_route_renders_component_empty_state_when_tracks_are_missing(client, monkeypatch) -> None:
     """The music section should fall back to its reusable empty-state container."""
-    monkeypatch.setattr(views, "_get_music_library_items", lambda: [])
+    monkeypatch.setattr(site_context, "get_music_library_items", lambda: [])
 
     response = client.get(reverse("main_site:music"))
     body = response.content.decode()
@@ -116,7 +116,7 @@ def test_music_route_replaces_buy_button_for_signed_in_owners(client, django_use
         password="secret123",
     )
     client.force_login(user)
-    monkeypatch.setattr(views, "get_owned_product_slugs", lambda user, *, slugs=None: {slugs[0]})
+    monkeypatch.setattr(site_context, "get_owned_product_slugs", lambda user, *, slugs=None: {slugs[0]})
 
     response = client.get(reverse("main_site:music"))
     body = response.content.decode()
@@ -130,8 +130,8 @@ def test_music_route_replaces_buy_button_for_signed_in_owners(client, django_use
 @pytest.mark.integration
 def test_art_route_renders_component_empty_states_when_galleries_are_empty(client, monkeypatch) -> None:
     """The art section should surface both empty states when no gallery items exist."""
-    monkeypatch.setattr(views, "_get_gig_photo_items", lambda: [])
-    monkeypatch.setattr(views, "_get_album_art_items", lambda: [])
+    monkeypatch.setattr(site_context, "get_gig_photo_items", lambda: [])
+    monkeypatch.setattr(site_context, "get_album_art_items", lambda: [])
 
     response = client.get(reverse("main_site:art"))
     body = response.content.decode()

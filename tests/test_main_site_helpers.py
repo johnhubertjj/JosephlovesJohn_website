@@ -11,7 +11,8 @@ from django.http import HttpResponse
 from django.test import override_settings
 from josephlovesjohn_site import assets
 from main_site import cache as main_site_cache
-from main_site import views
+from main_site import context as site_context
+from main_site import site_data
 from main_site.models import AlbumArt, AnimationAsset, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
 
@@ -44,7 +45,7 @@ def test_get_header_social_links_returns_active_database_rows_in_order() -> None
         is_active=True,
     )
 
-    links = views._get_header_social_links()
+    links = site_data.get_header_social_links()
 
     assert links == [
         {
@@ -91,7 +92,7 @@ def test_get_header_social_links_moves_spotify_to_second_position() -> None:
         is_active=True,
     )
 
-    links = views._get_header_social_links()
+    links = site_data.get_header_social_links()
 
     assert [link["label"] for link in links] == ["Bandcamp", "Spotify", "Instagram"]
     assert links[1]["href"] == "https://open.spotify.com/artist/27YZiLsfuwfBI5e4BZyTIi?si=rcYZFzPzSPCfartpPGM6gg"
@@ -106,7 +107,7 @@ def test_get_primary_nav_items_returns_active_database_rows_in_order() -> None:
     PrimaryNavItem.objects.create(label="Intro", href="#intro", sort_order=0, is_active=True)
     PrimaryNavItem.objects.create(label="Music", href="#music", sort_order=1, is_active=True)
 
-    items = views._get_primary_nav_items()
+    items = site_data.get_primary_nav_items()
 
     assert items == [
         {"href": "#intro", "label": "Intro"},
@@ -129,7 +130,7 @@ def test_get_header_social_links_cache_invalidates_when_content_changes() -> Non
         is_active=True,
     )
 
-    first_links = views._get_header_social_links()
+    first_links = site_data.get_header_social_links()
 
     HeaderSocialLink.objects.create(
         label="YouTube",
@@ -138,7 +139,7 @@ def test_get_header_social_links_cache_invalidates_when_content_changes() -> Non
         sort_order=1,
         is_active=True,
     )
-    refreshed_links = views._get_header_social_links()
+    refreshed_links = site_data.get_header_social_links()
 
     assert [link["label"] for link in first_links] == ["Bandcamp", "Spotify"]
     assert [link["label"] for link in refreshed_links] == ["Bandcamp", "Spotify", "YouTube"]
@@ -203,7 +204,7 @@ def test_get_gig_photo_items_prefers_active_database_rows(create_static_asset) -
         is_active=True,
     )
 
-    items = views._get_gig_photo_items()
+    items = site_data.get_gig_photo_items()
 
     assert [item["title"] for item in items] == ["Earlier", "Later"]
     assert items[0]["thumbnail_path"] == "images/gallery/live-1-thumb.jpg"
@@ -221,7 +222,7 @@ def test_get_gig_photo_items_supports_uploaded_files(media_base_dir) -> None:
     photo.image_file.save("live.jpg", ContentFile(b"live"), save=True)
     photo.thumbnail_file.save("live-thumb.jpg", ContentFile(b"thumb"), save=True)
 
-    items = views._get_gig_photo_items()
+    items = site_data.get_gig_photo_items()
 
     assert items == [
         {
@@ -250,7 +251,7 @@ def test_get_gig_photo_items_does_not_reuse_cached_empty_results(monkeypatch, cr
         is_active=True,
     )
 
-    original_filter = views.GigPhoto.objects.filter
+    original_filter = GigPhoto.objects.filter
     calls = {"count": 0}
 
     def flaky_filter(*args, **kwargs):
@@ -259,10 +260,10 @@ def test_get_gig_photo_items_does_not_reuse_cached_empty_results(monkeypatch, cr
             raise OperationalError("temporary db issue")
         return original_filter(*args, **kwargs)
 
-    monkeypatch.setattr(views.GigPhoto.objects, "filter", flaky_filter)
+    monkeypatch.setattr(GigPhoto.objects, "filter", flaky_filter)
 
-    first_items = views._get_gig_photo_items()
-    second_items = views._get_gig_photo_items()
+    first_items = site_data.get_gig_photo_items()
+    second_items = site_data.get_gig_photo_items()
 
     assert first_items == []
     assert second_items == [
@@ -286,8 +287,8 @@ def test_normalize_asset_path_strips_prefixes() -> None:
 
 def test_uploaded_file_exists_returns_false_without_a_usable_name() -> None:
     """Uploaded-file checks should fail closed when no file name is available."""
-    assert views._uploaded_file_exists(None) is False
-    assert views._uploaded_file_exists(SimpleNamespace(name="")) is False
+    assert site_data.uploaded_file_exists(None) is False
+    assert site_data.uploaded_file_exists(SimpleNamespace(name="")) is False
 
 
 def test_uploaded_file_exists_returns_false_when_storage_errors() -> None:
@@ -296,14 +297,14 @@ def test_uploaded_file_exists_returns_false_when_storage_errors() -> None:
     storage.exists.side_effect = OSError("storage unavailable")
     file_field = SimpleNamespace(name="uploads/test.jpg", storage=storage)
 
-    assert views._uploaded_file_exists(file_field) is False
+    assert site_data.uploaded_file_exists(file_field) is False
 
 
 def test_build_gig_photo_item_falls_back_to_source_image_when_thumb_missing(create_static_asset) -> None:
     """Gallery items should still render if a thumbnail is missing."""
     create_static_asset("images/gig_photos/test-photo.jpg")
 
-    item = views._build_gig_photo_item(
+    item = site_data.build_gig_photo_item(
         title="Test Photo",
         image_path="static/images/gig_photos/test-photo.jpg",
         thumbnail_path="images/gig_photos/missing-thumb.jpg",
@@ -326,7 +327,7 @@ def test_build_gig_photo_item_prefers_webp_thumbnail_when_available(create_stati
     create_static_asset("images/gig_photos/thumbs/test-photo-thumb.jpg")
     create_static_asset("images/gig_photos/thumbs/test-photo-thumb.webp")
 
-    item = views._build_gig_photo_item(
+    item = site_data.build_gig_photo_item(
         title="Test Photo",
         image_path="images/gig_photos/test-photo.jpg",
         thumbnail_path="images/gig_photos/thumbs/test-photo-thumb.jpg",
@@ -343,7 +344,7 @@ def test_build_gig_photo_item_assumes_remote_webp_thumbnail_when_public_assets_e
     create_static_asset("images/gig_photos/test-photo.jpg")
     create_static_asset("images/gig_photos/thumbs/test-photo-thumb.jpg")
 
-    item = views._build_gig_photo_item(
+    item = site_data.build_gig_photo_item(
         title="Test Photo",
         image_path="images/gig_photos/test-photo.jpg",
         thumbnail_path="images/gig_photos/thumbs/test-photo-thumb.jpg",
@@ -359,7 +360,7 @@ def test_build_album_art_item_prefers_smaller_mp4_for_gif_animation(create_stati
     create_static_asset("images/album_art/loop.gif", b"g" * 1000)
     create_static_asset("images/album_art/loop.mp4", b"m" * 100)
 
-    item = views._build_album_art_item(
+    item = site_data.build_album_art_item(
         kind="image",
         title="Loop Animation",
         asset_path="images/album_art/loop.gif",
@@ -389,7 +390,7 @@ def test_build_album_art_item_assumes_remote_mp4_variant_when_public_assets_enab
     """Public-asset mode should emit the sibling MP4 URL even when only the remote copy exists."""
     create_static_asset("images/album_art/loop.gif", b"g" * 1000)
 
-    item = views._build_album_art_item(
+    item = site_data.build_album_art_item(
         kind="image",
         title="Loop Animation",
         asset_path="images/album_art/loop.gif",
@@ -419,7 +420,7 @@ def test_build_album_art_item_keeps_gif_when_mp4_is_not_smaller(create_static_as
     create_static_asset("images/album_art/loop.gif", b"g" * 100)
     create_static_asset("images/album_art/loop.mp4", b"m" * 1000)
 
-    item = views._build_album_art_item(
+    item = site_data.build_album_art_item(
         kind="image",
         title="Loop Animation",
         asset_path="images/album_art/loop.gif",
@@ -434,7 +435,7 @@ def test_resolve_asset_source_supports_external_urls() -> None:
     """Absolute asset URLs should be returned directly without static lookup."""
     url = "https://assets.example.com/images/gig_photos/live.jpg"
 
-    assert views._resolve_asset_source(static_path=url) == {
+    assert site_data.resolve_asset_source(static_path=url) == {
         "path": url,
         "url": url,
         "is_static": False,
@@ -444,7 +445,7 @@ def test_resolve_asset_source_supports_external_urls() -> None:
 @override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
 def test_resolve_asset_source_uses_public_asset_base_url_without_local_static_file() -> None:
     """Gallery items should resolve through the CDN even when the file is not in the repo."""
-    assert views._resolve_asset_source(static_path="images/gig_photos/live.jpg") == {
+    assert site_data.resolve_asset_source(static_path="images/gig_photos/live.jpg") == {
         "path": "images/gig_photos/live.jpg",
         "url": "https://assets.example.com/images/gig_photos/live.jpg",
         "is_static": True,
@@ -476,7 +477,7 @@ def test_get_album_art_items_combines_album_art_and_animations(create_static_ass
         sort_order=0,
     )
 
-    items = views._get_album_art_items()
+    items = site_data.get_album_art_items()
 
     assert [item["caption"] for item in items] == ["Cover", "Animation"]
     assert items[0]["url"] == "/static/images/album_art/cover.jpg"
@@ -500,7 +501,7 @@ def test_get_album_art_items_supports_uploaded_files(media_base_dir) -> None:
     )
     animation.file_upload.save("loop.gif", ContentFile(b"gif"), save=True)
 
-    items = views._get_album_art_items()
+    items = site_data.get_album_art_items()
 
     assert [item["caption"] for item in items] == ["Uploaded Cover", "Uploaded Animation"]
     assert items[0]["url"] == f"/media/{art.image_file.name}"
@@ -547,7 +548,7 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
         is_reversed=False,
     )
 
-    items = views._get_music_library_items()
+    items = site_data.get_music_library_items()
 
     assert [item["title"] for item in items] == ["First Track", "Second Track"]
     assert {item["share_path"] for item in items} == {"/music/"}
@@ -578,7 +579,7 @@ def test_get_music_library_items_cache_invalidates_when_products_change() -> Non
         is_published=True,
     )
 
-    first_items = views._get_music_library_items()
+    first_items = site_data.get_music_library_items()
 
     Product.objects.create(
         title="Second Track",
@@ -591,7 +592,7 @@ def test_get_music_library_items_cache_invalidates_when_products_change() -> Non
         sort_order=1,
         is_published=True,
     )
-    refreshed_items = views._get_music_library_items()
+    refreshed_items = site_data.get_music_library_items()
 
     assert [item["title"] for item in first_items] == ["First Track"]
     assert [item["title"] for item in refreshed_items] == ["First Track", "Second Track"]
@@ -617,7 +618,7 @@ def test_get_music_library_items_ignores_pre_track_page_cache_payloads() -> None
         is_published=True,
     )
 
-    items = views._get_music_library_items()
+    items = site_data.get_music_library_items()
 
     assert [item["title"] for item in items] == ["First Track"]
     assert items[0]["track_path"] == "/music/first-track/"
@@ -627,52 +628,52 @@ def test_get_music_library_items_ignores_pre_track_page_cache_payloads() -> None
 @pytest.mark.django_db
 def test_get_header_social_links_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
     """Header links should fail closed when the database is unavailable."""
-    monkeypatch.setattr(views.HeaderSocialLink.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+    monkeypatch.setattr(HeaderSocialLink.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
 
-    assert views._get_header_social_links() == []
+    assert site_data.get_header_social_links() == []
 
 
 @pytest.mark.django_db
 def test_get_primary_nav_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
     """Primary nav should fail closed when the database is unavailable."""
-    monkeypatch.setattr(views.PrimaryNavItem.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+    monkeypatch.setattr(PrimaryNavItem.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
 
-    assert views._get_primary_nav_items() == []
+    assert site_data.get_primary_nav_items() == []
 
 
 @pytest.mark.django_db
 def test_get_gig_photo_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
     """Gig photo helpers should fail closed when the database is unavailable."""
-    monkeypatch.setattr(views.GigPhoto.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+    monkeypatch.setattr(GigPhoto.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
 
-    assert views._get_gig_photo_items() == []
+    assert site_data.get_gig_photo_items() == []
 
 
 @pytest.mark.django_db
 def test_get_album_art_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
     """Album art helpers should fail closed when the database is unavailable."""
-    monkeypatch.setattr(views.AlbumArt.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+    monkeypatch.setattr(AlbumArt.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
 
-    assert views._get_album_art_items() == []
+    assert site_data.get_album_art_items() == []
 
 
 @pytest.mark.django_db
 def test_get_music_library_items_returns_empty_when_database_lookup_fails(monkeypatch) -> None:
     """Music helpers should fail closed when the database is unavailable."""
-    monkeypatch.setattr(views.Product.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
+    monkeypatch.setattr(Product.objects, "filter", Mock(side_effect=OperationalError("db unavailable")))
 
-    assert views._get_music_library_items() == []
+    assert site_data.get_music_library_items() == []
 
 
 def test_site_context_collects_expected_sections(monkeypatch) -> None:
     """The site context should gather all renderable page sections."""
-    monkeypatch.setattr(views, "_get_header_social_links", lambda: [{"label": "Bandcamp"}])
-    monkeypatch.setattr(views, "_get_primary_nav_items", lambda: [{"label": "Music"}])
-    monkeypatch.setattr(views, "_get_music_library_items", lambda: [{"title": "Song"}])
-    monkeypatch.setattr(views, "_get_gig_photo_items", lambda: [{"title": "Photo"}])
-    monkeypatch.setattr(views, "_get_album_art_items", lambda: [{"caption": "Art"}])
+    monkeypatch.setattr(site_context, "get_header_social_links", lambda: [{"label": "Bandcamp"}])
+    monkeypatch.setattr(site_context, "get_primary_nav_items", lambda: [{"label": "Music"}])
+    monkeypatch.setattr(site_context, "get_music_library_items", lambda: [{"title": "Song"}])
+    monkeypatch.setattr(site_context, "get_gig_photo_items", lambda: [{"title": "Photo"}])
+    monkeypatch.setattr(site_context, "get_album_art_items", lambda: [{"caption": "Art"}])
 
-    context = views._site_context("music")
+    context = site_context.build_site_context("music")
 
     assert context["active_section"] == "music"
     assert context["header_social_links"] == [{"label": "Bandcamp"}]

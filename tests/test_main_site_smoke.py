@@ -2,7 +2,7 @@
 
 import pytest
 from django.urls import reverse
-from main_site import views
+from main_site import site_data
 from main_site.models import AlbumArt, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
 
@@ -213,18 +213,18 @@ def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_stati
         featured=True,
     )
 
-    items = views._get_music_library_items()
-    gig_items = views._get_gig_photo_items()
-    album_items = views._get_album_art_items()
+    items = site_data.get_music_library_items()
+    gig_items = site_data.get_gig_photo_items()
+    album_items = site_data.get_album_art_items()
 
     assert items[0]["title"] == product.title
-    assert views._static_file_exists(items[0]["art_path"])
-    assert views._static_file_exists(items[0]["file_wav"])
-    assert views._static_file_exists(items[0]["file_mp3"])
+    assert site_data.static_file_exists(items[0]["art_path"])
+    assert site_data.static_file_exists(items[0]["file_wav"])
+    assert site_data.static_file_exists(items[0]["file_mp3"])
 
     assert gig_items[0]["title"] == gig_photo.title
-    assert views._static_file_exists(gig_items[0]["image_path"])
-    assert views._static_file_exists(gig_items[0]["thumbnail_path"])
+    assert site_data.static_file_exists(gig_items[0]["image_path"])
+    assert site_data.static_file_exists(gig_items[0]["thumbnail_path"])
 
     assert album_items[0]["caption"] == album_art.title
-    assert views._static_file_exists(album_items[0]["path"])
+    assert site_data.static_file_exists(album_items[0]["path"])

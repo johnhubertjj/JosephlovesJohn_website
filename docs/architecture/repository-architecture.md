@@ -82,7 +82,7 @@ flowchart LR
 flowchart TD
     Route["/, /intro/, /music/, /art/, /contact/"]
     MainView["main_site.views.*"]
-    SiteContext["_site_context()<br>collects nav, music, gallery, contact form, SEO"]
+    SiteContext["main_site.context.build_site_context()<br>collects nav, music, gallery, contact form, SEO"]
     SiteData["main_site/site_data.py<br>reads content models and asset sources"]
     SiteTemplate["templates/main_site/site.html"]
     Sections["section partials<br>main, intro, music, art, contact"]

@@ -5,7 +5,7 @@ from typing import NamedTuple
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 
-from .site_data import _get_music_library_items
+from .site_data import get_music_library_items
 
 
 class SitemapRoute(NamedTuple):
@@ -36,7 +36,7 @@ class StaticViewSitemap(Sitemap):
         ]
         routes.extend(
             SitemapRoute("main_site:music_track", "weekly", 0.8, {"slug": item["public_slug"]})
-            for item in _get_music_library_items()
+            for item in get_music_library_items()
             if item.get("public_slug")
         )
         return routes
