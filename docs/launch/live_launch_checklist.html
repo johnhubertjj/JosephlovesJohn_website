@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>JosephlovesJohn Live Launch Checklist</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1f2430;
+      margin: 48px;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 18px;
+      margin-top: 28px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #d7dce5;
+      padding-bottom: 4px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    li {
+      margin: 6px 0;
+    }
+    .muted {
+      color: #5f6b7a;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h1>JosephlovesJohn Live Launch Checklist</h1>
+  <p class="muted">Final production go-live checklist for domain, deploy, payments, downloads, monitoring, and search setup.</p>
+
+  <h2>1. Domain and DNS</h2>
+  <ul>
+    <li>josephlovesjohn.com is Verified in Render</li>
+    <li>www.josephlovesjohn.com is Verified in Render</li>
+    <li>Both domains have Certificate Issued</li>
+    <li>www.josephlovesjohn.com redirects to josephlovesjohn.com</li>
+    <li>No old GoDaddy forwarding remains enabled</li>
+  </ul>
+
+  <h2>2. Render Production Settings</h2>
+  <ul>
+    <li>SITE_URL=https://josephlovesjohn.com</li>
+    <li>ALLOWED_HOSTS includes josephlovesjohn.com, www.josephlovesjohn.com, and the Render hostname</li>
+    <li>CSRF_TRUSTED_ORIGINS includes both HTTPS domains</li>
+    <li>DEBUG=false</li>
+    <li>SECRET_KEY is set</li>
+    <li>Live Stripe keys are set</li>
+    <li>STRIPE_WEBHOOK_SECRET is set</li>
+    <li>Resend SMTP settings are set</li>
+    <li>SENTRY_DSN is set</li>
+    <li>Plausible settings are set</li>
+  </ul>
+
+  <h2>3. Deploy</h2>
+  <ul>
+    <li>Latest code is pushed</li>
+    <li>Render deploy completes successfully</li>
+    <li>collectstatic succeeds</li>
+    <li>Migrations run successfully</li>
+    <li>Homepage loads without server errors</li>
+  </ul>
+
+  <h2>4. Core Site Checks</h2>
+  <ul>
+    <li>https://josephlovesjohn.com/ loads over HTTPS</li>
+    <li>Intro, Music, Art, Contact, Privacy, Cookies, Terms, and Refunds routes load</li>
+    <li>Logo, favicon, CSS, and JS all load correctly</li>
+    <li>No broken images are visible</li>
+    <li>Contact form loads and validates properly</li>
+  </ul>
+
+  <h2>5. Shop and Payment Checks</h2>
+  <ul>
+    <li>Add to cart works</li>
+    <li>Cart remove works</li>
+    <li>Checkout page loads</li>
+    <li>Stripe hosted checkout opens</li>
+    <li>One real low-value live payment succeeds</li>
+    <li>Stripe webhook succeeds on the live domain</li>
+    <li>Success page loads</li>
+    <li>Order is marked paid</li>
+  </ul>
+
+  <h2>6. Email and Download Checks</h2>
+  <ul>
+    <li>Confirmation email arrives</li>
+    <li>Password reset email arrives</li>
+    <li>Confirmation email links use josephlovesjohn.com</li>
+    <li>MP3 download works</li>
+    <li>WAV download works</li>
+    <li>Download links from the email work</li>
+  </ul>
+
+  <h2>7. Monitoring and Analytics</h2>
+  <ul>
+    <li>Plausible shows a pageview</li>
+    <li>Plausible shows checkout/purchase events</li>
+    <li>Sentry receives no unexpected production errors</li>
+    <li>Stripe shows successful payment and successful webhook delivery</li>
+  </ul>
+
+  <h2>8. Search and Discovery</h2>
+  <ul>
+    <li>https://josephlovesjohn.com/robots.txt loads</li>
+    <li>https://josephlovesjohn.com/sitemap.xml loads</li>
+    <li>Sitemap submitted to Google Search Console</li>
+    <li>Sitemap submitted to Bing Webmaster Tools</li>
+    <li>Website link added to Spotify, YouTube, Bandcamp, Instagram, TikTok, and gig listings</li>
+  </ul>
+
+  <h2>9. After Launch</h2>
+  <ul>
+    <li>Refund your own test purchase if needed</li>
+    <li>Watch the first real order closely</li>
+    <li>Check Render logs after launch</li>
+    <li>Check Stripe, Plausible, and Sentry again after the first real purchase</li>
+  </ul>
+</body>
+</html>

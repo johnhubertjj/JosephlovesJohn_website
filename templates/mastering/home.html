@@ -97,7 +97,7 @@
             align-items: flex-end;
             min-height: 82vh;
             margin-bottom: -6.5em;
-            padding: 10em 0 9em;
+            padding: 10em 0 11.5em;
             background-color: #151821;
             background-image:
                 linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
@@ -147,6 +147,10 @@
             box-shadow: 0 0.75rem 1.8rem rgba(0, 0, 0, 0.42);
             object-fit: cover;
             object-position: center;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            transition: opacity 0.55s ease, transform 0.55s ease, filter 0.3s ease;
+            transition-delay: 0.45s;
         }
 
         #banner h2,
@@ -154,10 +158,37 @@
             text-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.55);
         }
 
+        #banner .mastering-hero-cta {
+            margin: 1.6rem 0 1rem;
+            font-weight: 700;
+            letter-spacing: 0.08rem;
+            text-transform: uppercase;
+        }
+
+        #banner .actions {
+            margin-bottom: 0;
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.5s ease, transform 0.5s ease, filter 0.25s ease;
+            transition-delay: 0.95s;
+        }
+
         #banner .inner {
             position: relative;
             z-index: 1;
-            transform: translateY(-1rem);
+            transform: translateY(3.1rem);
+        }
+
+        body.is-preload #banner .mastering-profile {
+            opacity: 0;
+            transform: translateY(0.65rem) scale(0.96);
+            filter: blur(2px);
+        }
+
+        body.is-preload #banner .actions {
+            opacity: 0;
+            transform: translateX(0.5em);
+            filter: blur(2px);
         }
 
         .wrapper.spotlight .image img,
@@ -230,6 +261,13 @@
         }
 
         #examples:before {
+            -moz-transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            -ms-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+        #faq:before {
             -moz-transform: scaleX(-1);
             -webkit-transform: scaleX(-1);
             -ms-transform: scaleX(-1);
@@ -328,20 +366,38 @@
             margin-bottom: 0.65rem;
         }
 
+        .mastering-example-title-link {
+            border-bottom: 0;
+            color: inherit;
+        }
+
+        .mastering-example-title-link:hover {
+            color: #ffffff !important;
+        }
+
         .mastering-example-listen-link {
             display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
-            margin: 0 0 1rem;
-            border-bottom: dotted 1px rgba(255, 255, 255, 0.45);
-            font-size: 0.78rem;
+            gap: 0.5rem;
+            margin: 0 0 1.15rem;
+            padding: 0.6rem 0.75rem;
+            border: solid 1px rgba(255, 255, 255, 0.36);
+            border-radius: 4px;
+            background: rgba(92, 24, 40, 0.72);
+            box-shadow: 0 0.55rem 1rem rgba(0, 0, 0, 0.18);
+            font-size: 0.82rem;
             font-weight: 700;
             letter-spacing: 0.08rem;
             text-transform: uppercase;
         }
 
+        .mastering-example-listen-link:hover {
+            background: rgba(92, 24, 40, 0.92);
+            border-color: rgba(255, 255, 255, 0.62);
+        }
+
         .mastering-example-listen-icon {
-            font-size: 1rem;
+            font-size: 1.15rem;
             line-height: 1;
         }
 
@@ -414,9 +470,27 @@
             line-height: 1;
         }
 
+        .mastering-faq-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .mastering-faq-item {
+            padding: 1.45rem;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.045);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+        }
+
+        .mastering-faq-item h3 {
+            margin-bottom: 0.85rem;
+        }
+
         @media screen and (max-width: 1680px) {
             #banner .inner {
-                transform: translateY(-4.1rem);
+                transform: translateY(1.8rem);
             }
         }
 
@@ -428,18 +502,22 @@
                 background-size: auto, cover;
                 background-position: center, center;
             }
+
+            #banner .inner {
+                transform: translateY(1.5rem);
+            }
         }
 
         @media screen and (max-width: 736px) {
             #banner {
                 align-items: flex-end;
                 min-height: 34rem;
-                padding: 8em 2em 5em;
+                padding: 8em 2em 7.25em;
                 background-position: 58% center;
             }
 
             #banner .inner {
-                transform: translateY(-4.5rem);
+                transform: translateY(0.4rem);
             }
 
             #banner .mastering-profile {
@@ -457,26 +535,42 @@
                 grid-template-columns: 1fr;
             }
 
+            .mastering-faq-list {
+                grid-template-columns: 1fr;
+            }
+
             .mastering-example-cover {
                 max-width: 18rem;
             }
         }
 
         @media screen and (max-width: 676px) {
+            #banner {
+                padding-bottom: 7.75em;
+            }
+
             #banner .inner {
-                transform: translateY(-4.8rem);
+                transform: translateY(0.5rem);
             }
         }
 
         @media screen and (max-width: 600px) {
+            #banner {
+                padding-bottom: 9em;
+            }
+
             #banner .inner {
-                transform: translateY(-3rem);
+                transform: translateY(1.5rem);
             }
         }
 
         @media screen and (max-width: 480px) {
+            #banner {
+                padding-bottom: 10em;
+            }
+
             #banner .inner {
-                transform: translateY(-3rem);
+                transform: translateY(1.8rem);
             }
 
             #header h1 {
@@ -521,12 +615,6 @@
             }
 
         }
-
-        @media screen and (max-width: 360px) {
-            #banner .inner {
-                transform: translateY(-1rem);
-            }
-        }
     </style>
 </head>
 <body class="is-preload{% if entered_from_home %} is-from-home{% endif %}">
@@ -551,6 +639,7 @@
                 <li><a href="#pricing">Pricing</a></li>
                 <li><a href="#services">Services</a></li>
                 <li><a href="#process">Process</a></li>
+                <li><a href="#faq">FAQ</a></li>
             </ul>
             <a href="#" class="close">Close</a>
         </div>
@@ -566,6 +655,10 @@
             />
             <h2>John Joseph Mastering</h2>
             <p>Taste-first mastering focused on depth, clarity, and emotional translation without flattening the character out of the mix.</p>
+            <p class="mastering-hero-cta">First single master is free!</p>
+            <ul class="actions">
+                <li><a href="#contact" class="button primary">Contact below</a></li>
+            </ul>
         </div>
     </section>
 
@@ -577,7 +670,7 @@
                 <div class="mastering-example-grid">
                     <article class="mastering-example">
                         <a
-                            href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"
+                            href="https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7"
                             class="mastering-example-cover"
                             target="_blank"
                             rel="noopener"
@@ -588,7 +681,14 @@
                             />
                         </a>
                         <div>
-                            <h3 class="major">Dark and Light (Instrumental)</h3>
+                            <h3 class="major">
+                                <a
+                                    href="https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7"
+                                    class="mastering-example-title-link"
+                                    target="_blank"
+                                    rel="noopener"
+                                >Dark and Light (Instrumental)</a>
+                            </h3>
                             <a
                                 href="https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7"
                                 class="mastering-example-listen-link"
@@ -596,7 +696,7 @@
                                 rel="noopener"
                                 aria-label="Listen to on Spotify"
                             >Listen to on <span class="icon brands fa-spotify mastering-example-listen-icon" aria-hidden="true"></span>Spotify</a>
-                            <p>Mastering example with a spacious, atmospheric instrumental focus.</p>
+                            <p>Spacious, atmospheric instrumental master.</p>
                             <iframe
                                 class="mastering-example-player"
                                 title="SoundCloud player for Dark and Light instrumental"
@@ -609,7 +709,7 @@
                     </article>
                     <article class="mastering-example">
                         <a
-                            href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"
+                            href="https://fumebreather.bandcamp.com/album/super-dungeon"
                             class="mastering-example-cover"
                             target="_blank"
                             rel="noopener"
@@ -620,7 +720,14 @@
                             />
                         </a>
                         <div>
-                            <h3 class="major">Super Dungeon</h3>
+                            <h3 class="major">
+                                <a
+                                    href="https://fumebreather.bandcamp.com/album/super-dungeon"
+                                    class="mastering-example-title-link"
+                                    target="_blank"
+                                    rel="noopener"
+                                >Super Dungeon</a>
+                            </h3>
                             <a
                                 href="https://fumebreather.bandcamp.com/album/super-dungeon"
                                 class="mastering-example-listen-link"
@@ -628,7 +735,7 @@
                                 rel="noopener"
                                 aria-label="Listen to on Bandcamp"
                             >Listen to on <span class="icon brands fa-bandcamp mastering-example-listen-icon" aria-hidden="true"></span>Bandcamp</a>
-                            <p>By Fumebreather. A heavier, high-energy mastering reference with bold artwork.</p>
+                            <p>By Fumebreather. A heavier, high-energy master.</p>
                             <iframe
                                 class="mastering-example-player"
                                 title="SoundCloud player for Super Dungeon by Fumebreather"
@@ -646,7 +753,7 @@
         <section id="contact" class="wrapper style4">
             <div class="inner">
                 <h2 class="major">Get in touch</h2>
-                <p>If you want to discuss a project, send over your mix status, target release format, rough timeline, and any reference tracks or notes about feel and tone.</p>
+                <p>If you want to discuss a project or have any queries.</p>
                 {% if contact_messages %}
                     <ul class="mastering-contact-form-messages">
                         {% for message in contact_messages %}
@@ -710,7 +817,7 @@
                         <p>A finished master prepared for release with unlimited revisions.</p>
                     </article>
                     <article class="mastering-price-card">
-                        <h3 class="major">Master + Release Consultation/Walkthrough</h3>
+                        <h3 class="major">Master + Release Walkthrough</h3>
                         <span class="mastering-price">£90</span>
                         <p>A finished master plus guidance on release strategy, advertising and DIY artwork/photos.</p>
                     </article>
@@ -730,6 +837,7 @@
                     <h2 class="major">Single, EP, and Album Mastering</h2>
                     <p>Mastering should be personalised and perfected to your tastes and vision, not just a loudness pass. I believe open communication across the entire process is vital to get your mixes sounding professional.</p>
                     <p>Whether you are releasing one track or a full body of work, I aim to produce a result that is shaped to feel finished, confident, and coherent across streaming, headphones, speakers, and real-world listening environments.</p>
+                    <p><strong>Typical turnaround:</strong> 3-7 days depending on project size.</p>
                 </div>
             </div>
         </section>
@@ -758,7 +866,7 @@
                     <article>
                         <span class="image"><img src="{% static 'mastering/images/mastering-drum-kit.jpg' %}" alt="Drum kit in a rehearsal room" /></span>
                         <h3 class="major">Unlimited Revision Passes</h3>
-                        <p>Your music should sound how you want it to sound. I will not stop a project until it is perfected to your vision.</p>
+                        <p>Your music should sound how you want it to sound. I will not finish a project until it is perfected to your vision.</p>
                     </article>
                     <article>
                         <span class="image"><img src="{% static 'mastering/images/mastering-keyboard-controller.jpg' %}" alt="Keyboard controller with illuminated display" /></span>
@@ -766,11 +874,63 @@
                         <p>Delivery can be tailored to your release path, whether that means streaming-first output, CD or vinyl.</p>
                     </article>
                     <article>
-                        <span class="image"><img src="{% static 'mastering/images/mastering-guitars.jpg' %}" alt="Electric guitars against a textured wall" /></span>
+                        <span class="image"><img src="{% static 'mastering/images/mastering-instruments-image.jpg' %}" alt="Guitars, bass, banjo, ukulele and violin in studio light" /></span>
                         <h3 class="major">Release Strategy Advice</h3>
                         <p>Music doesn't stop at the master, advice on website design, adverts, distribution and artwork can be added on if you are stuck on how to get your music heard.</p>
                     </article>
                 </section>
+            </div>
+        </section>
+
+        <section id="faq" class="wrapper style3">
+            <div class="inner">
+                <h2 class="major">FAQ</h2>
+                <div class="mastering-faq-list">
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What software do you use?</h3>
+                        <p>Logic Pro with third-party mastering extensions including Kush Clariphonic, SSL Native Vocalstrip and UAD Pultec.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">I have questions about the intake form, who can I contact?</h3>
+                        <p>Me! Send an email to <a href="mailto:josephlovesjohn@gmail.com">josephlovesjohn@gmail.com</a> and I'll be happy to answer any of your questions.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is WAV or AIFF? Why do I need to provide it?</h3>
+                        <p>These are both uncompressed audio files. MP3 is lossy, aka it removes data and sound from the file that is less noticeable to the human ear. WAV and AIFF files preserve that information, but at the cost of being larger files.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is clipping or distortion?</h3>
+                        <p>Clipping is when the loudness of the sound is higher than what the digital audio workstation can handle. It cuts the sound off at the peak of the waveform and can create distortion as a result, meaning a different sound to what was originally produced with various artifacts left in. Distortion can also be intentionally added for effect.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What does maximised for loudness mean?</h3>
+                        <p>Essentially, it is when the mix or audio file has been turned up to the max without clipping occurring. This is usually the very last stage of the mastering process. If the loudness is already at the highest point, there is not a lot of headroom for the mastering engineer to make substantial changes to the mix.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is a limiter?</h3>
+                        <p>A limiter puts a hard ceiling on the loudness of the sound. It slowly decreases the height of the waveform as it reaches the upper limit, preventing clipping distortion and maintaining a natural sound in the mix.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is a reference track?</h3>
+                        <p>A reference track is a song or piece that is similar in sound to yours. It should represent how you want your final master to sound in terms of style, not necessarily instrumentation. If unsure, just pick a song that makes you feel the same way as the song you have created.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is an ISRC code?</h3>
+                        <p>ISRC stands for International Standard Recording Code. An ISRC is a unique ID for a specific sound recording, helping streaming platforms, distributors, labels, publishers, and royalty systems identify exactly which recording is being used.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is sample rate?</h3>
+                        <p>Sample rate is how many times per second the audio is measured, or sampled. For example, 44.1kHz is 44,100 samples a second.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What does samples per second mean?</h3>
+                        <p>When sound is in the real world, it is continuous. A vocal, guitar, or drum hit is a smooth wave of air pressure changing over time. A computer cannot store a perfectly continuous wave directly, so it takes lots of tiny measurements of that wave. Each measurement is called a sample.</p>
+                    </article>
+                    <article class="mastering-faq-item">
+                        <h3 class="major">What is bit depth?</h3>
+                        <p>Bit depth is how much detail each sample can store in terms of volume level. It is usually either 16-bit for CDs, 24-bit for mastering files, or 32-bit inside Logic Pro. A higher bit depth means that the audio file can handle more dynamic range at the cost of a larger file size.</p>
+                    </article>
+                </div>
             </div>
         </section>
     </section>

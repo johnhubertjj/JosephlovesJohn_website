@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mastering Page Reading Plan</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #dbe2ea;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+    h1, h2 {
+      line-height: 1.2;
+    }
+    h2 {
+      margin-top: 2rem;
+    }
+    ol, ul {
+      padding-left: 1.5rem;
+    }
+    li + li {
+      margin-top: 0.4rem;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.95em;
+    }
+    .note {
+      color: #475467;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Mastering Page Reading Plan</h1>
+    <p class="note">
+      A focused reading order for understanding the John Joseph Mastering microsite, the intake form,
+      the contact flow, and the assets that shape the page.
+    </p>
+
+    <h2>1. Route and View Entry Points</h2>
+    <ol>
+      <li><code>josephlovesjohn_site/urls.py</code> - confirms that <code>/mastering-services/</code> is routed into the mastering app.</li>
+      <li><code>mastering/urls.py</code> - shows the public page, intake page, and any named routes.</li>
+      <li><code>mastering/views.py</code> - contains the landing-page context, contact handling, intake submission, email, and webhook posting.</li>
+    </ol>
+
+    <h2>2. Public Page Template</h2>
+    <ol>
+      <li><code>templates/mastering/home.html</code> - the main microsite page, including inline page-specific styling.</li>
+      <li><code>static/mastering/images/</code> - local optimized images used by the hero, examples, and lower service cards.</li>
+      <li><code>static/assets/js/main.js</code> - bundled HTML5 UP shell behavior used by the Solid State base.</li>
+      <li><code>static/assets/css/main.css</code> - the inherited Solid State theme base before page-specific overrides.</li>
+    </ol>
+
+    <h2>3. Intake Form Flow</h2>
+    <ol>
+      <li><code>mastering/forms.py</code> - role-specific artist and mix engineer questions, validation, and cleaned values.</li>
+      <li><code>templates/mastering/intake.html</code> - frontend role switching, field grouping, date input styling, and checkbox/radio presentation.</li>
+      <li><code>mastering/views.py</code> - the intake POST flow, email body, Google Sheets payload, and success/error handling.</li>
+      <li><code>josephlovesjohn_site/settings.py</code> - environment variables for email recipients and <code>MASTERING_INTAKE_GOOGLE_SHEETS_WEBHOOK_URL</code>.</li>
+    </ol>
+
+    <h2>4. Contact and External Services</h2>
+    <ol>
+      <li><code>main_site/forms.py</code> - shared contact form patterns if comparing the main-site and mastering contact behavior.</li>
+      <li><code>mastering/views.py</code> - mastering contact submission and recipient selection.</li>
+      <li><code>josephlovesjohn_site/csp.py</code> - allowed origins for embeds, static assets, analytics, and third-party content.</li>
+      <li><code>.env.example</code> - local configuration names without exposing private credentials.</li>
+    </ol>
+
+    <h2>5. Tests That Explain Expected Behavior</h2>
+    <ol>
+      <li><code>tests/test_mastering_smoke.py</code> - page rendering, key copy, examples, sections, and template expectations.</li>
+      <li><code>tests/test_mastering_routes.py</code> - URL availability and route behavior.</li>
+      <li><code>tests/test_mastering_contact_form.py</code> - mastering contact flow behavior.</li>
+      <li><code>tests/test_mastering_intake_form.py</code> - role-specific intake validation and payload expectations.</li>
+    </ol>
+
+    <h2>Fast-Track Version</h2>
+    <ul>
+      <li><code>mastering/urls.py</code></li>
+      <li><code>mastering/views.py</code></li>
+      <li><code>mastering/forms.py</code></li>
+      <li><code>templates/mastering/home.html</code></li>
+      <li><code>templates/mastering/intake.html</code></li>
+      <li><code>tests/test_mastering_smoke.py</code></li>
+      <li><code>tests/test_mastering_intake_form.py</code></li>
+    </ul>
+
+    <h2>Questions To Keep In Mind</h2>
+    <ul>
+      <li>Is this part of the public sales page, the private intake workflow, or shared site infrastructure?</li>
+      <li>Which content should stay static in the template and which should become configurable later?</li>
+      <li>Does this change affect email delivery, Google Sheets payloads, or only presentation?</li>
+      <li>Which test would fail if this behavior accidentally changed?</li>
+    </ul>
+  </main>
+</body>
+</html>

@@ -17,11 +17,14 @@ This is the production Django codebase for the JosephlovesJohn website. It conta
 Useful orientation docs:
 
 - `README.md`
-- `docs/repository-architecture.md`
-- `docs/shop-flow.md`
-- `docs/deployment.md`
-- `docs/cloudflare_r2.md`
-- `docs/performance_reports.md`
+- `docs/README.md`
+- `docs/architecture/repository-architecture.md`
+- `docs/shop/shop-flow.md`
+- `docs/deployment/deployment.md`
+- `docs/deployment/cloudflare_r2.md`
+- `docs/performance/performance_reports.md`
+- `docs/reading-plans/repo_reading_plan.html`
+- `docs/reading-plans/mastering_page_reading_plan.html`
 
 ## Development Commands
 
@@ -80,7 +83,7 @@ Start with:
 - `shop/stripe.py`
 - `shop/downloads.py`
 - `templates/shop/`
-- `docs/shop-flow.md`
+- `docs/shop/shop-flow.md`
 
 Checkout uses Stripe-hosted Checkout. Order/download entitlement logic belongs in Django, and private paid files may be served through short-lived signed URLs.
 

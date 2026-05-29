@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Repository Cleanup Plan</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #dbe2ea;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+    h1, h2 {
+      line-height: 1.2;
+    }
+    h2 {
+      margin-top: 2rem;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.95em;
+    }
+    ul {
+      padding-left: 1.25rem;
+    }
+    li + li {
+      margin-top: 0.5rem;
+    }
+    .note {
+      color: #475467;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Repository Cleanup Plan</h1>
+    <p class="note">
+      A practical cleanup plan for the JosephlovesJohn website codebase, focused on production safety,
+      maintainability, and clarity rather than large-scale rewrites.
+    </p>
+
+    <h2>Do Now</h2>
+    <ul>
+      <li>Enforce production config safety in <code>josephlovesjohn_site/settings.py</code>, especially around <code>SECRET_KEY</code> and <code>ALLOWED_HOSTS</code>.</li>
+      <li>Split the largest coordination files before they get harder to change safely: <code>shop/views.py</code>, <code>main_site/site_data.py</code>, and <code>static/main_site/js/site.js</code>.</li>
+      <li>Replace dict-shaped gallery payloads with typed structures such as <code>TypedDict</code> or dataclass-style objects in the art/media builders.</li>
+      <li>Keep repository metadata aligned with actual releases, runtime versions, and deployment expectations.</li>
+    </ul>
+
+    <h2>Do Soon</h2>
+    <ul>
+      <li>Extract shop service logic from view functions into smaller modules for checkout fulfillment, download authorization, and account/order helpers.</li>
+      <li>Split main-site asset and content builders into narrower modules such as gallery assets, navigation data, and music library data.</li>
+      <li>Break the site shell JavaScript into modules by concern: routing, lightbox/media, signup/embed, and analytics/cookies.</li>
+      <li>Add a short internal architecture note describing request flow, shared content caching, and public asset resolution.</li>
+    </ul>
+
+    <h2>Nice Later</h2>
+    <ul>
+      <li>Add a lightweight health/readiness endpoint for deploy verification.</li>
+      <li>Move more side effects off the request path if traffic grows.</li>
+      <li>Standardize private helper naming and reduce cross-module imports of underscored functions.</li>
+    </ul>
+
+    <h2>Guiding Principle</h2>
+    <p>
+      The codebase already works well enough for production. The goal is not to rewrite it into a framework
+      exercise. The best next improvements are the ones that reduce maintenance drag, sharpen production safety,
+      and make future changes easier to reason about.
+    </p>
+  </main>
+</body>
+</html>

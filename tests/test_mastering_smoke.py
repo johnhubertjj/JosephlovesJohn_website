@@ -13,7 +13,11 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert response.status_code == 200
     for text in (
         "John Joseph Mastering",
+        "First single master is free!",
+        "Contact below",
         "Single, EP, and Album Mastering",
+        "Typical turnaround:",
+        "3-7 days depending on project size.",
         "A Thoughtful, Song-First Process",
         "Mastering Examples",
         "Dark and Light (Instrumental)",
@@ -29,8 +33,13 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
         "First Single Master",
         "Free!",
         "If you are a new client, the first single track master is on me.",
-        "Master + Release Consultation/Walkthrough",
+        "Master + Release Walkthrough",
         "Further Release Consultations",
+        "FAQ",
+        "What software do you use?",
+        "What is WAV or AIFF?",
+        "What is an ISRC code?",
+        "What is bit depth?",
         "Send Message",
     ):
         assert text in body
@@ -42,13 +51,20 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert "https://w.soundcloud.com/player/" in body
     assert "url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949" in body
     assert "url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel" in body
-    assert "https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7" in body
-    assert "https://fumebreather.bandcamp.com/album/super-dungeon" in body
-    assert 'href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"' in body
+    spotify_url = "https://open.spotify.com/track/3oUvoKqq4qrlSP5VkCqhvh?si=889a04bcb1bf42b7"
+    bandcamp_url = "https://fumebreather.bandcamp.com/album/super-dungeon"
+    assert spotify_url in body
+    assert bandcamp_url in body
+    assert 'href="#contact" class="button primary"' in body
+    assert f'href="{spotify_url}"\n                            class="mastering-example-cover"' in body
+    assert f'href="{bandcamp_url}"\n                            class="mastering-example-cover"' in body
+    assert 'href="https://on.soundcloud.com/55O97EKK0mPpSfjWQF"' not in body
     assert ">Listen<" not in body
     assert body.index('id="examples"') < body.index('id="contact"')
     assert body.index('id="contact"') < body.index('id="pricing"')
     assert body.index('id="pricing"') < body.index('id="services"')
+    assert body.index('id="services"') < body.index('id="process"')
+    assert body.index('id="process"') < body.index('id="faq"')
     assert 'action="/mastering-services/#contact"' in body
     assert 'data-recaptcha-action="contact"' in body
     assert '<meta name="description"' in body
