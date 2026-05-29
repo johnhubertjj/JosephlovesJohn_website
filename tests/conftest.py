@@ -190,6 +190,13 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
 
 
 @pytest.fixture(autouse=True)
+def disable_recaptcha_by_default(settings) -> None:
+    """Keep tests independent of local reCAPTCHA environment variables."""
+    settings.RECAPTCHA_SITE_KEY = ""
+    settings.RECAPTCHA_SECRET_KEY = ""
+
+
+@pytest.fixture(autouse=True)
 def disable_csp_upgrade_for_browser_live_server(request: pytest.FixtureRequest, settings) -> None:
     """Keep HTTP-only Playwright live-server assets loadable in WebKit."""
     if request.node.get_closest_marker("browser"):
