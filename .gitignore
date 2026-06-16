@@ -98,3 +98,6 @@ docs/performance_reports.md
 
 # performance_reports
 perf-report/
+
+# Contract
+docs/contracts/*

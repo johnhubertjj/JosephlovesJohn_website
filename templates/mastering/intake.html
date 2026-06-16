@@ -16,7 +16,7 @@
             background-color: #18265c;
             background-image:
                 linear-gradient(to bottom, rgba(9, 11, 16, 0.86), rgba(24, 38, 92, 0.92)),
-                url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+                url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
             background-size: auto, cover;
             background-position: center, center;
             color: #ffffff;
@@ -66,7 +66,7 @@
             background-color: #5c1828;
             background-image:
                 linear-gradient(90deg, rgba(92, 24, 40, 0.94), rgba(92, 24, 40, 0.82)),
-                url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+                url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
             background-size: auto, cover;
             background-position: center, center;
         }

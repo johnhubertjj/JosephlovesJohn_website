@@ -20,6 +20,7 @@
     <link rel="icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="48x48" />
     <link rel="icon" type="image/png" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="192x192" />
     <link rel="apple-touch-icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" />
+    <link rel="preload" as="image" href="{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}" fetchpriority="high" />
     <link rel="stylesheet" href="{% static 'mastering/assets/css/main.css' %}" />
     <noscript><link rel="stylesheet" href="{% static 'mastering/assets/css/noscript.css' %}" /></noscript>
     <style>
@@ -87,7 +88,7 @@
             background-color: #151821;
             background-image:
                 linear-gradient(to top, rgba(21, 24, 33, 0.86), rgba(21, 24, 33, 0.72)),
-                url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+                url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
             background-size: auto, cover;
             background-position: center, center;
         }
@@ -101,7 +102,7 @@
             background-color: #151821;
             background-image:
                 linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
-                url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+                url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
             background-size: auto, cover;
             background-position: center, center;
         }
@@ -176,7 +177,7 @@
         #banner .inner {
             position: relative;
             z-index: 1;
-            transform: translateY(3.1rem);
+            transform: translateY(5.1rem);
         }
 
         body.is-preload #banner .mastering-profile {
@@ -193,6 +194,7 @@
 
         .wrapper.spotlight .image img,
         .features article .image img {
+            height: auto;
             aspect-ratio: 1;
             object-fit: cover;
         }
@@ -356,6 +358,7 @@
         .mastering-example-cover img {
             display: block;
             width: 100%;
+            height: auto;
             aspect-ratio: 1;
             border-radius: 4px;
             object-fit: cover;
@@ -414,6 +417,49 @@
             background: rgba(0, 0, 0, 0.28);
         }
 
+        .mastering-example-player-shell {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            width: 100%;
+            min-height: 166px;
+            margin: 0 0 1.25rem;
+            overflow: hidden;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.28);
+        }
+
+        .mastering-example-player-shell .mastering-example-player {
+            margin: 0;
+        }
+
+        .mastering-example-player-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 166px;
+            padding: 1rem;
+            border: solid 1px rgba(255, 255, 255, 0.22);
+            border-radius: 4px;
+            background: rgba(9, 11, 16, 0.48);
+            color: #ffffff !important;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.08rem;
+            line-height: 1.2;
+            text-align: center;
+            text-transform: uppercase;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .mastering-example-player-placeholder:hover,
+        .mastering-example-player-placeholder:focus-visible {
+            background: rgba(92, 24, 40, 0.68);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
         .mastering-example .actions {
             margin-bottom: 0;
         }
@@ -461,6 +507,12 @@
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11);
         }
 
+        .mastering-price-card h3.major {
+            display: flex;
+            align-items: flex-start;
+            min-height: 5.3rem;
+        }
+
         .mastering-price {
             display: block;
             margin: 0.45rem 0 1rem;
@@ -490,7 +542,7 @@
 
         @media screen and (max-width: 1680px) {
             #banner .inner {
-                transform: translateY(1.8rem);
+                transform: translateY(3.3rem);
             }
         }
 
@@ -498,13 +550,13 @@
             #banner {
                 background-image:
                     linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
-                    url("{% static 'mastering/images/mastering-website-header-image.jpg' %}");
+                    url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
                 background-size: auto, cover;
                 background-position: center, center;
             }
 
             #banner .inner {
-                transform: translateY(1.5rem);
+                transform: translateY(2.9rem);
             }
         }
 
@@ -517,7 +569,7 @@
             }
 
             #banner .inner {
-                transform: translateY(0.4rem);
+                transform: translateY(2.2rem);
             }
 
             #banner .mastering-profile {
@@ -535,6 +587,11 @@
                 grid-template-columns: 1fr;
             }
 
+            .mastering-price-card h3.major {
+                display: block;
+                min-height: 0;
+            }
+
             .mastering-faq-list {
                 grid-template-columns: 1fr;
             }
@@ -550,7 +607,7 @@
             }
 
             #banner .inner {
-                transform: translateY(0.5rem);
+                transform: translateY(2.1rem);
             }
         }
 
@@ -560,7 +617,7 @@
             }
 
             #banner .inner {
-                transform: translateY(1.5rem);
+                transform: translateY(2.1rem);
             }
         }
 
@@ -570,7 +627,7 @@
             }
 
             #banner .inner {
-                transform: translateY(1.8rem);
+                transform: translateY(2.1rem);
             }
 
             #header h1 {
@@ -649,9 +706,13 @@
         <div class="inner">
             <div class="logo"><span class="icon fa-gem"></span></div>
             <img
-                src="{% static 'mastering/images/john-joseph-profile.jpg' %}"
+                src="{{ 'mastering/images/john-joseph-profile.webp'|asset_url }}"
                 alt="John Joseph"
                 class="mastering-profile"
+                width="900"
+                height="900"
+                decoding="async"
+                fetchpriority="high"
             />
             <h2>John Joseph Mastering</h2>
             <p>Taste-first mastering focused on depth, clarity, and emotional translation without flattening the character out of the mix.</p>
@@ -676,8 +737,12 @@
                             rel="noopener"
                         >
                             <img
-                                src="{% static 'mastering/images/mastering-example-dark-and-light.jpg' %}"
+                                src="{{ 'mastering/images/mastering-example-dark-and-light.webp'|asset_url }}"
                                 alt="Dark and Light instrumental cover art"
+                                width="1400"
+                                height="1400"
+                                loading="lazy"
+                                decoding="async"
                             />
                         </a>
                         <div>
@@ -697,14 +762,25 @@
                                 aria-label="Listen to on Spotify"
                             >Listen to on <span class="icon brands fa-spotify mastering-example-listen-icon" aria-hidden="true"></span>Spotify</a>
                             <p>Spacious, atmospheric instrumental master.</p>
-                            <iframe
-                                class="mastering-example-player"
-                                title="SoundCloud player for Dark and Light instrumental"
-                                scrolling="no"
-                                allow="autoplay; encrypted-media"
-                                loading="lazy"
-                                src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949&color=%235c1828&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"
-                            ></iframe>
+                            <div
+                                class="mastering-example-player-shell"
+                                data-soundcloud-player
+                                data-title="SoundCloud player for Dark and Light instrumental"
+                                data-allow="autoplay; encrypted-media"
+                                data-src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949&color=%235c1828&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"
+                            >
+                                <button type="button" class="mastering-example-player-placeholder">Play Preview</button>
+                                <noscript>
+                                    <iframe
+                                        class="mastering-example-player"
+                                        title="SoundCloud player for Dark and Light instrumental"
+                                        scrolling="no"
+                                        allow="autoplay; encrypted-media"
+                                        loading="lazy"
+                                        src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949&color=%235c1828&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"
+                                    ></iframe>
+                                </noscript>
+                            </div>
                         </div>
                     </article>
                     <article class="mastering-example">
@@ -715,8 +791,12 @@
                             rel="noopener"
                         >
                             <img
-                                src="{% static 'mastering/images/mastering-example-super-dungeon.jpg' %}"
+                                src="{{ 'mastering/images/mastering-example-super-dungeon.webp'|asset_url }}"
                                 alt="Super Dungeon by Fumebreather cover art"
+                                width="1032"
+                                height="1032"
+                                loading="lazy"
+                                decoding="async"
                             />
                         </a>
                         <div>
@@ -736,14 +816,25 @@
                                 aria-label="Listen to on Bandcamp"
                             >Listen to on <span class="icon brands fa-bandcamp mastering-example-listen-icon" aria-hidden="true"></span>Bandcamp</a>
                             <p>By Fumebreather. A heavier, high-energy master.</p>
-                            <iframe
-                                class="mastering-example-player"
-                                title="SoundCloud player for Super Dungeon by Fumebreather"
-                                scrolling="no"
-                                allow="autoplay"
-                                loading="lazy"
-                                src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel&color=%235c1828&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false"
-                            ></iframe>
+                            <div
+                                class="mastering-example-player-shell"
+                                data-soundcloud-player
+                                data-title="SoundCloud player for Super Dungeon by Fumebreather"
+                                data-allow="autoplay"
+                                data-src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel&color=%235c1828&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false"
+                            >
+                                <button type="button" class="mastering-example-player-placeholder">Play Preview</button>
+                                <noscript>
+                                    <iframe
+                                        class="mastering-example-player"
+                                        title="SoundCloud player for Super Dungeon by Fumebreather"
+                                        scrolling="no"
+                                        allow="autoplay"
+                                        loading="lazy"
+                                        src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel&color=%235c1828&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false"
+                                    ></iframe>
+                                </noscript>
+                            </div>
                         </div>
                     </article>
                 </div>
@@ -821,18 +912,13 @@
                         <span class="mastering-price">£90</span>
                         <p>A finished master plus guidance on release strategy, advertising and DIY artwork/photos.</p>
                     </article>
-                    <article class="mastering-price-card">
-                        <h3 class="major">Further Release Consultations</h3>
-                        <span class="mastering-price">£50</span>
-                        <p>Additional release support for strategy, artwork, distribution, adverts, or website planning.</p>
-                    </article>
                 </div>
             </div>
         </section>
 
         <section id="services" class="wrapper spotlight style1">
             <div class="inner">
-                <span class="image"><img src="{% static 'mastering/images/mastering-gear-rack.jpg' %}" alt="Mastering rack and studio monitor" /></span>
+                <span class="image"><img src="{{ 'mastering/images/mastering-gear-rack.webp'|asset_url }}" alt="Mastering rack and studio monitor" width="1400" height="1400" loading="lazy" decoding="async" /></span>
                 <div class="content">
                     <h2 class="major">Single, EP, and Album Mastering</h2>
                     <p>Mastering should be personalised and perfected to your tastes and vision, not just a loudness pass. I believe open communication across the entire process is vital to get your mixes sounding professional.</p>
@@ -844,7 +930,7 @@
 
         <section id="process" class="wrapper alt spotlight style2">
             <div class="inner">
-                <span class="image"><img src="{% static 'mastering/images/mastering-fader-detail.jpg' %}" alt="Mixing desk faders" /></span>
+                <span class="image"><img src="{{ 'mastering/images/mastering-fader-detail.webp'|asset_url }}" alt="Mixing desk faders" width="1400" height="1400" loading="lazy" decoding="async" /></span>
                 <div class="content">
                     <h2 class="major">A Thoughtful, Song-First Process</h2>
                     <p>Each master is checked for tonal balance, low-end control, clarity, space and depth. The emphasis is always on what serves the song, rather than chasing generic brightness or level.</p>
@@ -859,22 +945,22 @@
                 <p>Every project is delivered with practical release use in mind, so you have files that are immediately usable and a result that still feels like your record.</p>
                 <section class="features">
                     <article>
-                        <span class="image"><img src="{% static 'mastering/images/mastering-pad-controller.jpg' %}" alt="Colourful pad controller on a studio desk" /></span>
+                        <span class="image"><img src="{{ 'mastering/images/mastering-pad-controller.webp'|asset_url }}" alt="Colourful pad controller on a studio desk" width="1200" height="650" loading="lazy" decoding="async" /></span>
                         <h3 class="major">Release-Ready Masters</h3>
                         <p>Polished stereo masters prepared for digital release, with careful level and tonal decisions that hold up without sounding crushed or overworked.</p>
                     </article>
                     <article>
-                        <span class="image"><img src="{% static 'mastering/images/mastering-drum-kit.jpg' %}" alt="Drum kit in a rehearsal room" /></span>
+                        <span class="image"><img src="{{ 'mastering/images/mastering-drum-kit.webp'|asset_url }}" alt="Drum kit in a rehearsal room" width="1200" height="650" loading="lazy" decoding="async" /></span>
                         <h3 class="major">Unlimited Revision Passes</h3>
                         <p>Your music should sound how you want it to sound. I will not finish a project until it is perfected to your vision.</p>
                     </article>
                     <article>
-                        <span class="image"><img src="{% static 'mastering/images/mastering-keyboard-controller.jpg' %}" alt="Keyboard controller with illuminated display" /></span>
+                        <span class="image"><img src="{{ 'mastering/images/mastering-keyboard-controller.webp'|asset_url }}" alt="Keyboard controller with illuminated display" width="1200" height="650" loading="lazy" decoding="async" /></span>
                         <h3 class="major">Context-Aware Delivery</h3>
                         <p>Delivery can be tailored to your release path, whether that means streaming-first output, CD or vinyl.</p>
                     </article>
                     <article>
-                        <span class="image"><img src="{% static 'mastering/images/mastering-instruments-image.jpg' %}" alt="Guitars, bass, banjo, ukulele and violin in studio light" /></span>
+                        <span class="image"><img src="{{ 'mastering/images/mastering-instruments-image.webp'|asset_url }}" alt="Guitars, bass, banjo, ukulele and violin in studio light" width="1400" height="1400" loading="lazy" decoding="async" /></span>
                         <h3 class="major">Release Strategy Advice</h3>
                         <p>Music doesn't stop at the master, advice on website design, adverts, distribution and artwork can be added on if you are stuck on how to get your music heard.</p>
                     </article>
@@ -952,6 +1038,58 @@
 <script src="{% static 'mastering/assets/js/breakpoints.min.js' %}"></script>
 <script src="{% static 'mastering/assets/js/util.js' %}"></script>
 <script src="{% static 'mastering/assets/js/main.js' %}"></script>
-{% include 'includes/recaptcha_v3.html' %}
+<script>
+    (function () {
+        var players = document.querySelectorAll("[data-soundcloud-player]");
+
+        function loadPlayer(container) {
+            if (!container || container.dataset.loaded === "true") {
+                return;
+            }
+
+            var source = container.getAttribute("data-src");
+            if (!source) {
+                return;
+            }
+
+            var iframe = document.createElement("iframe");
+            iframe.className = "mastering-example-player";
+            iframe.title = container.getAttribute("data-title") || "SoundCloud player";
+            iframe.scrolling = "no";
+            iframe.allow = container.getAttribute("data-allow") || "autoplay";
+            iframe.loading = "lazy";
+            iframe.src = source;
+
+            container.dataset.loaded = "true";
+            container.textContent = "";
+            container.appendChild(iframe);
+        }
+
+        Array.prototype.forEach.call(players, function (container) {
+            var button = container.querySelector(".mastering-example-player-placeholder");
+            if (button) {
+                button.addEventListener("click", function () {
+                    loadPlayer(container);
+                });
+            }
+        });
+
+        if ("IntersectionObserver" in window) {
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        loadPlayer(entry.target);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: "520px 0px" });
+
+            Array.prototype.forEach.call(players, function (container) {
+                observer.observe(container);
+            });
+        }
+    })();
+</script>
+{% include 'includes/recaptcha_v3.html' with recaptcha_loading='lazy' %}
 </body>
 </html>

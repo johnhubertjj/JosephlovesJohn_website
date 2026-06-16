@@ -2,6 +2,14 @@
 
 Cloudflare R2 is used in this project as optional storage for large public assets and private downloads.
 
+For public site assets served through `PUBLIC_ASSET_BASE_URL`, mirror the path
+inside `static/` but do not include the `static/` prefix. Mastering website
+images belong under `mastering/images/`, for example:
+
+- `mastering/images/mastering-website-header-image.webp`
+- `mastering/images/john-joseph-profile.webp`
+- `mastering/images/mastering-gear-rack.webp`
+
 It can also back admin-uploaded public media files by setting:
 
 - `MEDIA_FILES_BUCKET_NAME`

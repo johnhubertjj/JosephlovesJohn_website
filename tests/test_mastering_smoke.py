@@ -1,6 +1,7 @@
 """Smoke and integration tests for the mastering site shell."""
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 
 
@@ -34,7 +35,6 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
         "Free!",
         "If you are a new client, the first single track master is on me.",
         "Master + Release Walkthrough",
-        "Further Release Consultations",
         "FAQ",
         "What software do you use?",
         "What is WAV or AIFF?",
@@ -45,9 +45,17 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
         assert text in body
     assert "£50" in body
     assert "£90" in body
-    assert "mastering-example-dark-and-light.jpg" in body
-    assert "mastering-example-super-dungeon.jpg" in body
+    assert "Further Release Consultations" not in body
+    assert "mastering-example-dark-and-light.webp" in body
+    assert "mastering-example-super-dungeon.webp" in body
+    assert 'rel="preload" as="image"' in body
+    assert "mastering/images/mastering-website-header-image.webp" in body
+    assert body.count('class="mastering-example-player-shell"') == 2
+    assert body.count('data-src="https://w.soundcloud.com/player/') == 2
     assert body.count('class="mastering-example-player"') == 2
+    assert body.count("<iframe") == 2
+    assert 'loading="lazy"' in body
+    assert 'decoding="async"' in body
     assert "https://w.soundcloud.com/player/" in body
     assert "url=https%3A//api.soundcloud.com/tracks/soundcloud%253Atracks%253A2254324949" in body
     assert "url=https%3A//soundcloud.com/josephlovesjohn_mastering/mastering_showreel" in body
@@ -71,6 +79,20 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert 'href="http://127.0.0.1:8000/mastering-services/"' in body
 
 
+@pytest.mark.smoke
+@override_settings(RECAPTCHA_SITE_KEY="site-key", RECAPTCHA_SECRET_KEY="secret-key")
+def test_mastering_home_lazy_loads_recaptcha_when_enabled(client) -> None:
+    """The mastering contact form should avoid the eager reCAPTCHA network request."""
+    response = client.get(reverse("mastering:home"))
+    body = response.content.decode()
+
+    assert 'data-recaptcha-action="contact"' in body
+    assert 'name="g-recaptcha-response"' in body
+    assert '<script src="https://www.google.com/recaptcha/api.js?render=site-key"' not in body
+    assert "shouldLazyLoad = true" in body
+    assert "document.createElement(\"script\")" in body
+
+
 @pytest.mark.integration
 def test_mastering_home_from_main_site_sets_transition_class_and_homepage_link(client) -> None:
     """The mastering home page should reflect arrival from the main site."""
@@ -80,3 +102,17 @@ def test_mastering_home_from_main_site_sets_transition_class_and_homepage_link(c
     assert response.context["entered_from_home"] is True
     assert 'class="is-preload is-from-home"' in body
     assert f'href="{reverse("main_site:main")}"' in body
+
+
+@pytest.mark.smoke
+@override_settings(PUBLIC_ASSET_BASE_URL="https://assets.example.com")
+def test_mastering_home_resolves_images_against_public_asset_base_url(client) -> None:
+    """Mastering page images should be CDN-ready when a public asset base URL is configured."""
+    response = client.get(reverse("mastering:home"))
+    body = response.content.decode()
+
+    assert "https://assets.example.com/mastering/images/mastering-website-header-image.webp" in body
+    assert "https://assets.example.com/mastering/images/john-joseph-profile.webp" in body
+    assert response.context["seo"]["image_url"] == (
+        "https://assets.example.com/mastering/images/mastering-website-header-image.webp"
+    )

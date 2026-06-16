@@ -1,4 +1,4 @@
-"""Contact form submission workflow for the main site."""
+"""Shared public contact form submission workflow."""
 
 from dataclasses import dataclass
 
@@ -17,7 +17,7 @@ class ContactSubmissionResult:
 
 
 def handle_contact_submission(request, form) -> ContactSubmissionResult:
-    """Validate, protect, and send a main-site contact form submission."""
+    """Validate, protect, and send a public contact form submission."""
     if not form.is_valid():
         messages.error(
             request,

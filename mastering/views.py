@@ -16,6 +16,7 @@ from josephlovesjohn_site.assets import public_asset_url
 from josephlovesjohn_site.rate_limits import is_rate_limited
 from josephlovesjohn_site.recaptcha import verify_recaptcha_request
 from josephlovesjohn_site.site_urls import absolute_site_url
+from main_site.contact_flow import handle_contact_submission
 from main_site.forms import ContactForm
 
 from .forms import MasteringIntakeForm
@@ -131,7 +132,7 @@ def _intake_context(request, *, form=None):
             "title": "Mastering Intake Form | John Joseph Mastering",
             "description": "Private intake form for John Joseph Mastering projects.",
             "canonical_url": absolute_site_url(request.path),
-            "image_url": absolute_site_url(public_asset_url("mastering/images/mastering-website-header-image.jpg")),
+            "image_url": absolute_site_url(public_asset_url("mastering/images/mastering-website-header-image.webp")),
             "robots": "noindex,follow",
         },
     }
@@ -154,7 +155,7 @@ def _home_context(request, *, contact_form=None):
                 "and emotional translation."
             ),
             "canonical_url": absolute_site_url(request.path),
-            "image_url": absolute_site_url(public_asset_url("mastering/images/mastering-website-header-image.jpg")),
+            "image_url": absolute_site_url(public_asset_url("mastering/images/mastering-website-header-image.webp")),
             "robots": "index,follow",
         },
     }
@@ -170,62 +171,10 @@ def home(request):
     """
     if request.method == "POST":
         form = ContactForm(request.POST)
-        if form.is_valid():
-            cleaned = form.cleaned_data
-            if cleaned.get("website"):
-                messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
-                return redirect(f"{reverse('mastering:home')}#contact")
-            if not verify_recaptcha_request(request, expected_action="contact"):
-                messages.error(
-                    request,
-                    "We could not verify this message. Please refresh the page and try again.",
-                    extra_tags="contact",
-                )
-                return render(request, "mastering/home.html", _home_context(request, contact_form=form))
-            if is_rate_limited(
-                request,
-                scope="contact-form",
-                limit=settings.CONTACT_RATE_LIMIT_ATTEMPTS,
-                window_seconds=settings.CONTACT_RATE_LIMIT_WINDOW,
-                extra_identifier=cleaned["email"],
-            ):
-                messages.error(
-                    request,
-                    "Too many messages have been sent from this connection. Please try again later.",
-                    extra_tags="contact",
-                )
-                return render(request, "mastering/home.html", _home_context(request, contact_form=form))
-            message_body = (
-                f"New website contact form submission\n\n"
-                f"Name: {cleaned['name']}\n"
-                f"Email: {cleaned['email']}\n\n"
-                f"Message:\n{cleaned['message']}"
-            )
-            email_message = EmailMessage(
-                subject=f"Website contact from {cleaned['name']}",
-                body=message_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[settings.CONTACT_RECIPIENT_EMAIL],
-                reply_to=[cleaned["email"]],
-            )
-            try:
-                email_message.send(fail_silently=False)
-            except Exception:  # pragma: no cover - exercised in production mail failures.
-                messages.error(
-                    request,
-                    "Your message could not be sent right now. Please try again in a moment.",
-                    extra_tags="contact",
-                )
-                return render(request, "mastering/home.html", _home_context(request, contact_form=form))
-
-            messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
+        result = handle_contact_submission(request, form)
+        if result.should_redirect:
             return redirect(f"{reverse('mastering:home')}#contact")
 
-        messages.error(
-            request,
-            "Please correct the highlighted fields and try again.",
-            extra_tags="contact",
-        )
         return render(request, "mastering/home.html", _home_context(request, contact_form=form))
 
     return render(request, "mastering/home.html", _home_context(request))
