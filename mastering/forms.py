@@ -265,7 +265,7 @@ class MasteringIntakeForm(forms.Form):
 
     def clean(self):
         """Validate the branch-specific required fields."""
-        cleaned = super().clean()
+        cleaned = super().clean() or {}
         role = cleaned.get("submitter_role")
         if role == "artist" and not cleaned.get("artist_name"):
             self.add_error("artist_name", "Please enter your artist name.")

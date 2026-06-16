@@ -112,6 +112,7 @@ def test_mastering_home_resolves_images_against_public_asset_base_url(client) ->
     body = response.content.decode()
 
     assert "https://assets.example.com/mastering/images/mastering-website-header-image.webp" in body
+    assert 'url("https://assets.example.com/mastering/images/bg.webp")' in body
     assert "https://assets.example.com/mastering/images/john-joseph-profile.webp" in body
     assert response.context["seo"]["image_url"] == (
         "https://assets.example.com/mastering/images/mastering-website-header-image.webp"

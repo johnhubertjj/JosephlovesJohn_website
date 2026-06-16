@@ -21,7 +21,10 @@ def test_content_security_policy_header_is_sent(client) -> None:
     ) in policy
     assert "https://connect.facebook.net" in policy
     assert "https://www.facebook.com" in policy
-    assert "frame-src https://josephlovesjohn.kit.com https://checkout.stripe.com https://www.google.com https://w.soundcloud.com" in policy
+    assert (
+        "frame-src https://josephlovesjohn.kit.com https://checkout.stripe.com "
+        "https://www.google.com https://w.soundcloud.com"
+    ) in policy
     assert (
         "form-action 'self' https://josephlovesjohn.kit.com "
         "https://app.kit.com https://checkout.stripe.com"
