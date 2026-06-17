@@ -40,6 +40,25 @@
 
 		$window.on('load pageshow', clearPreload);
 
+	// Safari can restore an old scroll position for the same URL, which makes
+	// the page appear to start at Examples instead of the banner.
+		if (!window.location.hash) {
+
+			var resetScrollToBanner = function() {
+				window.scrollTo(0, 0);
+			};
+
+			if ('scrollRestoration' in history)
+				history.scrollRestoration = 'manual';
+
+			resetScrollToBanner();
+			window.requestAnimationFrame(resetScrollToBanner);
+			window.setTimeout(resetScrollToBanner, 80);
+			window.setTimeout(resetScrollToBanner, 320);
+			$window.on('load pageshow', resetScrollToBanner);
+
+		}
+
 	// Header.
 		if ($banner.length > 0
 		&&	$header.hasClass('alt')) {

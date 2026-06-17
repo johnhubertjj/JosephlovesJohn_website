@@ -69,6 +69,19 @@ def test_mastering_js_clears_preload_before_window_load_for_safari() -> None:
     assert "DOMContentLoaded" in content
     assert "'load pageshow'" in content
     assert "$body.removeClass('is-preload')" in content
+    assert "if (!window.location.hash)" in content
+    assert "$body.hasClass('is-from-home') && !window.location.hash" not in content
+    assert "resetScrollToBanner" in content
+    assert "history.scrollRestoration = 'manual'" in content
+
+
+def test_main_site_mastering_route_animation_forces_firefox_reflow() -> None:
+    """Firefox needs the ghost pill's initial style flushed before the route animation starts."""
+    main_js = _REPO_ROOT / "static" / "assets" / "js" / "main.js"
+    content = main_js.read_text()
+
+    assert "$ghost[0].offsetWidth" in content
+    assert "otherwise it may skip the transition" in content
 
 
 @pytest.mark.django_db
