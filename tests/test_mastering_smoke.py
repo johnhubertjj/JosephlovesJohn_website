@@ -46,6 +46,8 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert "£50" in body
     assert "£90" in body
     assert "Further Release Consultations" not in body
+    assert "margin-bottom: 0;" in body
+    assert "#examples:before {\n            display: none;" in body
     assert f'<h1><a href="{reverse("mastering:home")}">John Joseph Mastering</a></h1>' in body
     assert f'<li><a href="{reverse("mastering:home")}">Home</a></li>' in body
     assert 'class="mastering-home-trigger">Josephlovesjohn - Artist page</a>' in body
