@@ -151,7 +151,7 @@ services:
       - key: RECAPTCHA_MIN_SCORE
         value: "0.5"
       - key: RECAPTCHA_ALLOWED_HOSTNAMES
-        value: josephlovesjohn.com
+        value: josephlovesjohn.com,www.josephlovesjohn.com
       - key: SENTRY_DSN
         sync: false
       - key: SENTRY_ENVIRONMENT

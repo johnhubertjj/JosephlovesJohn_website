@@ -194,6 +194,7 @@ def disable_recaptcha_by_default(settings) -> None:
     """Keep tests independent of local reCAPTCHA environment variables."""
     settings.RECAPTCHA_SITE_KEY = ""
     settings.RECAPTCHA_SECRET_KEY = ""
+    settings.RECAPTCHA_ALLOWED_HOSTNAMES = []
 
 
 @pytest.fixture(autouse=True)
@@ -203,6 +204,7 @@ def disable_csp_upgrade_for_browser_live_server(request: pytest.FixtureRequest, 
         settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = False
         settings.RECAPTCHA_SITE_KEY = ""
         settings.RECAPTCHA_SECRET_KEY = ""
+        settings.RECAPTCHA_ALLOWED_HOSTNAMES = []
 
 
 @pytest.fixture(autouse=True)

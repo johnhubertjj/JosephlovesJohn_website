@@ -61,6 +61,16 @@ def test_refactored_vendor_css_assets_resolve_to_real_files() -> None:
         assert resolved.exists(), f"{fontawesome_css} points to missing asset {relative_asset}"
 
 
+def test_mastering_js_clears_preload_before_window_load_for_safari() -> None:
+    """Safari navigation can leave the hero hidden if preload waits only for window.load."""
+    main_js = _REPO_ROOT / "static" / "mastering" / "assets" / "js" / "main.js"
+    content = main_js.read_text()
+
+    assert "DOMContentLoaded" in content
+    assert "'load pageshow'" in content
+    assert "$body.removeClass('is-preload')" in content
+
+
 @pytest.mark.django_db
 def test_main_site_base_template_uses_refactored_asset_locations(client) -> None:
     """The rendered page should reference the reorganized CSS entrypoints."""

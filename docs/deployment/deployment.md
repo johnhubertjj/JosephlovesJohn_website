@@ -138,10 +138,14 @@ To enable invisible reCAPTCHA checks on the contact, account creation, and login
 RECAPTCHA_SITE_KEY=...
 RECAPTCHA_SECRET_KEY=...
 RECAPTCHA_MIN_SCORE=0.5
-RECAPTCHA_ALLOWED_HOSTNAMES=josephlovesjohn.com
+RECAPTCHA_ALLOWED_HOSTNAMES=josephlovesjohn.com,www.josephlovesjohn.com
 ```
 
 The checks stay disabled unless both reCAPTCHA keys are present.
+When `RECAPTCHA_ALLOWED_HOSTNAMES` is set, the client hook is only rendered
+for matching request hostnames. That keeps Render preview URLs from showing
+Google's `Invalid domain` badge unless you explicitly add that preview hostname
+to both the Google reCAPTCHA key and `RECAPTCHA_ALLOWED_HOSTNAMES`.
 
 ### Optional public asset CDN
 

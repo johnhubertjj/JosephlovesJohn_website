@@ -20,12 +20,25 @@
 			xsmall:	'(max-width: 480px)'
 		});
 
-	// Play initial animations on page load.
-		$window.on('load', function() {
+	// Play initial animations once the page is interactive.
+		var preloadCleared = false;
+
+		function clearPreload() {
+			if (preloadCleared)
+				return;
+
+			preloadCleared = true;
 			window.setTimeout(function() {
 				$body.removeClass('is-preload');
 			}, 100);
-		});
+		}
+
+		if (document.readyState === 'loading')
+			document.addEventListener('DOMContentLoaded', clearPreload);
+		else
+			clearPreload();
+
+		$window.on('load pageshow', clearPreload);
 
 	// Header.
 		if ($banner.length > 0
