@@ -128,17 +128,13 @@ def test_product_asset_properties_support_external_urls() -> None:
         title="External Track",
         slug="external-track",
         art_path="https://cdn.example.com/images/cover.jpg",
-        preview_file_wav="https://cdn.example.com/audio/preview.wav",
         preview_file_mp3="https://cdn.example.com/audio/preview.mp3",
         download_file_path="https://cdn.example.com/audio/full.mp3",
-        download_file_wav_path="https://cdn.example.com/audio/full.wav",
     )
 
     assert product.art_url == "https://cdn.example.com/images/cover.jpg"
-    assert product.preview_wav_url == "https://cdn.example.com/audio/preview.wav"
     assert product.preview_mp3_url == "https://cdn.example.com/audio/preview.mp3"
     assert product.download_url == "https://cdn.example.com/audio/full.mp3"
-    assert product.download_wav_url == "https://cdn.example.com/audio/full.wav"
 
 
 @pytest.mark.django_db
@@ -148,7 +144,6 @@ def test_product_preview_urls_can_use_private_signed_assets(monkeypatch: pytest.
         title="Private Preview Track",
         slug="private-preview-track",
         art_path="images/album_art/cover.jpg",
-        preview_file_wav="audio/private-preview.wav",
         preview_file_mp3="audio/private-preview.mp3",
         download_file_path="audio/private-download.mp3",
     )
@@ -159,7 +154,6 @@ def test_product_preview_urls_can_use_private_signed_assets(monkeypatch: pytest.
         lambda path: f"https://signed.example.com/{path}",
     )
 
-    assert product.preview_wav_url == "https://signed.example.com/audio/private-preview.wav"
     assert product.preview_mp3_url == "https://signed.example.com/audio/private-preview.mp3"
 
 
@@ -171,10 +165,8 @@ def test_order_item_urls_split_public_art_and_protected_download_route() -> None
         title="Track",
         slug="track",
         art_path="images/album_art/cover.jpg",
-        preview_file_wav="audio/track.wav",
         preview_file_mp3="audio/track.mp3",
         download_file_path="audio/track.mp3",
-        download_file_wav_path="audio/track.wav",
     )
     order = Order.objects.create(
         full_name="Listener",
@@ -192,9 +184,7 @@ def test_order_item_urls_split_public_art_and_protected_download_route() -> None
         art_path_snapshot="images/album_art/cover.jpg",
         art_alt_snapshot="Cover",
         download_file_path="audio/track.mp3",
-        download_file_wav_path="audio/track.wav",
     )
 
     assert item.art_url == "https://assets.example.com/images/album_art/cover.jpg"
     assert item.download_url == reverse("shop:download", kwargs={"item_id": item.pk})
-    assert item.download_wav_url == f'{reverse("shop:download", kwargs={"item_id": item.pk})}?format=wav'

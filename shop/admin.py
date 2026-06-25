@@ -28,7 +28,6 @@ class OrderItemInline(admin.TabularInline):
         "artist_snapshot",
         "price_snapshot",
         "download_file_path",
-        "download_file_wav_path",
     )
 
 

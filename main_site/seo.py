@@ -30,7 +30,7 @@ SITE_SEO = {
     "music": {
         "title": "Music | JosephlovesJohn Downloads and Listening",
         "description": (
-            "Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 and WAV downloads "
+            "Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 downloads "
             "from the official music page."
         ),
         "canonical_route": "main_site:music",
@@ -170,7 +170,7 @@ def build_music_track_seo(
     artist_name = str(item.get("artist_name") or "JosephlovesJohn")
     description = str(item.get("description") or item.get("meta") or "")
     if not description:
-        description = f"Listen to {title} by {artist_name} and buy a direct MP3 or WAV download."
+        description = f"Listen to {title} by {artist_name} and buy a direct MP3 download."
 
     art_url = absolute_site_url(str(item.get("art_url") or item.get("art_path") or ""))
     price = str(item.get("price") or "")

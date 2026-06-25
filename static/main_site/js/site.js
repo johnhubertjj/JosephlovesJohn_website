@@ -318,44 +318,8 @@
         return playerScriptPromise;
     }
 
-    function shouldPreferCompressedAudio() {
-        var connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        if (!connection) {
-            return true;
-        }
-
-        if (connection.saveData) {
-            return true;
-        }
-
-        var type = (connection.effectiveType || "").toLowerCase();
-        if (type && type !== "4g") {
-            return true;
-        }
-
-        if (typeof connection.downlink === "number" && connection.downlink > 0 && connection.downlink < 6) {
-            return true;
-        }
-
-        if (typeof connection.rtt === "number" && connection.rtt > 300) {
-            return true;
-        }
-
-        return !(type === "4g" && typeof connection.downlink === "number" && connection.downlink >= 6);
-    }
-
     function pickPreferredAudioFile(frame) {
-        var wav = frame.getAttribute("data-file-wav") || "";
         var mp3 = frame.getAttribute("data-file-mp3") || "";
-        var preferCompressed = shouldPreferCompressedAudio();
-
-        if (preferCompressed && mp3) {
-            return mp3;
-        }
-
-        if (wav) {
-            return wav;
-        }
 
         return mp3;
     }
@@ -363,9 +327,6 @@
     function getAudioMimeType(path) {
         var cleanPath = (path || "").split("?")[0].toLowerCase();
 
-        if (cleanPath.endsWith(".wav")) {
-            return "audio/wav";
-        }
         if (cleanPath.endsWith(".mp3")) {
             return "audio/mpeg";
         }

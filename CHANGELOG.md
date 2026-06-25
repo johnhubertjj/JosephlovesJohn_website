@@ -85,5 +85,5 @@ This project follows simple semantic versioning for production releases:
 - Main artist site, mastering microsite, and legal pages live
 - Direct-download music shop with Stripe Checkout
 - Customer accounts, password reset, order history, and downloads
-- MP3 and WAV delivery from account, success page, and email links
+- MP3 delivery from account, success page, and email links
 - Plausible, Sentry, sitemap, and robots setup

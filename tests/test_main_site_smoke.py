@@ -174,7 +174,7 @@ def test_music_page_smoke_renders_route_specific_metadata(client) -> None:
 
     assert response.status_code == 200
     assert "<title>Music | JosephlovesJohn Downloads and Listening</title>" in body
-    assert 'Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 and WAV downloads' in body
+    assert "Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 downloads" in body
     assert 'href="http://127.0.0.1:8000/music/"' in body
     assert '"@type":"ItemList"' in body
     assert '"@type":"MusicRecording"' in body
@@ -194,7 +194,6 @@ def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_stati
         meta="Single",
         art_path=create_static_asset("images/album_art/mock-song-cover.jpg"),
         art_alt="Mock cover art",
-        preview_file_wav=create_static_asset("audio/mock-song.wav"),
         preview_file_mp3=create_static_asset("audio/mock-song.mp3"),
         download_file_path="audio/mock-song.mp3",
         sort_order=0,
@@ -219,7 +218,6 @@ def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_stati
 
     assert items[0]["title"] == product.title
     assert site_data.static_file_exists(items[0]["art_path"])
-    assert site_data.static_file_exists(items[0]["file_wav"])
     assert site_data.static_file_exists(items[0]["file_mp3"])
 
     assert gig_items[0]["title"] == gig_photo.title

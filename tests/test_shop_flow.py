@@ -83,9 +83,6 @@ def ensure_seeded_download_assets(create_static_asset) -> None:
     """Create temporary storefront audio files so checkout tests don't rely on local ignored media."""
     for download_path in Product.objects.values_list("download_file_path", flat=True):
         create_static_asset(download_path, content=b"shop audio")
-    wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
-    for download_path in wav_paths:
-        create_static_asset(download_path, content=b"shop wav audio")
 
 
 @pytest.fixture(autouse=True)
@@ -139,7 +136,6 @@ def test_cart_add_blocks_already_owned_downloads(client, django_user_model, seed
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
     client.force_login(user)
 
@@ -699,8 +695,8 @@ def test_checkout_uses_configured_allowed_countries(client, seeded_product: Prod
 
 def test_checkout_post_blocks_payment_when_a_download_is_unavailable(client, seeded_product: Product) -> None:
     """Checkout should fail closed before Stripe when the file is not available to deliver."""
-    seeded_product.download_file_wav_path = "audio/missing-before-payment.wav"
-    seeded_product.save(update_fields=["download_file_wav_path"])
+    seeded_product.download_file_path = "audio/missing-before-payment.mp3"
+    seeded_product.save(update_fields=["download_file_path"])
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
 
     response = client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
@@ -741,7 +737,6 @@ def test_checkout_blocks_signed_in_owners_from_rebuying_tracks(
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
     client.force_login(user)
     session = client.session
@@ -806,7 +801,7 @@ def test_success_page_confirms_paid_stripe_session_and_clears_cart(
     assert len(mail.outbox) == 1
     assert f"order #{order.pk}" in mail.outbox[0].subject.lower()
     assert reverse("shop:download", args=[order.items.get().pk]) in mail.outbox[0].body
-    assert "format=wav" in mail.outbox[0].body
+    assert "format=wav" not in mail.outbox[0].body
 
 
 def test_register_rejects_duplicate_email_addresses(client, django_user_model) -> None:
@@ -967,7 +962,6 @@ def test_guest_success_page_requires_recent_session_order(client, seeded_product
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
 
     response = client.get(reverse("shop:success", args=[order.pk]))
@@ -1004,7 +998,6 @@ def test_pending_guest_success_page_requires_verified_stripe_session(
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
     fake_stripe_checkout["sessions"]["cs_test_pending"] = {
         "id": "cs_test_pending",
@@ -1156,7 +1149,6 @@ def test_signed_email_download_link_allows_guest_access_without_recent_session(
 ) -> None:
     """The emailed download link should work even without the original guest session."""
     create_private_download_asset(seeded_product.download_file_path, content=b"paid file")
-    create_private_download_asset(seeded_product.download_file_wav_path, content=b"paid wav file")
     client.post(reverse("shop:cart_add", args=[seeded_product.slug]))
     client.post(reverse("shop:checkout"), VALID_CHECKOUT_CONSENTS)
     order = Order.objects.get()
@@ -1187,15 +1179,6 @@ def test_signed_email_download_link_allows_guest_access_without_recent_session(
     assert signed_response.status_code == 200
     assert signed_response.get("Content-Disposition", "").startswith("attachment;")
 
-    wav_download_line = next(
-        line for line in mail.outbox[0].body.splitlines() if "/shop/download/" in line and "format=wav" in line
-    )
-    wav_signed_download = urlsplit(wav_download_line.strip().split("WAV: ", 1)[-1])
-    wav_response = fresh_client.get(f"{wav_signed_download.path}?{wav_signed_download.query}")
-
-    assert wav_response.status_code == 200
-    assert 'filename="' in wav_response.get("Content-Disposition", "")
-
 
 @pytest.mark.parametrize("event_type", ["checkout.session.completed", "checkout.session.async_payment_succeeded"])
 @override_settings(
@@ -1225,7 +1208,6 @@ def test_stripe_webhook_confirms_matching_order(
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
 
     checkout_session = {
@@ -1362,7 +1344,6 @@ def test_stripe_webhook_tolerates_confirmation_email_failures(
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
 
     checkout_session = {
@@ -1701,7 +1682,6 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
         art_path_snapshot=seeded_product.art_path,
         art_alt_snapshot=seeded_product.art_alt,
         download_file_path=seeded_product.download_file_path,
-        download_file_wav_path=seeded_product.download_file_wav_path,
     )
     client.force_login(user)
 
@@ -1713,7 +1693,8 @@ def test_account_lists_completed_order_downloads(client, django_user_model, seed
     assert f"Order #{order.id}" in body
     assert seeded_product.title in body
     assert reverse("shop:download", args=[order.items.get().pk]) in body
-    assert "Download WAV" in body
+    assert "Download MP3" in body
+    assert "Download WAV" not in body
     assert_response_is_not_cacheable(response)
 
 
@@ -1797,8 +1778,11 @@ def test_guest_download_requires_recent_session_order(
     session.save()
 
     allowed = client.get(reverse("shop:download", args=[item.pk]))
+    wav_format_response = client.get(reverse("shop:download", args=[item.pk]), {"format": "wav"})
+
     assert allowed.status_code == 200
     assert allowed.get("Content-Disposition", "").startswith("attachment;")
+    assert wav_format_response.status_code == 404
 
 
 def test_account_owner_can_download_private_file(

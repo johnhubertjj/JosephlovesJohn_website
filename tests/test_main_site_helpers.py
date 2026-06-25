@@ -517,7 +517,6 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
         slug="second-track",
         meta="Single",
         art_path="images/album_art/second.jpg",
-        preview_file_wav="audio/second.wav",
         preview_file_mp3="audio/second.mp3",
         download_file_path="audio/second.mp3",
         sort_order=1,
@@ -529,7 +528,6 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
         slug="hidden-track",
         meta="Hidden",
         art_path="images/album_art/hidden.jpg",
-        preview_file_wav="audio/hidden.wav",
         preview_file_mp3="audio/hidden.mp3",
         download_file_path="audio/hidden.mp3",
         sort_order=0,
@@ -540,7 +538,6 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
         slug="first-track",
         meta="EP",
         art_path="images/album_art/first.jpg",
-        preview_file_wav="audio/first.wav",
         preview_file_mp3="audio/first.mp3",
         download_file_path="audio/first.mp3",
         sort_order=0,
@@ -556,7 +553,6 @@ def test_get_music_library_items_uses_published_products_in_order() -> None:
     assert items[0]["public_slug"] == "first-track"
     assert all(item["buy_path"].startswith("/shop/cart/add/") for item in items)
     assert items[0]["art_url"] == "/static/images/album_art/first.jpg"
-    assert items[0]["file_wav_url"] == "/static/audio/first.wav"
     assert items[0]["file_mp3_url"] == "/static/audio/first.mp3"
     assert items[1]["is_reversed"] is True
 
@@ -572,7 +568,6 @@ def test_get_music_library_items_cache_invalidates_when_products_change() -> Non
         slug="first-track",
         meta="Single",
         art_path="images/album_art/first.jpg",
-        preview_file_wav="audio/first.wav",
         preview_file_mp3="audio/first.mp3",
         download_file_path="audio/first.mp3",
         sort_order=0,
@@ -586,7 +581,6 @@ def test_get_music_library_items_cache_invalidates_when_products_change() -> Non
         slug="second-track",
         meta="Single",
         art_path="images/album_art/second.jpg",
-        preview_file_wav="audio/second.wav",
         preview_file_mp3="audio/second.mp3",
         download_file_path="audio/second.mp3",
         sort_order=1,
@@ -611,7 +605,6 @@ def test_get_music_library_items_ignores_pre_track_page_cache_payloads() -> None
         slug="first-track",
         meta="Single",
         art_path="images/album_art/first.jpg",
-        preview_file_wav="audio/first.wav",
         preview_file_mp3="audio/first.mp3",
         download_file_path="audio/first.mp3",
         sort_order=0,

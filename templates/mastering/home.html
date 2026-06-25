@@ -101,8 +101,9 @@
             display: flex;
             align-items: flex-end;
             min-height: 82vh;
-            margin-bottom: 0;
+            margin-bottom: -6.5em;
             padding: 10em 0 11.5em;
+            position: relative;
             background-color: #151821;
             background-image:
                 linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
@@ -180,8 +181,10 @@
 
         #banner .inner {
             position: relative;
-            z-index: 1;
-            transform: translateY(5.1rem);
+            z-index: 20;
+            -webkit-transform: translate3d(0, 5.1rem, 0);
+            transform: translate3d(0, 5.1rem, 0);
+            will-change: transform;
         }
 
         body.is-preload #banner .mastering-profile {
@@ -267,7 +270,6 @@
         }
 
         #examples:before {
-            display: none;
             -moz-transform: scaleX(-1);
             -webkit-transform: scaleX(-1);
             -ms-transform: scaleX(-1);
@@ -547,7 +549,8 @@
 
         @media screen and (max-width: 1680px) {
             #banner .inner {
-                transform: translateY(3.3rem);
+                -webkit-transform: translate3d(0, 3.3rem, 0);
+                transform: translate3d(0, 3.3rem, 0);
             }
         }
 
@@ -561,7 +564,8 @@
             }
 
             #banner .inner {
-                transform: translateY(2.9rem);
+                -webkit-transform: translate3d(0, 2.9rem, 0);
+                transform: translate3d(0, 2.9rem, 0);
             }
         }
 
@@ -574,7 +578,8 @@
             }
 
             #banner .inner {
-                transform: translateY(2.2rem);
+                -webkit-transform: translate3d(0, 2.2rem, 0);
+                transform: translate3d(0, 2.2rem, 0);
             }
 
             #banner .mastering-profile {
@@ -612,7 +617,8 @@
             }
 
             #banner .inner {
-                transform: translateY(2.1rem);
+                -webkit-transform: translate3d(0, 2.1rem, 0);
+                transform: translate3d(0, 2.1rem, 0);
             }
         }
 
@@ -622,7 +628,8 @@
             }
 
             #banner .inner {
-                transform: translateY(2.1rem);
+                -webkit-transform: translate3d(0, 2.1rem, 0);
+                transform: translate3d(0, 2.1rem, 0);
             }
         }
 
@@ -632,7 +639,8 @@
             }
 
             #banner .inner {
-                transform: translateY(2.1rem);
+                -webkit-transform: translate3d(0, 2.1rem, 0);
+                transform: translate3d(0, 2.1rem, 0);
             }
 
             #header h1 {

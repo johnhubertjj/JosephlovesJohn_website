@@ -154,7 +154,6 @@ def test_music_library_item_component_renders_reusable_share_and_player_structur
                 "art_path": "images/album_art/dark_and_light_artist_cover.jpg",
                 "art_alt": "Reusable artwork",
                 "player_id": "reusable-track-player",
-                "file_wav": "audio/reusable-track.wav",
                 "file_mp3": "audio/reusable-track.mp3",
                 "is_reversed": True,
                 "share_path": "/music/",

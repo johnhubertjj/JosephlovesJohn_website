@@ -474,8 +474,6 @@ def get_music_library_items():
                 "art_url": product.art_url,
                 "art_alt": product.art_alt or product.title,
                 "player_id": product.player_id,
-                "file_wav": product.preview_file_wav,
-                "file_wav_url": product.preview_wav_url,
                 "file_mp3": product.preview_file_mp3,
                 "file_mp3_url": product.preview_mp3_url,
                 "price": f"{product.price:.2f}",

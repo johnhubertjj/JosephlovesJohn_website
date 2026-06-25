@@ -54,7 +54,6 @@
 - [ ] Password reset email arrives
 - [ ] Confirmation email links use `josephlovesjohn.com`
 - [ ] MP3 download works
-- [ ] WAV download works
 - [ ] Download links from the email work
 
 ## 7. Monitoring and Analytics
