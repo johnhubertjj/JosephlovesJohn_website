@@ -9,7 +9,7 @@
 	var	$window = $(window),
 		$body = $('body'),
 		$header = $('#header'),
-		$banner = $('#banner');
+		$hero = $('#mastering-hero');
 
 	// Breakpoints.
 		breakpoints({
@@ -40,42 +40,13 @@
 
 		$window.on('load pageshow', clearPreload);
 
-	// Safari can restore an old scroll position for the same URL, which makes
-	// the page appear to start at Examples instead of the banner.
-		if (!window.location.hash) {
-
-			var resetScrollToBanner = function() {
-				window.scrollTo(0, 0);
-			};
-
-			var scheduleScrollReset = function() {
-				resetScrollToBanner();
-
-				if (window.requestAnimationFrame)
-					window.requestAnimationFrame(resetScrollToBanner);
-
-				window.setTimeout(resetScrollToBanner, 80);
-				window.setTimeout(resetScrollToBanner, 320);
-				window.setTimeout(resetScrollToBanner, 800);
-				window.setTimeout(resetScrollToBanner, 1600);
-				window.setTimeout(resetScrollToBanner, 2400);
-			};
-
-			if ('scrollRestoration' in history)
-				history.scrollRestoration = 'manual';
-
-			scheduleScrollReset();
-			$window.on('load pageshow', scheduleScrollReset);
-
-		}
-
 	// Header.
-		if ($banner.length > 0
+		if ($hero.length > 0
 		&&	$header.hasClass('alt')) {
 
 			$window.on('resize', function() { $window.trigger('scroll'); });
 
-			$banner.scrollex({
+			$hero.scrollex({
 				bottom:		$header.outerHeight(),
 				terminate:	function() { $header.removeClass('alt'); },
 				enter:		function() { $header.addClass('alt'); },

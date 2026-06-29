@@ -62,17 +62,17 @@ def test_refactored_vendor_css_assets_resolve_to_real_files() -> None:
 
 
 def test_mastering_js_clears_preload_before_window_load_for_safari() -> None:
-    """Safari navigation can leave the hero hidden if preload waits only for window.load."""
+    """Safari navigation should reveal the renamed hero before window.load."""
     main_js = _REPO_ROOT / "static" / "mastering" / "assets" / "js" / "main.js"
     content = main_js.read_text()
 
     assert "DOMContentLoaded" in content
     assert "'load pageshow'" in content
     assert "$body.removeClass('is-preload')" in content
-    assert "if (!window.location.hash)" in content
-    assert "$body.hasClass('is-from-home') && !window.location.hash" not in content
-    assert "resetScrollToBanner" in content
-    assert "history.scrollRestoration = 'manual'" in content
+    assert "$hero = $('#mastering-hero')" in content
+    assert "$banner = $('#banner')" not in content
+    assert "resetScrollToBanner" not in content
+    assert "history.scrollRestoration" not in content
 
 
 def test_main_site_mastering_route_animation_forces_firefox_reflow() -> None:

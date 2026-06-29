@@ -5,13 +5,6 @@
     <title>{{ seo.title }}</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <script>
-        (function () {
-            if (!window.location.hash && "scrollRestoration" in history) {
-                history.scrollRestoration = "manual";
-            }
-        }());
-    </script>
     <meta name="description" content="{{ seo.description }}" />
     <meta name="robots" content="{{ seo.robots }}" />
     <link rel="canonical" href="{{ seo.canonical_url }}" />
@@ -104,7 +97,7 @@
             background-position: center, center;
         }
 
-        #banner {
+        #mastering-hero {
             display: flex;
             align-items: flex-end;
             min-height: 82vh;
@@ -146,11 +139,11 @@
             color: #ffffff;
         }
 
-        #banner .logo {
+        #mastering-hero .logo {
             display: none;
         }
 
-        #banner .mastering-profile {
+        #mastering-hero .mastering-profile {
             display: block;
             width: 7.5rem;
             height: 7.5rem;
@@ -166,19 +159,19 @@
             transition-delay: 0.45s;
         }
 
-        #banner h2,
-        #banner p {
+        #mastering-hero h2,
+        #mastering-hero p {
             text-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.55);
         }
 
-        #banner .mastering-hero-cta {
+        #mastering-hero .mastering-hero-cta {
             margin: 1.6rem 0 1rem;
             font-weight: 700;
             letter-spacing: 0.08rem;
             text-transform: uppercase;
         }
 
-        #banner .actions {
+        #mastering-hero .actions {
             margin-bottom: 0;
             opacity: 1;
             transform: translateX(0);
@@ -186,7 +179,7 @@
             transition-delay: 0.95s;
         }
 
-        #banner .inner {
+        #mastering-hero .inner {
             position: relative;
             z-index: 20;
             -webkit-transform: translate3d(0, 5.1rem, 0);
@@ -194,13 +187,13 @@
             will-change: transform;
         }
 
-        body.is-preload #banner .mastering-profile {
+        body.is-preload #mastering-hero .mastering-profile {
             opacity: 0;
             transform: translateY(0.65rem) scale(0.96);
             filter: blur(2px);
         }
 
-        body.is-preload #banner .actions {
+        body.is-preload #mastering-hero .actions {
             opacity: 0;
             transform: translateX(0.5em);
             filter: blur(2px);
@@ -555,14 +548,14 @@
         }
 
         @media screen and (max-width: 1680px) {
-            #banner .inner {
+            #mastering-hero .inner {
                 -webkit-transform: translate3d(0, 3.3rem, 0);
                 transform: translate3d(0, 3.3rem, 0);
             }
         }
 
         @media screen and (max-width: 1280px) {
-            #banner {
+            #mastering-hero {
                 background-image:
                     linear-gradient(90deg, rgba(9, 11, 16, 0.88) 0%, rgba(9, 11, 16, 0.58) 46%, rgba(9, 11, 16, 0.28) 100%),
                     url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
@@ -570,26 +563,26 @@
                 background-position: center, center;
             }
 
-            #banner .inner {
+            #mastering-hero .inner {
                 -webkit-transform: translate3d(0, 2.9rem, 0);
                 transform: translate3d(0, 2.9rem, 0);
             }
         }
 
         @media screen and (max-width: 736px) {
-            #banner {
+            #mastering-hero {
                 align-items: flex-end;
                 min-height: 34rem;
                 padding: 8em 2em 7.25em;
                 background-position: 58% center;
             }
 
-            #banner .inner {
+            #mastering-hero .inner {
                 -webkit-transform: translate3d(0, 2.2rem, 0);
                 transform: translate3d(0, 2.2rem, 0);
             }
 
-            #banner .mastering-profile {
+            #mastering-hero .mastering-profile {
                 width: 5.7rem;
                 height: 5.7rem;
                 margin-bottom: 0.85rem;
@@ -619,33 +612,33 @@
         }
 
         @media screen and (max-width: 676px) {
-            #banner {
+            #mastering-hero {
                 padding-bottom: 7.75em;
             }
 
-            #banner .inner {
+            #mastering-hero .inner {
                 -webkit-transform: translate3d(0, 2.1rem, 0);
                 transform: translate3d(0, 2.1rem, 0);
             }
         }
 
         @media screen and (max-width: 600px) {
-            #banner {
+            #mastering-hero {
                 padding-bottom: 9em;
             }
 
-            #banner .inner {
+            #mastering-hero .inner {
                 -webkit-transform: translate3d(0, 2.1rem, 0);
                 transform: translate3d(0, 2.1rem, 0);
             }
         }
 
         @media screen and (max-width: 480px) {
-            #banner {
+            #mastering-hero {
                 padding-bottom: 10em;
             }
 
-            #banner .inner {
+            #mastering-hero .inner {
                 -webkit-transform: translate3d(0, 2.1rem, 0);
                 transform: translate3d(0, 2.1rem, 0);
             }
@@ -722,7 +715,7 @@
         </div>
     </nav>
 
-    <section id="banner">
+    <section id="mastering-hero">
         <div class="inner">
             <div class="logo"><span class="icon fa-gem"></span></div>
             <img
