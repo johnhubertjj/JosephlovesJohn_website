@@ -49,8 +49,10 @@ def seed_music_products(apps, schema_editor):
     :rtype: None
     """
     Product = apps.get_model("shop", "Product")
+    product_field_names = {field.name for field in Product._meta.get_fields()}
     for payload in PRODUCT_SEED_DATA:
-        Product.objects.update_or_create(slug=payload["slug"], defaults=payload)
+        defaults = {key: value for key, value in payload.items() if key in product_field_names}
+        Product.objects.update_or_create(slug=payload["slug"], defaults=defaults)
 
 
 def remove_music_products(apps, schema_editor):

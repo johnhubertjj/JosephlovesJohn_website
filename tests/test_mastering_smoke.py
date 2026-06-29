@@ -1,5 +1,7 @@
 """Smoke and integration tests for the mastering site shell."""
 
+from pathlib import Path
+
 import pytest
 from django.test import override_settings
 from django.urls import reverse
@@ -59,6 +61,8 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert "mastering-example-dark-and-light.webp" in body
     assert "mastering-example-super-dungeon.webp" in body
     assert 'rel="preload" as="image"' in body
+    assert 'if (!window.location.hash && "scrollRestoration" in history)' in body
+    assert 'history.scrollRestoration = "manual";' in body
     assert "mastering/images/mastering-website-header-image.webp" in body
     assert body.count('class="mastering-example-player-shell"') == 2
     assert body.count('data-src="https://w.soundcloud.com/player/') == 2
@@ -87,6 +91,15 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert 'data-recaptcha-action="contact"' in body
     assert '<meta name="description"' in body
     assert 'href="http://127.0.0.1:8000/mastering-services/"' in body
+
+
+def test_mastering_scroll_reset_handles_late_safari_restoration() -> None:
+    """The mastering script should keep the banner at the top during Safari restore timing."""
+    script = Path("static/mastering/assets/js/main.js").read_text()
+
+    assert "var scheduleScrollReset = function()" in script
+    assert "window.setTimeout(resetScrollToBanner, 2400);" in script
+    assert "$window.on('load pageshow', scheduleScrollReset);" in script
 
 
 @pytest.mark.smoke

@@ -543,6 +543,11 @@ def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> 
 
     body_class = browser_page.locator("body").get_attribute("class") or ""
     assert "is-from-home" in body_class
+    browser_page.wait_for_function("window.scrollY === 0")
+    assert browser_page.locator("#banner h2").is_visible()
+    banner_box = browser_page.locator("#banner").bounding_box()
+    assert banner_box is not None
+    assert banner_box["height"] > 300
 
     browser_page.locator("a.mastering-menu-trigger").click()
     browser_page.wait_for_function("document.body.classList.contains('is-menu-visible')")

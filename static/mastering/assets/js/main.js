@@ -48,14 +48,24 @@
 				window.scrollTo(0, 0);
 			};
 
+			var scheduleScrollReset = function() {
+				resetScrollToBanner();
+
+				if (window.requestAnimationFrame)
+					window.requestAnimationFrame(resetScrollToBanner);
+
+				window.setTimeout(resetScrollToBanner, 80);
+				window.setTimeout(resetScrollToBanner, 320);
+				window.setTimeout(resetScrollToBanner, 800);
+				window.setTimeout(resetScrollToBanner, 1600);
+				window.setTimeout(resetScrollToBanner, 2400);
+			};
+
 			if ('scrollRestoration' in history)
 				history.scrollRestoration = 'manual';
 
-			resetScrollToBanner();
-			window.requestAnimationFrame(resetScrollToBanner);
-			window.setTimeout(resetScrollToBanner, 80);
-			window.setTimeout(resetScrollToBanner, 320);
-			$window.on('load pageshow', resetScrollToBanner);
+			scheduleScrollReset();
+			$window.on('load pageshow', scheduleScrollReset);
 
 		}
 
