@@ -52,6 +52,11 @@ def test_mastering_home_smoke_renders_menu_sections_and_contact_cta(client) -> N
     assert "z-index: 20;" in body
     assert "translate3d(0, 5.1rem, 0)" in body
     assert "will-change: transform;" in body
+    assert "margin: 0 auto;" in body
+    assert "width: 55em;" in body
+    assert "font-size: 2.25em;" in body
+    assert "body.is-preload #mastering-hero h2" in body
+    assert "body.is-preload #mastering-hero p" in body
     assert 'id="mastering-hero"' in body
     assert 'id="banner"' not in body
     assert "#examples:before {\n            -moz-transform: scaleX(-1);" in body
@@ -111,7 +116,8 @@ def test_mastering_home_from_main_site_sets_transition_class_and_homepage_link(c
     body = response.content.decode()
 
     assert response.context["entered_from_home"] is True
-    assert 'class="is-preload is-from-home"' in body
+    assert '<body class="is-from-home">' in body
+    assert 'class="is-preload is-from-home"' not in body
     assert f'href="{reverse("main_site:main")}"' in body
 
 

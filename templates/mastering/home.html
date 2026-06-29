@@ -164,6 +164,36 @@
             text-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.55);
         }
 
+        #mastering-hero h2 {
+            opacity: 1;
+            border-bottom: solid 2px rgba(255, 255, 255, 0.125);
+            font-size: 2.25em;
+            margin-bottom: 0.8em;
+            padding-bottom: 0.4em;
+            -webkit-filter: blur(0);
+            filter: blur(0);
+            -webkit-transform: translateX(0);
+            transform: translateX(0);
+            transition: opacity 0.5s ease, transform 0.5s ease, filter 0.25s ease;
+            transition-delay: 0.65s;
+        }
+
+        #mastering-hero p {
+            opacity: 1;
+            font-family: Raleway, Helvetica, sans-serif;
+            font-size: 1em;
+            font-weight: 200;
+            letter-spacing: 0.1em;
+            line-height: 2;
+            text-transform: uppercase;
+            -webkit-filter: blur(0);
+            filter: blur(0);
+            -webkit-transform: translateX(0);
+            transform: translateX(0);
+            transition: opacity 0.5s ease, transform 0.5s ease, filter 0.25s ease;
+            transition-delay: 0.8s;
+        }
+
         #mastering-hero .mastering-hero-cta {
             margin: 1.6rem 0 1rem;
             font-weight: 700;
@@ -180,6 +210,9 @@
         }
 
         #mastering-hero .inner {
+            margin: 0 auto;
+            width: 55em;
+            max-width: calc(100% - 4rem);
             position: relative;
             z-index: 20;
             -webkit-transform: translate3d(0, 5.1rem, 0);
@@ -187,16 +220,26 @@
             will-change: transform;
         }
 
+        body.is-preload #mastering-hero .mastering-profile,
+        body.is-preload #mastering-hero h2,
+        body.is-preload #mastering-hero p,
+        body.is-preload #mastering-hero .actions {
+            opacity: 1;
+            -webkit-filter: none;
+            filter: none;
+        }
+
         body.is-preload #mastering-hero .mastering-profile {
-            opacity: 0;
-            transform: translateY(0.65rem) scale(0.96);
-            filter: blur(2px);
+            transform: translateY(0) scale(1);
+        }
+
+        body.is-preload #mastering-hero h2,
+        body.is-preload #mastering-hero p {
+            transform: translateX(0);
         }
 
         body.is-preload #mastering-hero .actions {
-            opacity: 0;
-            transform: translateX(0.5em);
-            filter: blur(2px);
+            transform: translateX(0);
         }
 
         .wrapper.spotlight .image img,
@@ -687,7 +730,7 @@
         }
     </style>
 </head>
-<body class="is-preload{% if entered_from_home %} is-from-home{% endif %}">
+<body{% if entered_from_home %} class="is-from-home"{% endif %}>
 
 <div id="page-wrapper">
 

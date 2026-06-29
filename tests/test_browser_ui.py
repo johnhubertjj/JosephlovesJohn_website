@@ -544,7 +544,11 @@ def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> 
     body_class = browser_page.locator("body").get_attribute("class") or ""
     assert "is-from-home" in body_class
     browser_page.wait_for_function("window.scrollY === 0")
-    assert browser_page.locator("#mastering-hero h2").is_visible()
+    hero_heading = browser_page.locator("#mastering-hero h2")
+    assert hero_heading.is_visible()
+    heading_box = hero_heading.bounding_box()
+    assert heading_box is not None
+    assert heading_box["x"] > 100
     hero_box = browser_page.locator("#mastering-hero").bounding_box()
     assert hero_box is not None
     assert hero_box["height"] > 300
