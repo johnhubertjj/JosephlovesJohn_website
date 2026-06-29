@@ -311,14 +311,27 @@ RECAPTCHA_VERIFY_URL = os.environ.get(
 RECAPTCHA_VERIFY_TIMEOUT = _env_int("RECAPTCHA_VERIFY_TIMEOUT", default=3)
 RECAPTCHA_ALLOWED_HOSTNAMES = _env_list("RECAPTCHA_ALLOWED_HOSTNAMES")
 
-EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+_email_backend_default = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if RESEND_API_KEY
+    else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", _email_backend_default)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.resend.com" if RESEND_API_KEY else "smtp.gmail.com")
 EMAIL_PORT = _env_int("EMAIL_PORT", default=587)
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "resend" if RESEND_API_KEY else "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", RESEND_API_KEY)
 EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", default=True)
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "josephlovesjohn@gmail.com")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    EMAIL_HOST_USER if "@" in EMAIL_HOST_USER else "josephlovesjohn@gmail.com",
+)
 CONTACT_RECIPIENT_EMAIL = os.environ.get("CONTACT_RECIPIENT_EMAIL", "josephlovesjohn@gmail.com")
+MASTERING_INTAKE_GOOGLE_SHEETS_WEBHOOK_URL = os.environ.get(
+    "MASTERING_INTAKE_GOOGLE_SHEETS_WEBHOOK_URL",
+    "",
+).strip()
 LEGAL_BUSINESS_NAME = os.environ.get("LEGAL_BUSINESS_NAME", "JosephlovesJohn")
 BUSINESS_CONTACT_EMAIL = os.environ.get("BUSINESS_CONTACT_EMAIL", CONTACT_RECIPIENT_EMAIL)
 BUSINESS_POSTAL_ADDRESS = os.environ.get("BUSINESS_POSTAL_ADDRESS", "")

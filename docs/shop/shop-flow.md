@@ -188,7 +188,6 @@ classDiagram
         +description
         +art_path
         +art_alt
-        +preview_file_wav
         +preview_file_mp3
         +download_file_path
         +product_kind
@@ -199,7 +198,6 @@ classDiagram
         +player_id
         +price_display
         +art_url
-        +preview_wav_url
         +preview_mp3_url
         +download_url
     }

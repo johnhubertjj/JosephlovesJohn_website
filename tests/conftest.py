@@ -5,7 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
-from main_site import views as main_site_views
+from django.conf import settings
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def static_base_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     :param tmp_path: Temporary directory unique to the test invocation.
     :returns: The temporary ``static`` directory path.
     """
-    monkeypatch.setattr(main_site_views.settings, "BASE_DIR", tmp_path, raising=False)
+    monkeypatch.setattr(settings, "BASE_DIR", tmp_path, raising=False)
     static_dir = tmp_path / "static"
     static_dir.mkdir(parents=True, exist_ok=True)
     return static_dir
@@ -27,8 +27,8 @@ def media_base_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     """Point uploaded media helpers at a temporary media directory."""
     media_dir = tmp_path / "media"
     media_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(main_site_views.settings, "MEDIA_ROOT", media_dir, raising=False)
-    monkeypatch.setattr(main_site_views.settings, "MEDIA_URL", "/media/", raising=False)
+    monkeypatch.setattr(settings, "MEDIA_ROOT", media_dir, raising=False)
+    monkeypatch.setattr(settings, "MEDIA_URL", "/media/", raising=False)
     return media_dir
 
 
@@ -67,7 +67,7 @@ def private_downloads_base_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
     """Point private download helpers at a temporary download directory."""
     downloads_dir = tmp_path / "private_downloads"
     downloads_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(main_site_views.settings, "PRIVATE_DOWNLOADS_ROOT", downloads_dir, raising=False)
+    monkeypatch.setattr(settings, "PRIVATE_DOWNLOADS_ROOT", downloads_dir, raising=False)
     return downloads_dir
 
 
@@ -159,10 +159,8 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
             "description": "Original artist version of Dark and Light.",
             "art_path": "images/album_art/dark_and_light_artist_cover.jpg",
             "art_alt": "Dark and Light artist cover artwork",
-            "preview_file_wav": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
             "preview_file_mp3": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
             "download_file_path": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.mp3",
-            "download_file_wav_path": "audio/dark_and_light_final_full_mastered_new_deesser3_24bit_192khz_JJ.wav",
             "price": Decimal("1.00"),
             "sort_order": 1,
             "is_reversed": False,
@@ -175,10 +173,8 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
             "description": "Instrumental mix of Dark and Light.",
             "art_path": "images/album_art/dark_and_light_instrumental.jpg",
             "art_alt": "Dark and Light instrumental artwork",
-            "preview_file_wav": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
             "preview_file_mp3": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
             "download_file_path": "audio/dark_and_light_final_instrumental_v3_24_192.mp3",
-            "download_file_wav_path": "audio/dark_and_light_final_instrumental_v3_24_192.wav",
             "price": Decimal("1.00"),
             "sort_order": 2,
             "is_reversed": True,
@@ -190,12 +186,21 @@ def ensure_seeded_shop_products(request: pytest.FixtureRequest) -> None:
 
 
 @pytest.fixture(autouse=True)
+def disable_recaptcha_by_default(settings) -> None:
+    """Keep tests independent of local reCAPTCHA environment variables."""
+    settings.RECAPTCHA_SITE_KEY = ""
+    settings.RECAPTCHA_SECRET_KEY = ""
+    settings.RECAPTCHA_ALLOWED_HOSTNAMES = []
+
+
+@pytest.fixture(autouse=True)
 def disable_csp_upgrade_for_browser_live_server(request: pytest.FixtureRequest, settings) -> None:
     """Keep HTTP-only Playwright live-server assets loadable in WebKit."""
     if request.node.get_closest_marker("browser"):
         settings.CONTENT_SECURITY_POLICY_UPGRADE_INSECURE_REQUESTS = False
         settings.RECAPTCHA_SITE_KEY = ""
         settings.RECAPTCHA_SECRET_KEY = ""
+        settings.RECAPTCHA_ALLOWED_HOSTNAMES = []
 
 
 @pytest.fixture(autouse=True)

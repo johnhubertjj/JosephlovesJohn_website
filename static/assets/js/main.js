@@ -112,6 +112,10 @@
 					.addClass('is-routing-mastering')
 					.append($ghost);
 
+				// Force Firefox to paint the initial position before applying
+				// the destination styles, otherwise it may skip the transition.
+				$ghost[0].offsetWidth;
+
 				window.setTimeout(function() {
 					$ghost.text('Menu');
 				}, 360);

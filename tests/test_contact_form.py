@@ -138,7 +138,7 @@ def test_contact_form_rate_limit_blocks_repeated_messages(client) -> None:
 )
 def test_contact_form_blocks_failed_recaptcha(client, monkeypatch) -> None:
     """Protected contact submissions should stop when reCAPTCHA verification fails."""
-    monkeypatch.setattr("main_site.views.verify_recaptcha_request", lambda request, expected_action: False)
+    monkeypatch.setattr("main_site.contact_flow.verify_recaptcha_request", lambda request, expected_action: False)
 
     response = client.post(
         reverse("main_site:contact"),

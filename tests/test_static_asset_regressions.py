@@ -61,6 +61,29 @@ def test_refactored_vendor_css_assets_resolve_to_real_files() -> None:
         assert resolved.exists(), f"{fontawesome_css} points to missing asset {relative_asset}"
 
 
+def test_mastering_js_clears_preload_before_window_load_for_safari() -> None:
+    """Safari navigation should reveal the renamed hero before window.load."""
+    main_js = _REPO_ROOT / "static" / "mastering" / "assets" / "js" / "main.js"
+    content = main_js.read_text()
+
+    assert "DOMContentLoaded" in content
+    assert "'load pageshow'" in content
+    assert "$body.removeClass('is-preload')" in content
+    assert "$hero = $('#mastering-hero')" in content
+    assert "$banner = $('#banner')" not in content
+    assert "resetScrollToBanner" not in content
+    assert "history.scrollRestoration" not in content
+
+
+def test_main_site_mastering_route_animation_forces_firefox_reflow() -> None:
+    """Firefox needs the ghost pill's initial style flushed before the route animation starts."""
+    main_js = _REPO_ROOT / "static" / "assets" / "js" / "main.js"
+    content = main_js.read_text()
+
+    assert "$ghost[0].offsetWidth" in content
+    assert "otherwise it may skip the transition" in content
+
+
 @pytest.mark.django_db
 def test_main_site_base_template_uses_refactored_asset_locations(client) -> None:
     """The rendered page should reference the reorganized CSS entrypoints."""

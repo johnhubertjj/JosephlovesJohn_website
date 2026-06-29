@@ -619,7 +619,6 @@ class CheckoutView(View):
                 art_path_snapshot=product.art_path,
                 art_alt_snapshot=product.art_alt,
                 download_file_path=product.download_file_path,
-                download_file_wav_path=product.download_file_wav_path,
             )
 
         return order

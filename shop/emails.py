@@ -55,12 +55,7 @@ def _download_link(request, item: OrderItem) -> str:
 
 def _download_links(request, item: OrderItem) -> list[tuple[str, str]]:
     """Return all absolute emailed download URLs for a purchased item."""
-    links = [("MP3", _download_link(request, item))]
-    if item.download_file_wav_path:
-        query = urlencode({"access": build_download_access_token(item), "format": "wav"})
-        path = reverse("shop:download", kwargs={"item_id": item.pk})
-        links.append(("WAV", absolute_site_url(f"{path}?{query}", request)))
-    return links
+    return [("MP3", _download_link(request, item))]
 
 
 def send_order_confirmation_email(request, order: Order) -> bool:

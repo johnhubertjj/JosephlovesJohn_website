@@ -2,7 +2,7 @@
 
 import pytest
 from django.urls import reverse
-from main_site import views
+from main_site import site_data
 from main_site.models import AlbumArt, GigPhoto, HeaderSocialLink, PrimaryNavItem
 from shop.models import Product
 
@@ -16,6 +16,7 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
     assert response.status_code == 200
     for fragment in (
+        'id="top-nav"',
         'id="header"',
         'id="main"',
         'id="footer"',
@@ -55,18 +56,30 @@ def test_homepage_smoke_renders_layout_navigation_and_social_links(client) -> No
 
 
 def test_intro_page_smoke_renders_signup_and_mastering_cta(client) -> None:
-    """The intro route should expose the delayed signup form gate and mastering CTA."""
+    """The intro route should expose the delayed signup form gate without the homepage mastering button."""
     response = client.get(reverse("main_site:intro"))
     body = response.content.decode()
 
     assert response.status_code == 200
+    assert 'id="top-nav"' not in body
+    assert 'data-mastering-link="true"' not in body
     assert 'aria-label="Sign up for updates"' in body
     assert 'data-signup-root' in body
     assert 'data-kit-src="https://josephlovesjohn.kit.com/408ee57c19/index.js"' in body
     assert 'data-signup-gate' in body
     assert "Open signup form" in body
     assert 'href="https://josephlovesjohn.kit.com/408ee57c19"' in body
-    assert f'href="{reverse("mastering:home")}"' in body
+
+
+@pytest.mark.parametrize("route_name", ("main_site:music", "main_site:art", "main_site:contact"))
+def test_section_routes_do_not_render_homepage_mastering_button(client, route_name) -> None:
+    """The mastering top-nav button should only render on the main screen."""
+    response = client.get(reverse(route_name))
+    body = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'id="top-nav"' not in body
+    assert 'data-mastering-link="true"' not in body
 
 
 def test_music_page_smoke_renders_all_published_tracks_and_share_controls(client) -> None:
@@ -161,7 +174,7 @@ def test_music_page_smoke_renders_route_specific_metadata(client) -> None:
 
     assert response.status_code == 200
     assert "<title>Music | JosephlovesJohn Downloads and Listening</title>" in body
-    assert 'Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 and WAV downloads' in body
+    assert "Listen to JosephlovesJohn tracks, preview new releases, and buy direct MP3 downloads" in body
     assert 'href="http://127.0.0.1:8000/music/"' in body
     assert '"@type":"ItemList"' in body
     assert '"@type":"MusicRecording"' in body
@@ -181,7 +194,6 @@ def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_stati
         meta="Single",
         art_path=create_static_asset("images/album_art/mock-song-cover.jpg"),
         art_alt="Mock cover art",
-        preview_file_wav=create_static_asset("audio/mock-song.wav"),
         preview_file_mp3=create_static_asset("audio/mock-song.mp3"),
         download_file_path="audio/mock-song.mp3",
         sort_order=0,
@@ -200,18 +212,17 @@ def test_smoke_database_backed_assets_exist_on_disk_with_mock_media(create_stati
         featured=True,
     )
 
-    items = views._get_music_library_items()
-    gig_items = views._get_gig_photo_items()
-    album_items = views._get_album_art_items()
+    items = site_data.get_music_library_items()
+    gig_items = site_data.get_gig_photo_items()
+    album_items = site_data.get_album_art_items()
 
     assert items[0]["title"] == product.title
-    assert views._static_file_exists(items[0]["art_path"])
-    assert views._static_file_exists(items[0]["file_wav"])
-    assert views._static_file_exists(items[0]["file_mp3"])
+    assert site_data.static_file_exists(items[0]["art_path"])
+    assert site_data.static_file_exists(items[0]["file_mp3"])
 
     assert gig_items[0]["title"] == gig_photo.title
-    assert views._static_file_exists(gig_items[0]["image_path"])
-    assert views._static_file_exists(gig_items[0]["thumbnail_path"])
+    assert site_data.static_file_exists(gig_items[0]["image_path"])
+    assert site_data.static_file_exists(gig_items[0]["thumbnail_path"])
 
     assert album_items[0]["caption"] == album_art.title
-    assert views._static_file_exists(album_items[0]["path"])
+    assert site_data.static_file_exists(album_items[0]["path"])

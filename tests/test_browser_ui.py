@@ -27,9 +27,6 @@ def ensure_browser_shop_download_assets(create_private_download_asset) -> None:
     """Create temporary private audio files so browser checkout can reach the review page."""
     for download_path in Product.objects.values_list("download_file_path", flat=True):
         create_private_download_asset(download_path, content=b"browser audio")
-    wav_paths = Product.objects.exclude(download_file_wav_path="").values_list("download_file_wav_path", flat=True)
-    for download_path in wav_paths:
-        create_private_download_asset(download_path, content=b"browser wav audio")
 
 
 @pytest.fixture
@@ -546,6 +543,15 @@ def test_mastering_route_and_menu_open_still_work(browser_page, live_server) -> 
 
     body_class = browser_page.locator("body").get_attribute("class") or ""
     assert "is-from-home" in body_class
+    browser_page.wait_for_function("window.scrollY === 0")
+    hero_heading = browser_page.locator("#mastering-hero h2")
+    assert hero_heading.is_visible()
+    heading_box = hero_heading.bounding_box()
+    assert heading_box is not None
+    assert heading_box["x"] > 100
+    hero_box = browser_page.locator("#mastering-hero").bounding_box()
+    assert hero_box is not None
+    assert hero_box["height"] > 300
 
     browser_page.locator("a.mastering-menu-trigger").click()
     browser_page.wait_for_function("document.body.classList.contains('is-menu-visible')")

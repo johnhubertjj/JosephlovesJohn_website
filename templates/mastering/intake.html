@@ -1,0 +1,616 @@
+{% load static asset_urls %}
+<!DOCTYPE HTML>
+<html lang="en-GB">
+<head>
+    <title>{{ seo.title }}</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="description" content="{{ seo.description }}" />
+    <meta name="robots" content="{{ seo.robots }}" />
+    <link rel="canonical" href="{{ seo.canonical_url }}" />
+    <link rel="icon" href="{{ 'images/jlovesj_symbol-my_version3.png'|asset_url }}" sizes="48x48" />
+    <link rel="stylesheet" href="{% static 'mastering/assets/css/main.css' %}" />
+    <noscript><link rel="stylesheet" href="{% static 'mastering/assets/css/noscript.css' %}" /></noscript>
+    <style>
+        body {
+            background-color: #18265c;
+            background-image:
+                linear-gradient(to bottom, rgba(9, 11, 16, 0.86), rgba(24, 38, 92, 0.92)),
+                url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
+            background-size: auto, cover;
+            background-position: center, center;
+            color: #ffffff;
+        }
+
+        body,
+        body input,
+        body select,
+        body textarea,
+        body h1,
+        body h2,
+        body h3,
+        body p,
+        body a,
+        body li,
+        body label,
+        body strong {
+            color: #ffffff;
+        }
+
+        #header nav {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        #header nav a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.75rem;
+            padding: 0 1.2rem 0 1.35rem;
+            border: solid 1px rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            background: rgba(19, 21, 25, 0.78);
+            box-shadow: 0 0 1.25rem rgba(0, 0, 0, 0.22);
+            font-size: 0.8rem;
+            letter-spacing: 0.18rem;
+            line-height: 1;
+            text-align: center;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        #wrapper > header {
+            padding: 8.5em 0 11em;
+            background-color: #5c1828;
+            background-image:
+                linear-gradient(90deg, rgba(92, 24, 40, 0.94), rgba(92, 24, 40, 0.82)),
+                url("{{ 'mastering/images/mastering-website-header-image.webp'|asset_url }}");
+            background-size: auto, cover;
+            background-position: center, center;
+        }
+
+        .wrapper.style4 {
+            background-color: #18265c;
+            margin-top: 0;
+        }
+
+        .wrapper.style4:before,
+        .wrapper.style4:after {
+            background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='0,100 100,0 100,100' style='fill:%2318265C%3B' /%3E%3C/svg%3E");
+            box-shadow: inset 0 -1px 0 0 #18265c, 0 1px 0 0 #18265c;
+        }
+
+        .wrapper.style4:before {
+            -moz-transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            -ms-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+        .mastering-intake-form {
+            margin-top: 2rem;
+            padding: 1.75rem;
+            border-radius: 6px;
+            background: rgba(9, 11, 16, 0.22);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .mastering-intake-form input[type="text"],
+        .mastering-intake-form input[type="email"],
+        .mastering-intake-form input[type="url"],
+        .mastering-intake-form input[type="date"],
+        .mastering-intake-form select,
+        .mastering-intake-form textarea {
+            width: 100%;
+            border: solid 1px rgba(255, 255, 255, 0.18);
+            background-color: rgba(255, 255, 255, 0.07);
+            color: #ffffff;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+            color-scheme: dark;
+        }
+
+        .mastering-intake-form input[type="text"]:focus,
+        .mastering-intake-form input[type="email"]:focus,
+        .mastering-intake-form input[type="url"]:focus,
+        .mastering-intake-form input[type="date"]:focus,
+        .mastering-intake-form select:focus,
+        .mastering-intake-form textarea:focus {
+            border-color: rgba(105, 177, 116, 0.78);
+            box-shadow: 0 0 0 1px rgba(105, 177, 116, 0.78);
+        }
+
+        .mastering-intake-form input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(1);
+            opacity: 0.9;
+        }
+
+        .mastering-intake-form input::placeholder,
+        .mastering-intake-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.52);
+        }
+
+        .mastering-form-help {
+            margin: 0.35rem 0 0;
+            font-size: 0.85rem;
+            opacity: 0.82;
+        }
+
+        .mastering-form-error {
+            margin: 0.35rem 0 0;
+            font-size: 0.85rem;
+        }
+
+        .mastering-form-message {
+            margin-bottom: 0.85rem;
+            padding: 0.85rem 1rem;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+
+        .mastering-form-message.error {
+            background: rgba(92, 24, 40, 0.58);
+        }
+
+        .mastering-form-message.success {
+            background: rgba(24, 93, 34, 0.62);
+        }
+
+        .mastering-intake-role-card {
+            padding: 1.35rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+        }
+
+        .mastering-intake-role-card > label {
+            margin-bottom: 1rem;
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.76);
+        }
+
+        .mastering-intake-role-card ul,
+        .mastering-intake-role-card > div {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .mastering-intake-role-card li label,
+        .mastering-intake-role-card > div > div label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 3.25rem;
+            padding: 0.9rem 1rem;
+            border: solid 1px rgba(255, 255, 255, 0.22);
+            border-radius: 5px;
+            background: rgba(24, 93, 34, 0.18);
+            font-weight: 700;
+            letter-spacing: 0.06rem;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .mastering-intake-role-card li label:has(input:checked),
+        .mastering-intake-role-card > div > div label:has(input:checked) {
+            border-color: rgba(105, 177, 116, 0.86);
+            background: rgba(24, 93, 34, 0.4);
+        }
+
+        .mastering-intake-actions[hidden],
+        .mastering-intake-fields[hidden],
+        [data-intake-role][hidden] {
+            display: none;
+        }
+
+        .mastering-checkbox-field ul {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.7rem 1.25rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .mastering-checkbox-field label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin: 0;
+            font-weight: 400;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        .mastering-intake-form input[type="checkbox"],
+        .mastering-intake-form input[type="radio"] {
+            position: relative;
+            display: inline-grid !important;
+            opacity: 1 !important;
+            z-index: 1;
+            width: 1rem;
+            height: 1rem;
+            flex: 0 0 1rem;
+            margin: 0 0.55rem 0 0;
+            border: solid 1px rgba(255, 255, 255, 0.62);
+            background-color: rgba(0, 0, 0, 0.28);
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            cursor: pointer;
+        }
+
+        .mastering-intake-form input[type="radio"] {
+            border-radius: 50%;
+        }
+
+        .mastering-intake-form input[type="checkbox"] {
+            border-radius: 3px;
+        }
+
+        .mastering-intake-form input[type="checkbox"]:checked,
+        .mastering-intake-form input[type="radio"]:checked {
+            border-color: #69b174;
+            background-color: #69b174;
+        }
+
+        .mastering-intake-form input[type="radio"]:checked:after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.38rem;
+            height: 0.38rem;
+            border-radius: 50%;
+            background: #18265c;
+            transform: translate(-50%, -50%);
+        }
+
+        .mastering-intake-form input[type="checkbox"]:checked:after {
+            content: "";
+            position: absolute;
+            top: 0.08rem;
+            left: 0.28rem;
+            width: 0.32rem;
+            height: 0.58rem;
+            border: solid #18265c;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        #footer {
+            background-color: #151821;
+        }
+
+        @media screen and (max-width: 736px) {
+            #wrapper > header {
+                padding: 7em 0 5.5em;
+            }
+
+            .mastering-intake-form {
+                padding: 1.2rem;
+            }
+
+            .mastering-checkbox-field ul {
+                grid-template-columns: 1fr;
+            }
+
+            .mastering-intake-role-card ul,
+            .mastering-intake-role-card > div {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="is-preload">
+
+<div id="page-wrapper">
+    <header id="header">
+        <h1><a href="{% url 'mastering:home' %}">John Joseph Mastering</a></h1>
+        <nav>
+            <a href="{% url 'mastering:home' %}">Back to mastering</a>
+        </nav>
+    </header>
+
+    <section id="wrapper">
+        <header>
+            <div class="inner">
+                <h2>Mastering Intake Form</h2>
+                <p>Choose whether you are submitting as the artist or the mix engineer, then send the details I need to understand the release context.</p>
+            </div>
+        </header>
+
+        <section class="wrapper style4">
+            <div class="inner">
+                {% if messages %}
+                    {% for message in messages %}
+                        <p class="mastering-form-message {{ message.tags }}">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+
+                <form
+                    method="post"
+                    action="{% url 'mastering:intake' %}"
+                    class="mastering-intake-form"
+                    data-recaptcha-action="mastering_intake"
+                    novalidate
+                >
+                    {% csrf_token %}
+                    <input type="hidden" name="g-recaptcha-response" value="" />
+                    <div style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">
+                        <label for="{{ form.website.id_for_label }}">Website</label>
+                        {{ form.website }}
+                    </div>
+
+                    <div class="fields">
+                        <div class="field mastering-intake-role-card" data-selected-role="{{ form.submitter_role.value|default:'' }}">
+                            <label>{{ form.submitter_role.label }}</label>
+                            {{ form.submitter_role }}
+                            <p class="mastering-form-help" data-intake-role-note>Choose one option to open the right intake questions.</p>
+                            {% if form.submitter_role.errors %}<p class="mastering-form-error">{{ form.submitter_role.errors|join:", " }}</p>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="fields mastering-intake-fields" data-intake-fields hidden>
+                        <div class="field half">
+                            <label for="{{ form.contact_email.id_for_label }}">{{ form.contact_email.label }}</label>
+                            {{ form.contact_email }}
+                            {% if form.contact_email.errors %}<p class="mastering-form-error">{{ form.contact_email.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half" data-intake-role="engineer" hidden>
+                            <label for="{{ form.engineer_name.id_for_label }}">{{ form.engineer_name.label }}</label>
+                            {{ form.engineer_name }}
+                            {% if form.engineer_name.errors %}<p class="mastering-form-error">{{ form.engineer_name.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half" data-intake-role="engineer" hidden>
+                            <label for="{{ form.client_contact_email.id_for_label }}">{{ form.client_contact_email.label }}</label>
+                            {{ form.client_contact_email }}
+                            {% if form.client_contact_email.help_text %}<p class="mastering-form-help">{{ form.client_contact_email.help_text }}</p>{% endif %}
+                            {% if form.client_contact_email.errors %}<p class="mastering-form-error">{{ form.client_contact_email.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ form.artist_name.id_for_label }}">{{ form.artist_name.label }}</label>
+                            {{ form.artist_name }}
+                            {% if form.artist_name.errors %}<p class="mastering-form-error">{{ form.artist_name.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ form.track_title.id_for_label }}">{{ form.track_title.label }}</label>
+                            {{ form.track_title }}
+                            {% if form.track_title.errors %}<p class="mastering-form-error">{{ form.track_title.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ form.album_or_ep.id_for_label }}">{{ form.album_or_ep.label }}</label>
+                            {{ form.album_or_ep }}
+                            {% if form.album_or_ep.errors %}<p class="mastering-form-error">{{ form.album_or_ep.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ form.isrc_code.id_for_label }}">{{ form.isrc_code.label }}</label>
+                            {{ form.isrc_code }}
+                            {% if form.isrc_code.errors %}<p class="mastering-form-error">{{ form.isrc_code.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.upload_confirmation.id_for_label }}">{{ form.upload_confirmation.label }}</label>
+                            {{ form.upload_confirmation }}
+                            {% if form.upload_confirmation.help_text %}<p class="mastering-form-help">{{ form.upload_confirmation.help_text }}</p>{% endif %}
+                            {% if form.upload_confirmation.errors %}<p class="mastering-form-error">{{ form.upload_confirmation.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.artist_loudness_processing.id_for_label }}">{{ form.artist_loudness_processing.label }}</label>
+                            {{ form.artist_loudness_processing }}
+                            {% if form.artist_loudness_processing.help_text %}<p class="mastering-form-help">{{ form.artist_loudness_processing.help_text }}</p>{% endif %}
+                            {% if form.artist_loudness_processing.errors %}<p class="mastering-form-error">{{ form.artist_loudness_processing.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.genre_vibe.id_for_label }}">{{ form.genre_vibe.label }}</label>
+                            {{ form.genre_vibe }}
+                            {% if form.genre_vibe.errors %}<p class="mastering-form-error">{{ form.genre_vibe.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.artist_final_feel.id_for_label }}">{{ form.artist_final_feel.label }}</label>
+                            {{ form.artist_final_feel }}
+                            {% if form.artist_final_feel.errors %}<p class="mastering-form-error">{{ form.artist_final_feel.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.artist_reference_tracks.id_for_label }}">{{ form.artist_reference_tracks.label }}</label>
+                            {{ form.artist_reference_tracks }}
+                            {% if form.artist_reference_tracks.help_text %}<p class="mastering-form-help">{{ form.artist_reference_tracks.help_text }}</p>{% endif %}
+                            {% if form.artist_reference_tracks.errors %}<p class="mastering-form-error">{{ form.artist_reference_tracks.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.artist_reference_notes.id_for_label }}">{{ form.artist_reference_notes.label }}</label>
+                            {{ form.artist_reference_notes }}
+                            {% if form.artist_reference_notes.help_text %}<p class="mastering-form-help">{{ form.artist_reference_notes.help_text }}</p>{% endif %}
+                            {% if form.artist_reference_notes.errors %}<p class="mastering-form-error">{{ form.artist_reference_notes.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half mastering-checkbox-field" data-intake-role="artist" hidden>
+                            <label>{{ form.artist_release_formats.label }}</label>
+                            {{ form.artist_release_formats }}
+                            {% if form.artist_release_formats.errors %}<p class="mastering-form-error">{{ form.artist_release_formats.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="artist" hidden>
+                            <label for="{{ form.artist_extra_notes.id_for_label }}">{{ form.artist_extra_notes.label }}</label>
+                            {{ form.artist_extra_notes }}
+                            {% if form.artist_extra_notes.errors %}<p class="mastering-form-error">{{ form.artist_extra_notes.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.mix_file_details.id_for_label }}">{{ form.mix_file_details.label }}</label>
+                            {{ form.mix_file_details }}
+                            {% if form.mix_file_details.help_text %}<p class="mastering-form-help">{{ form.mix_file_details.help_text }}</p>{% endif %}
+                            {% if form.mix_file_details.errors %}<p class="mastering-form-error">{{ form.mix_file_details.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.mix_file_link.id_for_label }}">{{ form.mix_file_link.label }}</label>
+                            {{ form.mix_file_link }}
+                            {% if form.mix_file_link.help_text %}<p class="mastering-form-help">{{ form.mix_file_link.help_text }}</p>{% endif %}
+                            {% if form.mix_file_link.errors %}<p class="mastering-form-error">{{ form.mix_file_link.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field third" data-intake-role="engineer" hidden>
+                            <label for="{{ form.sample_rate.id_for_label }}">{{ form.sample_rate.label }}</label>
+                            {{ form.sample_rate }}
+                            {% if form.sample_rate.help_text %}<p class="mastering-form-help">{{ form.sample_rate.help_text }}</p>{% endif %}
+                            {% if form.sample_rate.errors %}<p class="mastering-form-error">{{ form.sample_rate.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field third" data-intake-role="engineer" hidden>
+                            <label for="{{ form.bit_depth.id_for_label }}">{{ form.bit_depth.label }}</label>
+                            {{ form.bit_depth }}
+                            {% if form.bit_depth.help_text %}<p class="mastering-form-help">{{ form.bit_depth.help_text }}</p>{% endif %}
+                            {% if form.bit_depth.errors %}<p class="mastering-form-error">{{ form.bit_depth.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field third" data-intake-role="engineer" hidden>
+                            <label for="{{ form.peak_loudness_level.id_for_label }}">{{ form.peak_loudness_level.label }}</label>
+                            {{ form.peak_loudness_level }}
+                            {% if form.peak_loudness_level.help_text %}<p class="mastering-form-help">{{ form.peak_loudness_level.help_text }}</p>{% endif %}
+                            {% if form.peak_loudness_level.errors %}<p class="mastering-form-error">{{ form.peak_loudness_level.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.master_bus_processing.id_for_label }}">{{ form.master_bus_processing.label }}</label>
+                            {{ form.master_bus_processing }}
+                            {% if form.master_bus_processing.help_text %}<p class="mastering-form-help">{{ form.master_bus_processing.help_text }}</p>{% endif %}
+                            {% if form.master_bus_processing.errors %}<p class="mastering-form-error">{{ form.master_bus_processing.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.limiting_clipping.id_for_label }}">{{ form.limiting_clipping.label }}</label>
+                            {{ form.limiting_clipping }}
+                            {% if form.limiting_clipping.help_text %}<p class="mastering-form-help">{{ form.limiting_clipping.help_text }}</p>{% endif %}
+                            {% if form.limiting_clipping.errors %}<p class="mastering-form-error">{{ form.limiting_clipping.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.desired_feel.id_for_label }}">{{ form.desired_feel.label }}</label>
+                            {{ form.desired_feel }}
+                            {% if form.desired_feel.errors %}<p class="mastering-form-error">{{ form.desired_feel.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.mix_concerns.id_for_label }}">{{ form.mix_concerns.label }}</label>
+                            {{ form.mix_concerns }}
+                            {% if form.mix_concerns.help_text %}<p class="mastering-form-help">{{ form.mix_concerns.help_text }}</p>{% endif %}
+                            {% if form.mix_concerns.errors %}<p class="mastering-form-error">{{ form.mix_concerns.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.reference_tracks.id_for_label }}">{{ form.reference_tracks.label }}</label>
+                            {{ form.reference_tracks }}
+                            {% if form.reference_tracks.errors %}<p class="mastering-form-error">{{ form.reference_tracks.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.reference_track_notes.id_for_label }}">{{ form.reference_track_notes.label }}</label>
+                            {{ form.reference_track_notes }}
+                            {% if form.reference_track_notes.help_text %}<p class="mastering-form-help">{{ form.reference_track_notes.help_text }}</p>{% endif %}
+                            {% if form.reference_track_notes.errors %}<p class="mastering-form-error">{{ form.reference_track_notes.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half mastering-checkbox-field" data-intake-role="engineer" hidden>
+                            <label>{{ form.release_formats.label }}</label>
+                            {{ form.release_formats }}
+                            {% if form.release_formats.errors %}<p class="mastering-form-error">{{ form.release_formats.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half mastering-checkbox-field" data-intake-role="engineer" hidden>
+                            <label>{{ form.deliverables.label }}</label>
+                            {{ form.deliverables }}
+                            {% if form.deliverables.errors %}<p class="mastering-form-error">{{ form.deliverables.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.multiple_tracks_notes.id_for_label }}">{{ form.multiple_tracks_notes.label }}</label>
+                            {{ form.multiple_tracks_notes }}
+                            {% if form.multiple_tracks_notes.help_text %}<p class="mastering-form-help">{{ form.multiple_tracks_notes.help_text }}</p>{% endif %}
+                            {% if form.multiple_tracks_notes.errors %}<p class="mastering-form-error">{{ form.multiple_tracks_notes.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ form.deadline.id_for_label }}">{{ form.deadline.label }}</label>
+                            {{ form.deadline }}
+                            {% if form.deadline.errors %}<p class="mastering-form-error">{{ form.deadline.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field half">
+                            <label for="{{ form.hard_deadline.id_for_label }}">{{ form.hard_deadline.label }}</label>
+                            {{ form.hard_deadline }}
+                            {% if form.hard_deadline.errors %}<p class="mastering-form-error">{{ form.hard_deadline.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        <div class="field" data-intake-role="engineer" hidden>
+                            <label for="{{ form.extra_notes.id_for_label }}">{{ form.extra_notes.label }}</label>
+                            {{ form.extra_notes }}
+                            {% if form.extra_notes.errors %}<p class="mastering-form-error">{{ form.extra_notes.errors|join:", " }}</p>{% endif %}
+                        </div>
+                    </div>
+                    <ul class="actions mastering-intake-actions" data-intake-actions hidden>
+                        <li><input type="submit" value="Send Intake Form" class="primary" /></li>
+                        <li><input type="reset" value="Reset" /></li>
+                    </ul>
+                </form>
+            </div>
+        </section>
+    </section>
+
+    <section id="footer">
+        <div class="inner">
+            <ul class="copyright">
+                <li>&copy; JosephlovesJohn. All rights reserved.</li>
+                <li>Design base: <a href="https://html5up.net">HTML5 UP</a></li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<script src="{% static 'mastering/assets/js/jquery.min.js' %}"></script>
+<script src="{% static 'mastering/assets/js/jquery.scrollex.min.js' %}"></script>
+<script src="{% static 'mastering/assets/js/browser.min.js' %}"></script>
+<script src="{% static 'mastering/assets/js/breakpoints.min.js' %}"></script>
+<script src="{% static 'mastering/assets/js/util.js' %}"></script>
+<script src="{% static 'mastering/assets/js/main.js' %}"></script>
+<script>
+    (function () {
+        var form = document.querySelector(".mastering-intake-form");
+        if (!form) {
+            return;
+        }
+
+        var fields = form.querySelector("[data-intake-fields]");
+        var actions = form.querySelector("[data-intake-actions]");
+        var roleNote = form.querySelector("[data-intake-role-note]");
+        var roleInputs = form.querySelectorAll('input[name="submitter_role"]');
+        var initialRole = (form.querySelector("[data-selected-role]") || {}).dataset.selectedRole || "";
+
+        function selectedRole() {
+            var selected = form.querySelector('input[name="submitter_role"]:checked');
+            return selected ? selected.value : "";
+        }
+
+        function updateBranch() {
+            var role = selectedRole();
+            if (!role && initialRole) {
+                role = initialRole;
+                var initialInput = form.querySelector('input[name="submitter_role"][value="' + role + '"]');
+                if (initialInput) {
+                    initialInput.checked = true;
+                }
+            }
+
+            fields.hidden = !role;
+            if (actions) {
+                actions.hidden = !role;
+            }
+            Array.prototype.forEach.call(form.querySelectorAll("[data-intake-role]"), function (element) {
+                element.hidden = element.getAttribute("data-intake-role") !== role;
+            });
+
+            if (roleNote) {
+                roleNote.textContent = role === "engineer"
+                    ? "Engineer intake selected. Add your details and the artist/project details below."
+                    : role === "artist"
+                        ? "Artist intake selected. Add your project details below."
+                        : "Choose one option to open the right intake questions.";
+            }
+        }
+
+        Array.prototype.forEach.call(roleInputs, function (input) {
+            input.addEventListener("change", updateBranch);
+        });
+
+        updateBranch();
+    }());
+</script>
+{% include 'includes/recaptcha_v3.html' %}
+</body>
+</html>

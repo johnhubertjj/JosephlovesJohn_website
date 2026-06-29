@@ -9,7 +9,7 @@
 	var	$window = $(window),
 		$body = $('body'),
 		$header = $('#header'),
-		$banner = $('#banner');
+		$hero = $('#mastering-hero');
 
 	// Breakpoints.
 		breakpoints({
@@ -20,20 +20,33 @@
 			xsmall:	'(max-width: 480px)'
 		});
 
-	// Play initial animations on page load.
-		$window.on('load', function() {
+	// Play initial animations once the page is interactive.
+		var preloadCleared = false;
+
+		function clearPreload() {
+			if (preloadCleared)
+				return;
+
+			preloadCleared = true;
 			window.setTimeout(function() {
 				$body.removeClass('is-preload');
 			}, 100);
-		});
+		}
+
+		if (document.readyState === 'loading')
+			document.addEventListener('DOMContentLoaded', clearPreload);
+		else
+			clearPreload();
+
+		$window.on('load pageshow', clearPreload);
 
 	// Header.
-		if ($banner.length > 0
+		if ($hero.length > 0
 		&&	$header.hasClass('alt')) {
 
 			$window.on('resize', function() { $window.trigger('scroll'); });
 
-			$banner.scrollex({
+			$hero.scrollex({
 				bottom:		$header.outerHeight(),
 				terminate:	function() { $header.removeClass('alt'); },
 				enter:		function() { $header.addClass('alt'); },

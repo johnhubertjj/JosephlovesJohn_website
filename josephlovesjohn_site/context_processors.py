@@ -10,7 +10,7 @@ def recaptcha(request):
 
     return {
         "recaptcha": {
-            "enabled": recaptcha_is_enabled(),
+            "enabled": recaptcha_is_enabled(request),
             "site_key": settings.RECAPTCHA_SITE_KEY,
         }
     }

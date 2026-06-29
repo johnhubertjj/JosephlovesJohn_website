@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Repository Reading Plan</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 2rem;
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1f2937;
+      background: #f8fafc;
+    }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #dbe2ea;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+    h1, h2 {
+      line-height: 1.2;
+    }
+    h2 {
+      margin-top: 2rem;
+    }
+    ol, ul {
+      padding-left: 1.5rem;
+    }
+    li + li {
+      margin-top: 0.4rem;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.95em;
+    }
+    .note {
+      color: #475467;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Repository Reading Plan</h1>
+    <p class="note">
+      A structured reading order for understanding the JosephlovesJohn codebase end to end, with the smallest
+      number of files that still explain how the site works in production.
+    </p>
+
+    <h2>Docs Map</h2>
+    <ul>
+      <li><code>docs/architecture/</code> - repo-level architecture and system diagrams.</li>
+      <li><code>docs/shop/</code> - shop, cart, checkout, order, and download flow notes.</li>
+      <li><code>docs/deployment/</code> - Render, Cloudflare R2, storage, and versioning notes.</li>
+      <li><code>docs/performance/</code> - performance report workflow and benchmarking notes.</li>
+      <li><code>docs/launch/</code> - launch and prelaunch checklists.</li>
+      <li><code>docs/seo/</code> - Search Console and SEO operations notes.</li>
+      <li><code>docs/reading-plans/</code> - reading plans for the repo and focused features.</li>
+      <li><code>docs/local-notes/</code> - local/private notes that are useful on this machine but not general project docs.</li>
+    </ul>
+
+    <h2>Day 1: Entry Points and Runtime Configuration</h2>
+    <ol>
+      <li><code>josephlovesjohn_site/settings.py</code></li>
+      <li><code>josephlovesjohn_site/csp.py</code></li>
+      <li><code>josephlovesjohn_site/urls.py</code></li>
+      <li><code>josephlovesjohn_site/site_urls.py</code></li>
+      <li><code>josephlovesjohn_site/assets.py</code></li>
+      <li><code>josephlovesjohn_site/rate_limits.py</code></li>
+    </ol>
+
+    <h2>Day 2: Main Site Request Flow</h2>
+    <ol>
+      <li><code>main_site/urls.py</code></li>
+      <li><code>main_site/views.py</code></li>
+      <li><code>main_site/site_data.py</code></li>
+      <li><code>main_site/cache.py</code></li>
+      <li><code>main_site/models.py</code></li>
+      <li><code>main_site/seo.py</code></li>
+    </ol>
+
+    <h2>Day 3: Shop and Purchase Flow</h2>
+    <ol>
+      <li><code>shop/urls.py</code></li>
+      <li><code>shop/views.py</code></li>
+      <li><code>shop/forms.py</code></li>
+      <li><code>shop/models.py</code></li>
+      <li><code>shop/cart.py</code></li>
+      <li><code>shop/downloads.py</code></li>
+      <li><code>shop/emails.py</code></li>
+      <li><code>shop/ownership.py</code></li>
+    </ol>
+
+    <h2>Day 4: Mastering Microsite</h2>
+    <ol>
+      <li><code>mastering/urls.py</code></li>
+      <li><code>mastering/views.py</code></li>
+      <li><code>mastering/forms.py</code></li>
+      <li><code>templates/mastering/home.html</code></li>
+      <li><code>templates/mastering/intake.html</code></li>
+      <li><code>static/mastering/images/</code></li>
+      <li><code>tests/test_mastering_smoke.py</code></li>
+      <li><code>tests/test_mastering_routes.py</code></li>
+      <li><code>tests/test_mastering_intake_form.py</code></li>
+    </ol>
+    <p class="note">
+      For a narrower walkthrough, use <code>docs/reading-plans/mastering_page_reading_plan.html</code>.
+    </p>
+
+    <h2>Day 5: Templates and Frontend Runtime</h2>
+    <ol>
+      <li><code>templates/main_site/site.html</code></li>
+      <li><code>templates/main_site/includes/sections/music.html</code></li>
+      <li><code>templates/main_site/includes/sections/art.html</code></li>
+      <li><code>templates/main_site/includes/layout/art_lightbox.html</code></li>
+      <li><code>templates/main_site/includes/components/art/album_art_grid.html</code></li>
+      <li><code>templates/main_site/includes/components/art/gig_photo_grid.html</code></li>
+      <li><code>templates/shop/base.html</code></li>
+      <li><code>templates/shop/register.html</code></li>
+      <li><code>templates/shop/checkout.html</code></li>
+      <li><code>static/main_site/js/site.js</code></li>
+      <li><code>static/main_site/js/cart.js</code></li>
+      <li><code>static/main_site/js/analytics.js</code></li>
+    </ol>
+
+    <h2>Day 6: Operational Tooling and Performance</h2>
+    <ol>
+      <li><code>scripts/generate_perf_report.py</code></li>
+      <li><code>scripts/compare_branch_browser_perf.py</code></li>
+      <li><code>scripts/compare_branch_perf.sh</code></li>
+      <li><code>scripts/compare_branch_concurrency.sh</code></li>
+      <li><code>scripts/compare_branch_queries.sh</code></li>
+      <li><code>scripts/compare_branch_profiles.sh</code></li>
+    </ol>
+
+    <h2>Day 7: Tests That Explain Behavior Best</h2>
+    <ol>
+      <li><code>tests/conftest.py</code></li>
+      <li><code>tests/test_content_security_policy.py</code></li>
+      <li><code>tests/test_settings_config.py</code></li>
+      <li><code>tests/test_shop_flow.py</code></li>
+      <li><code>tests/test_main_site_integration.py</code></li>
+      <li><code>tests/test_browser_ui.py</code></li>
+      <li><code>tests/test_browser_quality.py</code></li>
+      <li><code>tests/test_perf_report.py</code></li>
+    </ol>
+
+    <h2>Recent Mastering Changes to Notice</h2>
+    <ul>
+      <li><code>mastering/forms.py</code> separates artist and mix engineer intake questions while keeping both submissions compatible with one Google Sheet.</li>
+      <li><code>mastering/views.py</code> can email intake submissions and optionally post a structured payload to <code>MASTERING_INTAKE_GOOGLE_SHEETS_WEBHOOK_URL</code>.</li>
+      <li><code>templates/mastering/home.html</code> contains page-specific Solid State styling for the hero, examples, pricing, services, contact, and FAQ sections.</li>
+      <li><code>templates/mastering/intake.html</code> handles role-specific field visibility and custom checkbox/radio styling.</li>
+    </ul>
+
+    <h2>Recent Security Changes to Notice</h2>
+    <ul>
+      <li><code>josephlovesjohn_site/csp.py</code> now sends a Content Security Policy allowing only the expected first-party, Plausible, Kit/ConvertKit, Stripe, and configured asset origins.</li>
+      <li><code>shop/views.py</code> applies no-cache protections to account, authentication, checkout, cart, success, and download views so browser history does not revive stale private pages after logout.</li>
+      <li><code>templates/shop/base.html</code> includes a back-forward-cache guard for signed-in shop pages.</li>
+      <li><code>shop/forms.py</code> and <code>templates/shop/register.html</code> now use a registration honeypot, and registration rate limiting is configured through <code>REGISTER_RATE_LIMIT_ATTEMPTS</code> and <code>REGISTER_RATE_LIMIT_WINDOW</code>.</li>
+      <li><code>shop/models.py</code> no longer stores customer profile full names; account creation only needs username, email, and password.</li>
+      <li><code>render.yaml</code> documents the production-facing CSP and registration rate limit environment variables, though Render may still be managed manually.</li>
+    </ul>
+
+    <h2>Fast-Track Version</h2>
+    <ul>
+      <li><code>josephlovesjohn_site/settings.py</code></li>
+      <li><code>josephlovesjohn_site/csp.py</code></li>
+      <li><code>josephlovesjohn_site/urls.py</code></li>
+      <li><code>main_site/views.py</code></li>
+      <li><code>main_site/site_data.py</code></li>
+      <li><code>mastering/views.py</code></li>
+      <li><code>mastering/forms.py</code></li>
+      <li><code>shop/views.py</code></li>
+      <li><code>shop/forms.py</code></li>
+      <li><code>shop/models.py</code></li>
+      <li><code>static/main_site/js/site.js</code></li>
+      <li><code>scripts/generate_perf_report.py</code></li>
+      <li><code>tests/test_content_security_policy.py</code></li>
+      <li><code>tests/test_shop_flow.py</code></li>
+    </ul>
+  </main>
+</body>
+</html>

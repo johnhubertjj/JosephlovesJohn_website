@@ -215,6 +215,35 @@ def test_settings_expose_meta_pixel_configuration(monkeypatch: pytest.MonkeyPatc
         importlib.reload(settings)
 
 
+def test_resend_api_key_configures_default_smtp_email_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Resend API key should opt email delivery into Resend SMTP defaults."""
+    for name in (
+        "EMAIL_BACKEND",
+        "EMAIL_HOST",
+        "EMAIL_HOST_USER",
+        "EMAIL_HOST_PASSWORD",
+        "DEFAULT_FROM_EMAIL",
+        "RESEND_API_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("RESEND_API_KEY", "re_test_key")
+    monkeypatch.setenv("DOTENV_PATH", str(Path(__file__).parent / "missing.env"))
+
+    reloaded = importlib.reload(settings)
+    try:
+        assert reloaded.EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend"
+        assert reloaded.EMAIL_HOST == "smtp.resend.com"
+        assert reloaded.EMAIL_PORT == 587
+        assert reloaded.EMAIL_HOST_USER == "resend"
+        assert reloaded.EMAIL_HOST_PASSWORD == "re_test_key"
+        assert reloaded.EMAIL_USE_TLS is True
+        assert reloaded.DEFAULT_FROM_EMAIL == "josephlovesjohn@gmail.com"
+    finally:
+        monkeypatch.delenv("RESEND_API_KEY", raising=False)
+        monkeypatch.delenv("DOTENV_PATH", raising=False)
+        importlib.reload(settings)
+
+
 def test_settings_expose_site_url_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     """Canonical site URLs should be configurable from the environment."""
     monkeypatch.setenv("SITE_URL", "https://josephlovesjohn.com/")

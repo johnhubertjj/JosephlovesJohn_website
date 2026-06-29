@@ -1,127 +1,14 @@
-"""Views and content helpers for the main JosephlovesJohn site."""
+"""Request views for the main JosephlovesJohn site."""
 
-from typing import cast
-
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.messages import get_messages
-from django.core.mail import EmailMessage
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from josephlovesjohn_site.rate_limits import is_rate_limited
-from josephlovesjohn_site.recaptcha import verify_recaptcha_request
 from josephlovesjohn_site.site_urls import absolute_site_url
-from shop.ownership import get_owned_product_slugs
 
-from . import site_data as _site_data
-from .content import LEGAL_PAGE_CONTENT
+from .contact_flow import handle_contact_submission
+from .context import build_legal_page_context, build_music_track_context, build_site_context
 from .forms import ContactForm
-from .seo import build_legal_page_seo, build_music_track_seo, build_site_seo
-
-_static_file_exists = _site_data._static_file_exists
-_uploaded_file_exists = _site_data._uploaded_file_exists
-_resolve_asset_source = _site_data._resolve_asset_source
-_build_gig_photo_item = _site_data._build_gig_photo_item
-_build_album_art_item = _site_data._build_album_art_item
-_get_header_social_links = _site_data._get_header_social_links
-_get_primary_nav_items = _site_data._get_primary_nav_items
-_get_gig_photo_items = _site_data._get_gig_photo_items
-_get_album_art_items = _site_data._get_album_art_items
-_get_music_library_items = _site_data._get_music_library_items
-_get_music_library_item = _site_data._get_music_library_item
-
-HeaderSocialLink = _site_data.HeaderSocialLink
-PrimaryNavItem = _site_data.PrimaryNavItem
-GigPhoto = _site_data.GigPhoto
-AlbumArt = _site_data.AlbumArt
-Product = _site_data.Product
-
-CANONICAL_ROUTES = {
-    "main": "main_site:main",
-    "intro": "main_site:intro",
-    "music": "main_site:music",
-    "art": "main_site:art",
-    "contact": "main_site:contact",
-}
-
-
-def _site_context(active_section, *, contact_form=None, request=None):
-    """Build the shared rendering context for the one-page site.
-
-    :param active_section: Hash-compatible section slug to activate on load.
-    :type active_section: str
-    :param contact_form: Optional pre-bound contact form instance.
-    :type contact_form: main_site.forms.ContactForm | None
-    :returns: Template context for the main site page.
-    :rtype: dict[str, object]
-    """
-    section_key = active_section or "main"
-    header_social_links = _get_header_social_links()
-    music_items = _get_music_library_items()
-    contact_messages = [
-        message
-        for message in (get_messages(request) if request is not None else [])
-        if "contact" in message.extra_tags.split()
-    ]
-    owned_slug_candidates = [item.get("slug") for item in music_items if item.get("slug")]
-    owned_music_slugs = sorted(
-        get_owned_product_slugs(getattr(request, "user", None), slugs=owned_slug_candidates)
-    )
-    return {
-        "active_section": active_section,
-        "header_social_links": header_social_links,
-        "primary_nav_items": _get_primary_nav_items(),
-        "music_items": music_items,
-        "owned_music_slugs": owned_music_slugs,
-        "gig_photo_items": _get_gig_photo_items(),
-        "album_art_items": _get_album_art_items(),
-        "contact_form": contact_form or ContactForm(),
-        "contact_messages": contact_messages,
-        "seo": build_site_seo(
-            section_key,
-            canonical_url=absolute_site_url(reverse(CANONICAL_ROUTES[section_key])),
-            header_social_links=cast(list[dict[str, str]], header_social_links),
-            music_items=music_items,
-        ),
-    }
-
-
-def _legal_page_context(page_key):
-    """Build the rendering context for a legal-information page."""
-    page = LEGAL_PAGE_CONTENT[page_key]
-    business_name = settings.LEGAL_BUSINESS_NAME
-    contact_email = settings.BUSINESS_CONTACT_EMAIL
-    postal_address = settings.BUSINESS_POSTAL_ADDRESS
-    vat_number = settings.VAT_NUMBER
-    contact_lines = [business_name, contact_email]
-    if postal_address:
-        contact_lines.extend(line.strip() for line in postal_address.splitlines() if line.strip())
-    if vat_number:
-        contact_lines.append(f"VAT number: {vat_number}")
-
-    return {
-        "page": page,
-        "contact_lines": contact_lines,
-        "business_name": business_name,
-        "primary_nav_items": _get_primary_nav_items(),
-        "seo": build_legal_page_seo(
-            page_key,
-            page_title=str(page["title"]),
-            canonical_url=absolute_site_url(reverse(f"main_site:{page_key}")),
-        ),
-    }
-
-
-def _music_track_context(request, item):
-    """Build the rendering context for a dedicated music track page."""
-    public_slug = str(item.get("public_slug") or item["slug"])
-    canonical_url = absolute_site_url(reverse("main_site:music_track", kwargs={"slug": public_slug}), request)
-    return {
-        "active_section": "music",
-        "item": item,
-        "seo": build_music_track_seo(item, canonical_url=canonical_url),
-    }
+from .site_data import get_music_library_item
 
 
 def _render_site_section(request, active_section, *, contact_form=None):
@@ -130,14 +17,14 @@ def _render_site_section(request, active_section, *, contact_form=None):
     return render(
         request,
         "main_site/site.html",
-        _site_context(active_section, contact_form=contact_form, request=request),
+        build_site_context(active_section, contact_form=contact_form, request=request),
     )
 
 
 def _render_legal_page(request, page_key):
     """Render a legal-information page by key."""
 
-    return render(request, "main_site/legal_page.html", _legal_page_context(page_key))
+    return render(request, "main_site/legal_page.html", build_legal_page_context(page_key))
 
 
 def main(request):
@@ -175,7 +62,7 @@ def music(request):
 
 def music_track(request, slug):
     """Render a dedicated public page for one music track."""
-    item = _get_music_library_item(slug)
+    item = get_music_library_item(slug)
     if item is None:
         raise Http404("Track not found")
 
@@ -183,7 +70,7 @@ def music_track(request, slug):
     if slug != public_slug:
         return redirect("main_site:music_track", slug=public_slug, permanent=True)
 
-    return render(request, "main_site/music_track.html", _music_track_context(request, item))
+    return render(request, "main_site/music_track.html", build_music_track_context(request, item))
 
 
 def art(request):
@@ -207,62 +94,10 @@ def contact(request):
     """
     if request.method == "POST":
         form = ContactForm(request.POST)
-        if form.is_valid():
-            cleaned = form.cleaned_data
-            if cleaned.get("website"):
-                messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
-                return redirect("main_site:contact")
-            if not verify_recaptcha_request(request, expected_action="contact"):
-                messages.error(
-                    request,
-                    "We could not verify this message. Please refresh the page and try again.",
-                    extra_tags="contact",
-                )
-                return _render_site_section(request, "contact", contact_form=form)
-            if is_rate_limited(
-                request,
-                scope="contact-form",
-                limit=settings.CONTACT_RATE_LIMIT_ATTEMPTS,
-                window_seconds=settings.CONTACT_RATE_LIMIT_WINDOW,
-                extra_identifier=cleaned["email"],
-            ):
-                messages.error(
-                    request,
-                    "Too many messages have been sent from this connection. Please try again later.",
-                    extra_tags="contact",
-                )
-                return _render_site_section(request, "contact", contact_form=form)
-            message_body = (
-                f"New website contact form submission\n\n"
-                f"Name: {cleaned['name']}\n"
-                f"Email: {cleaned['email']}\n\n"
-                f"Message:\n{cleaned['message']}"
-            )
-            email_message = EmailMessage(
-                subject=f"Website contact from {cleaned['name']}",
-                body=message_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[settings.CONTACT_RECIPIENT_EMAIL],
-                reply_to=[cleaned["email"]],
-            )
-            try:
-                email_message.send(fail_silently=False)
-            except Exception:  # pragma: no cover - exercised in production mail failures.
-                messages.error(
-                    request,
-                    "Your message could not be sent right now. Please try again in a moment.",
-                    extra_tags="contact",
-                )
-                return _render_site_section(request, "contact", contact_form=form)
-
-            messages.success(request, "Thanks, your message has been sent.", extra_tags="contact")
+        result = handle_contact_submission(request, form)
+        if result.should_redirect:
             return redirect("main_site:contact")
 
-        messages.error(
-            request,
-            "Please correct the highlighted fields and try again.",
-            extra_tags="contact",
-        )
         return _render_site_section(request, "contact", contact_form=form)
 
     return _render_site_section(request, "contact")

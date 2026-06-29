@@ -80,3 +80,61 @@ body.is-safari-browser #art .album-art-card video {
     transform: none !important;
     will-change: auto;
 }
+
+body.is-safari-browser #main {
+    isolation: isolate;
+}
+
+body.is-safari-browser #main article {
+    background-color: #1b1f22;
+    background-clip: padding-box;
+    box-shadow: 0 0 0 1px rgba(27, 31, 34, 0.96);
+    -webkit-font-smoothing: antialiased;
+    contain: paint;
+}
+
+body.is-safari-browser #header,
+body.is-safari-browser #header .logo,
+body.is-safari-browser #header .logo .logo-frame,
+body.is-safari-browser #header .logo img,
+body.is-safari-browser #header nav,
+body.is-safari-browser #header nav ul,
+body.is-safari-browser #header nav ul li,
+body.is-safari-browser #header nav ul li a {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+body.is-safari-browser #header .logo .logo-frame {
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    transform: translateZ(0);
+}
+
+body.is-safari-browser #header .logo img {
+    border-radius: 0;
+}
+
+body.is-safari-browser #header nav ul {
+    overflow: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+body.is-safari-browser #header nav ul li {
+    border-left-color: rgba(255, 255, 255, 0.92);
+}
+
+body.is-safari-browser .music-library-item,
+body.is-safari-browser .music-library-art img,
+body.is-safari-browser input,
+body.is-safari-browser textarea,
+body.is-safari-browser .button,
+body.is-safari-browser button {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+body.is-safari-browser .music-library-item {
+    background-clip: padding-box;
+    contain: paint;
+}

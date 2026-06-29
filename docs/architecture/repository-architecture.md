@@ -82,7 +82,7 @@ flowchart LR
 flowchart TD
     Route["/, /intro/, /music/, /art/, /contact/"]
     MainView["main_site.views.*"]
-    SiteContext["_site_context()<br>collects nav, music, gallery, contact form, SEO"]
+    SiteContext["main_site.context.build_site_context()<br>collects nav, music, gallery, contact form, SEO"]
     SiteData["main_site/site_data.py<br>reads content models and asset sources"]
     SiteTemplate["templates/main_site/site.html"]
     Sections["section partials<br>main, intro, music, art, contact"]
@@ -137,7 +137,7 @@ flowchart TD
     Success --> Downloads
 ```
 
-For the detailed checkout sequence, see [shop-flow.md](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop-flow.md).
+For the detailed checkout sequence, see [shop-flow.md](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop/shop-flow.md).
 
 ## Runtime State
 
@@ -164,7 +164,7 @@ Read it in this order:
 2. Read [josephlovesjohn_site/urls.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/josephlovesjohn_site/urls.py) to see the top-level split between `main_site`, `shop`, and `mastering`.
 3. Read [josephlovesjohn_site/settings.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/josephlovesjohn_site/settings.py) to understand environment, middleware, static files, sessions, Stripe, email, analytics, and storage.
 4. Read [main_site/views.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/main_site/views.py), then [templates/main_site/site.html](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/templates/main_site/site.html), then [static/main_site/js/site.js](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/static/main_site/js/site.js).
-5. Read [shop/views.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/shop/views.py) together with [shop/models.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/shop/models.py) and [docs/shop-flow.md](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop-flow.md).
+5. Read [shop/views.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/shop/views.py) together with [shop/models.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/shop/models.py) and [docs/shop/shop-flow.md](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/docs/shop/shop-flow.md).
 6. Read [main_site/models.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/main_site/models.py) to see what content is editable in the admin.
 7. Read [shop/context_processors.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/shop/context_processors.py) and [main_site/context_processors.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/main_site/context_processors.py) to see what every template gets automatically.
 8. Read the browser tests in [tests/test_browser_ui.py](/Users/johnjoseph/PycharmProjects/JosephlovesJohn_website/tests/test_browser_ui.py) and the smoke/integration tests around it. They describe expected behaviour better than comments alone.

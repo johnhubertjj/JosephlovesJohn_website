@@ -1,25 +1,85 @@
 {% if recaptcha.enabled %}
-    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha.site_key }}" async defer></script>
+    {% if recaptcha_loading != "lazy" %}
+        <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha.site_key }}" async defer data-recaptcha-v3-script></script>
+    {% endif %}
     <script>
         (function () {
             var siteKey = "{{ recaptcha.site_key|escapejs }}";
+            var shouldLazyLoad = {% if recaptcha_loading == "lazy" %}true{% else %}false{% endif %};
+            var scriptUrl = "https://www.google.com/recaptcha/api.js?render=" + encodeURIComponent(siteKey);
 
-            function bindForm(form) {
-                if (form.dataset.recaptchaBound === "true") {
-                    return;
+            function waitForRecaptcha() {
+                return new Promise(function (resolve, reject) {
+                    var attempts = 0;
+
+                    function check() {
+                        if (window.grecaptcha && window.grecaptcha.execute) {
+                            resolve();
+                            return;
+                        }
+
+                        attempts += 1;
+                        if (attempts > 80) {
+                            reject();
+                            return;
+                        }
+
+                        window.setTimeout(check, 50);
+                    }
+
+                    check();
+                });
+            }
+
+            function getRecaptchaScript() {
+                return document.querySelector("script[data-recaptcha-v3-script]") ||
+                    document.querySelector('script[src^="https://www.google.com/recaptcha/api.js"]');
+            }
+
+            function loadRecaptcha() {
+                if (window.grecaptcha && window.grecaptcha.execute) {
+                    return Promise.resolve();
                 }
-                form.dataset.recaptchaBound = "true";
 
-                form.addEventListener("submit", function (event) {
-                    if (form.dataset.recaptchaReady === "true") {
-                        form.dataset.recaptchaReady = "";
+                if (window.__recaptchaV3Promise) {
+                    return window.__recaptchaV3Promise;
+                }
+
+                window.__recaptchaV3Promise = new Promise(function (resolve, reject) {
+                    var script = getRecaptchaScript();
+
+                    if (!script && shouldLazyLoad) {
+                        script = document.createElement("script");
+                        script.src = scriptUrl;
+                        script.async = true;
+                        script.defer = true;
+                        script.setAttribute("data-recaptcha-v3-script", "");
+                        document.head.appendChild(script);
+                    }
+
+                    if (!script) {
+                        reject();
                         return;
                     }
+
+                    waitForRecaptcha().then(resolve).catch(reject);
+                });
+
+                return window.__recaptchaV3Promise;
+            }
+
+            function submitWithoutToken(form) {
+                form.dataset.recaptchaReady = "true";
+                form.submit();
+            }
+
+            function requestTokenAndSubmit(form) {
+                loadRecaptcha().then(function () {
                     if (!window.grecaptcha || !window.grecaptcha.execute) {
+                        submitWithoutToken(form);
                         return;
                     }
 
-                    event.preventDefault();
                     window.grecaptcha.ready(function () {
                         window.grecaptcha.execute(siteKey, {
                             action: form.getAttribute("data-recaptcha-action") || "submit",
@@ -31,10 +91,40 @@
                             form.dataset.recaptchaReady = "true";
                             form.submit();
                         }).catch(function () {
-                            form.submit();
+                            submitWithoutToken(form);
                         });
                     });
+                }).catch(function () {
+                    submitWithoutToken(form);
                 });
+            }
+
+            function bindForm(form) {
+                if (form.dataset.recaptchaBound === "true") {
+                    return;
+                }
+                form.dataset.recaptchaBound = "true";
+                form.addEventListener("submit", function (event) {
+                    if (form.dataset.recaptchaReady === "true") {
+                        form.dataset.recaptchaReady = "";
+                        return;
+                    }
+
+                    event.preventDefault();
+                    requestTokenAndSubmit(form);
+                });
+
+                if (shouldLazyLoad) {
+                    form.addEventListener("focusin", function () {
+                        loadRecaptcha().catch(function () {});
+                    }, { once: true });
+                    form.addEventListener("pointerenter", function () {
+                        loadRecaptcha().catch(function () {});
+                    }, { once: true });
+                    form.addEventListener("touchstart", function () {
+                        loadRecaptcha().catch(function () {});
+                    }, { once: true, passive: true });
+                }
             }
 
             Array.prototype.forEach.call(

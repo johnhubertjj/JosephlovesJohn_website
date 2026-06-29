@@ -138,10 +138,14 @@ To enable invisible reCAPTCHA checks on the contact, account creation, and login
 RECAPTCHA_SITE_KEY=...
 RECAPTCHA_SECRET_KEY=...
 RECAPTCHA_MIN_SCORE=0.5
-RECAPTCHA_ALLOWED_HOSTNAMES=josephlovesjohn.com
+RECAPTCHA_ALLOWED_HOSTNAMES=josephlovesjohn.com,www.josephlovesjohn.com
 ```
 
 The checks stay disabled unless both reCAPTCHA keys are present.
+When `RECAPTCHA_ALLOWED_HOSTNAMES` is set, the client hook is only rendered
+for matching request hostnames. That keeps Render preview URLs from showing
+Google's `Invalid domain` badge unless you explicitly add that preview hostname
+to both the Google reCAPTCHA key and `RECAPTCHA_ALLOWED_HOSTNAMES`.
 
 ### Optional public asset CDN
 
@@ -156,6 +160,11 @@ PUBLIC_ASSET_BASE_URL=https://your-public-bucket-domain
 With this set, the site will resolve relative asset paths such as
 `audio/song.mp3` and `images/gig_photos/photo.jpg` against that public bucket
 instead of the local repo's `static/` directory.
+
+Mastering website images should keep the same relative keys they have under
+`static/`. For example, upload the WebP hero image to the public bucket as
+`mastering/images/mastering-website-header-image.webp`, not
+`static/mastering/images/mastering-website-header-image.webp`.
 
 ### Optional public uploaded-media storage
 
@@ -214,15 +223,16 @@ PRIVATE_DOWNLOADS_ROOT=/opt/render/project/src/media/private_downloads
 ### Email/contact
 
 ```env
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.resend.com
-EMAIL_PORT=587
-EMAIL_HOST_USER=resend
-EMAIL_HOST_PASSWORD=your-resend-api-key
-EMAIL_USE_TLS=true
+RESEND_API_KEY=your-resend-api-key
 DEFAULT_FROM_EMAIL=hello@your-sending-domain.example
 CONTACT_RECIPIENT_EMAIL=josephlovesjohn@gmail.com
 ```
+
+When `RESEND_API_KEY` is set, the Django SMTP email backend defaults to Resend
+(`smtp.resend.com`, port `587`, username `resend`, STARTTLS enabled). You can
+still override `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`,
+`EMAIL_HOST_PASSWORD`, or `EMAIL_USE_TLS` explicitly if a deploy needs custom
+mail settings.
 
 ### Legal/business
 
